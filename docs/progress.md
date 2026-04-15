@@ -6,6 +6,7 @@
 
 ## 已完成
 
+- 前端项目骨架（React + Vite + react-router-dom），全部 7 个页面实现完成，构建无报错
 - PRD 文档（`docs/prd.md`），覆盖 6 项功能的完整行为和约束
 - 数据库表设计：5 张表的 GORM 模型（`backend/model/`）及文档（`backend/docs/database/`）
 - 架构文档（`docs/architecture.md`）
@@ -20,7 +21,6 @@
 ## 待办
 
 - 搭建后端项目骨架（三层架构：handler → service → repository，路由、数据库初始化）
-- 初始化前端项目（React + pnpm，路由、基础布局）
 - 逐个实现核心功能：发卡 → 存款 → 就餐 → 挂失 → 注销 → 汇总统计
 - 前后端联调
 - 后端核心逻辑单元测试
@@ -92,3 +92,26 @@
 - 成功统一返回 200（不用 201），透明响应不加包装层
 - 业务错误返回 4xx + {code, message}，其他意外错误统一 500 + INTERNAL_ERROR
 - JSON 字段名与 Go 模型 json tag 完全一致（camelCase）
+
+### 2026-04-15 第 3 轮：前端项目初始化与全功能页面实现
+
+新增文件：
+- `frontend/package.json` — Vite + React + react-router-dom 项目配置
+- `frontend/vite.config.js` — Vite 配置
+- `frontend/index.html` — 入口 HTML
+- `frontend/src/main.jsx` — React 入口
+- `frontend/src/api.js` — 封装全部 16 个 API（base URL: http://localhost:8080）
+- `frontend/src/App.jsx` — 顶部导航 + React Router 路由配置
+- `frontend/src/pages/IssuePage.jsx` — 发卡页（POST /api/cards）
+- `frontend/src/pages/DepositPage.jsx` — 存款页（含收据展示）
+- `frontend/src/pages/MealPage.jsx` — 就餐消费页（三重校验 + 报警 + 结算）
+- `frontend/src/pages/LossPage.jsx` — 挂失管理页（挂失/取消挂失）
+- `frontend/src/pages/CancelPage.jsx` — 注销页（二次确认 + 退款明细）
+- `frontend/src/pages/StatisticsPage.jsx` — 汇总统计页（全部 7 个统计区块）
+- `frontend/src/pages/WindowsPage.jsx` — 窗口管理页（列表 + 新建）
+
+关键决策：
+- 金额在前端全部转换：显示时 ÷100 保留 2 位小数，提交时 Math.round(value * 100)
+- 就餐页卡片异常（cancelled/lost/404）显示红色醒目报警提示
+- 注销操作设置二次确认防止误操作
+- 统计页各区块独立发请求，避免一次加载过慢
