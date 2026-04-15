@@ -1,0 +1,43 @@
+// Package router 负责注册所有 HTTP 路由
+package router
+
+import (
+	"backend/handler"
+
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+)
+
+// Register 注册所有路由，并配置 CORS 中间件
+func Register(e *echo.Echo, cardH *handler.CardHandler, statsH *handler.StatisticsHandler, windowH *handler.WindowHandler) {
+	// 允许所有来源的跨域请求
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders: []string{"Content-Type", "Authorization"},
+	}))
+
+	api := e.Group("/api")
+
+	// 饭卡
+	api.POST("/cards", cardH.IssueCard)
+	api.GET("/cards/:id", cardH.GetCard)
+	api.POST("/cards/:id/deposits", cardH.Deposit)
+	api.POST("/cards/:id/transactions", cardH.CreateTransaction)
+	api.PUT("/cards/:id/loss-report", cardH.ReportLoss)
+	api.DELETE("/cards/:id/loss-report", cardH.CancelLossReport)
+	api.POST("/cards/:id/cancellation", cardH.CancelCard)
+
+	// 统计
+	api.GET("/statistics/meal-revenue", statsH.GetMealRevenue)
+	api.GET("/statistics/window-revenue", statsH.GetWindowRevenue)
+	api.GET("/statistics/deposit-details", statsH.GetDepositDetails)
+	api.GET("/statistics/deposit-summary", statsH.GetDepositSummary)
+	api.GET("/statistics/active-balance", statsH.GetActiveBalance)
+	api.GET("/statistics/daily-report", statsH.GetDailyReport)
+	api.GET("/statistics/yearly-report", statsH.GetYearlyReport)
+
+	// 窗口
+	api.GET("/windows", windowH.ListWindows)
+	api.POST("/windows", windowH.CreateWindow)
+}

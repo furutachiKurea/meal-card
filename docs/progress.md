@@ -2,7 +2,7 @@
 
 ## 当前迭代目标
 
-完成项目基础搭建：PRD、数据库设计、OpenAPI 契约、前后端项目骨架。
+前后端联调与功能验收。
 
 ## 已完成
 
@@ -20,10 +20,7 @@
 
 ## 待办
 
-- 搭建后端项目骨架（三层架构：handler → service → repository，路由、数据库初始化）
-- 逐个实现核心功能：发卡 → 存款 → 就餐 → 挂失 → 注销 → 汇总统计
 - 前后端联调
-- 后端核心逻辑单元测试
 
 ## 阻塞
 
@@ -31,7 +28,7 @@
 
 ## 下一步
 
-搭建后端项目骨架（三层架构、路由、数据库初始化），开始实现核心功能。
+前后端联调，启动后端服务后通过前端页面进行功能验收。
 
 ## 变更记录
 
@@ -93,7 +90,28 @@
 - 业务错误返回 4xx + {code, message}，其他意外错误统一 500 + INTERNAL_ERROR
 - JSON 字段名与 Go 模型 json tag 完全一致（camelCase）
 
-### 2026-04-15 第 3 轮：前端项目初始化与全功能页面实现
+### 2026-04-15 第 4 轮：后端三层架构实现与单元测试
+
+新增文件：
+- `backend/db/init.go` — GORM + SQLite 数据库初始化，AutoMigrate 5 张表
+- `backend/repository/card_repository.go` — Card/CardHolder/DepositRecord/Transaction CRUD 及统计查询
+- `backend/repository/window_repository.go` — Window CRUD
+- `backend/service/card_service.go` — 发卡、存款、就餐消费、挂失/取消挂失、注销核心业务逻辑
+- `backend/service/statistics_service.go` — 7 项统计业务逻辑
+- `backend/service/window_service.go` — 窗口管理业务逻辑
+- `backend/handler/card_handler.go` — 7 个饭卡相关 HTTP handler
+- `backend/handler/statistics_handler.go` — 7 个统计 HTTP handler
+- `backend/handler/window_handler.go` — 2 个窗口 HTTP handler
+- `backend/router/router.go` — 路由注册，CORS 允许所有来源
+- `backend/main.go` — 程序入口，监听 :8080
+- `backend/service/card_service_test.go` — CardService 表驱动单元测试
+- `backend/service/statistics_service_test.go` — StatisticsService 单元测试
+
+关键决策：
+- 业务错误统一用 BizError 结构体，handler 层通过 bizErrStatus 映射到对应 HTTP 状态码
+- 金额全部 int64（分），绝无 float
+- 就餐三重校验顺序：卡存在 → 非 cancelled → 非 lost → 余额充足
+- 测试使用 SQLite 内存数据库（":memory:"），不依赖文件
 
 新增文件：
 - `frontend/package.json` — Vite + React + react-router-dom 项目配置
