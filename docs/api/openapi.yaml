@@ -1,0 +1,929 @@
+openapi: 3.0.3
+info:
+  title: 食堂饭卡管理系统 API
+  description: 食堂饭卡管理系统后端接口契约，前后端严格遵照此文档开发。金额单位统一为分（int64）。
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: 开发环境
+
+tags:
+  - name: cards
+    description: 饭卡管理（发卡、查询）
+  - name: deposits
+    description: 存款
+  - name: transactions
+    description: 就餐消费
+  - name: loss-report
+    description: 挂失 / 取消挂失
+  - name: cancellation
+    description: 注销
+  - name: statistics
+    description: 汇总统计
+  - name: windows
+    description: 窗口管理
+
+paths:
+  # ==================== 发卡 ====================
+  /api/cards:
+    post:
+      tags: [cards]
+      summary: 发卡
+      description: |
+        操作员录入持卡人信息、押金、预存款，系统创建新卡。
+
+        业务规则：
+        - 同一证件号只能持有一张 active 卡，已有 active 卡时返回 409
+        - 若该证件号有 lost 状态的卡，系统自动注销旧卡（退还旧卡押金和余额），再创建新卡
+        - 每次发卡都生成新卡号，不重用旧卡号
+        - 押金必须 > 0，预存款 >= 0
+      operationId: issueCard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IssueCardRequest"
+      responses:
+        "200":
+          description: 发卡成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueCardResponse"
+        "400":
+          description: 参数校验失败（缺少必填项、押金 <= 0、预存款 < 0 等）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 该证件号已有 active 状态的卡
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: CARD_ALREADY_ACTIVE
+                message: 该证件号已有正在使用的卡
+
+  # ==================== 查卡 ====================
+  /api/cards/{id}:
+    get:
+      tags: [cards]
+      summary: 查询卡信息
+      description: |
+        根据卡号查询卡片详情，包含持卡人信息。
+        无论卡片状态如何（active/lost/cancelled）都会返回，前端根据 status 字段判断状态。
+        用于就餐刷卡时的第一步校验（卡号是否存在 + 状态展示）。
+      operationId: getCard
+      parameters:
+        - $ref: "#/components/parameters/CardId"
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardDetail"
+        "404":
+          description: 卡号不存在（非本单位所发）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: CARD_NOT_FOUND
+                message: 卡号不存在
+
+  # ==================== 存款 ====================
+  /api/cards/{id}/deposits:
+    post:
+      tags: [deposits]
+      summary: 存款（充值）
+      description: |
+        为指定卡号充值。充值成功后返回收据信息（卡号、持卡人姓名、充值金额、充值后余额、充值时间）。
+
+        约束：
+        - 充值金额必须 > 0
+        - 卡必须为 active 状态
+      operationId: deposit
+      parameters:
+        - $ref: "#/components/parameters/CardId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepositRequest"
+      responses:
+        "200":
+          description: 充值成功，返回收据信息
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepositResponse"
+        "400":
+          description: 充值金额无效
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 卡号不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 卡不是 active 状态（已挂失或已注销）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: CARD_NOT_ACTIVE
+                message: 该卡已挂失，无法充值
+
+  # ==================== 就餐消费 ====================
+  /api/cards/{id}/transactions:
+    post:
+      tags: [transactions]
+      summary: 就餐消费（结算扣款）
+      description: |
+        窗口工作人员确认结算后调用此接口扣款。
+
+        后端执行校验：
+        1. 卡号存在
+        2. 卡状态不是 cancelled
+        3. 卡状态不是 lost
+        4. 余额充足
+
+        前端流程：先调用 GET /api/cards/{id} 展示卡信息和余额，再调用此接口结算。
+      operationId: createTransaction
+      parameters:
+        - $ref: "#/components/parameters/CardId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionRequest"
+      responses:
+        "200":
+          description: 扣款成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+        "400":
+          description: 消费金额无效
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 卡号不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: CARD_NOT_FOUND
+                message: 此卡非本单位所发
+        "409":
+          description: 业务校验失败（卡已注销、卡已挂失、余额不足）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                cancelled:
+                  summary: 卡已注销
+                  value:
+                    code: CARD_CANCELLED
+                    message: 此卡已注销
+                lost:
+                  summary: 卡已挂失
+                  value:
+                    code: CARD_LOST
+                    message: 此卡已挂失
+                insufficient:
+                  summary: 余额不足
+                  value:
+                    code: INSUFFICIENT_BALANCE
+                    message: 余额不足
+
+  # ==================== 挂失 ====================
+  /api/cards/{id}/loss-report:
+    put:
+      tags: [loss-report]
+      summary: 挂失
+      description: |
+        将 active 状态的卡挂失（状态变为 lost）。
+        挂失后在任何窗口刷卡都会被拦截报警。
+      operationId: reportLoss
+      parameters:
+        - $ref: "#/components/parameters/CardId"
+      responses:
+        "200":
+          description: 挂失成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardDetail"
+        "404":
+          description: 卡号不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 卡不是 active 状态
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: CARD_NOT_ACTIVE
+                message: 只有正常使用中的卡可以挂失
+
+    # ==================== 取消挂失 ====================
+    delete:
+      tags: [loss-report]
+      summary: 取消挂失
+      description: |
+        将 lost 状态的卡恢复为 active。
+      operationId: cancelLossReport
+      parameters:
+        - $ref: "#/components/parameters/CardId"
+      responses:
+        "200":
+          description: 取消挂失成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardDetail"
+        "404":
+          description: 卡号不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 卡不是 lost 状态
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: CARD_NOT_LOST
+                message: 只有已挂失的卡可以取消挂失
+
+  # ==================== 注销 ====================
+  /api/cards/{id}/cancellation:
+    post:
+      tags: [cancellation]
+      summary: 注销
+      description: |
+        注销卡片，退还押金和余额。
+
+        约束：
+        - 卡状态为 active 或 lost 时可注销
+        - 已注销的卡不能再注销
+        - 注销后余额清零，状态变为 cancelled
+      operationId: cancelCard
+      parameters:
+        - $ref: "#/components/parameters/CardId"
+      responses:
+        "200":
+          description: 注销成功，返回应退金额
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancellationResponse"
+        "404":
+          description: 卡号不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 卡已注销
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: CARD_ALREADY_CANCELLED
+                message: 该卡已注销
+
+  # ==================== 汇总统计 ====================
+  /api/statistics/meal-revenue:
+    get:
+      tags: [statistics]
+      summary: 本餐售饭总收入
+      description: 按时间范围统计消费总收入。
+      operationId: getMealRevenue
+      parameters:
+        - $ref: "#/components/parameters/StartTime"
+        - $ref: "#/components/parameters/EndTime"
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [totalRevenue]
+                properties:
+                  totalRevenue:
+                    type: integer
+                    format: int64
+                    description: 总收入（分）
+
+  /api/statistics/window-revenue:
+    get:
+      tags: [statistics]
+      summary: 各窗口收入
+      description: 按时间范围统计各窗口的消费收入。
+      operationId: getWindowRevenue
+      parameters:
+        - $ref: "#/components/parameters/StartTime"
+        - $ref: "#/components/parameters/EndTime"
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [windows]
+                properties:
+                  windows:
+                    type: array
+                    items:
+                      type: object
+                      required: [windowId, windowName, revenue]
+                      properties:
+                        windowId:
+                          type: integer
+                          format: int64
+                        windowName:
+                          type: string
+                        revenue:
+                          type: integer
+                          format: int64
+                          description: 该窗口收入（分）
+
+  /api/statistics/deposit-details:
+    get:
+      tags: [statistics]
+      summary: 各持卡人存款明细
+      description: 按持卡人分组列出每笔存款记录。可选时间范围筛选。
+      operationId: getDepositDetails
+      parameters:
+        - name: startTime
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: 起始时间（可选）
+        - name: endTime
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: 结束时间（可选）
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [holders]
+                properties:
+                  holders:
+                    type: array
+                    items:
+                      type: object
+                      required: [holderId, holderName, idNumber, deposits, totalAmount]
+                      properties:
+                        holderId:
+                          type: integer
+                          format: int64
+                        holderName:
+                          type: string
+                        idNumber:
+                          type: string
+                        deposits:
+                          type: array
+                          items:
+                            type: object
+                            required: [id, cardId, amount, createdAt]
+                            properties:
+                              id:
+                                type: integer
+                                format: int64
+                              cardId:
+                                type: integer
+                                format: int64
+                              amount:
+                                type: integer
+                                format: int64
+                                description: 存款金额（分）
+                              createdAt:
+                                type: string
+                                format: date-time
+                        totalAmount:
+                          type: integer
+                          format: int64
+                          description: 该持卡人存款总额（分）
+
+  /api/statistics/deposit-summary:
+    get:
+      tags: [statistics]
+      summary: 本日 / 本月存款金额
+      description: 返回今日存款总额和本月存款总额，无需传参（后端按当前日期计算）。
+      operationId: getDepositSummary
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [todayTotal, monthTotal]
+                properties:
+                  todayTotal:
+                    type: integer
+                    format: int64
+                    description: 本日存款总额（分）
+                  monthTotal:
+                    type: integer
+                    format: int64
+                    description: 本月存款总额（分）
+
+  /api/statistics/active-balance:
+    get:
+      tags: [statistics]
+      summary: 卡中流动资金总额
+      description: 所有 active 状态卡的余额之和。
+      operationId: getActiveBalance
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [totalBalance]
+                properties:
+                  totalBalance:
+                    type: integer
+                    format: int64
+                    description: 流动资金总额（分）
+
+  /api/statistics/daily-report:
+    get:
+      tags: [statistics]
+      summary: 日餐报表
+      description: 按指定日期汇总当日消费数据。
+      operationId: getDailyReport
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          description: 日期，格式 YYYY-MM-DD
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [date, totalRevenue, transactionCount, windows]
+                properties:
+                  date:
+                    type: string
+                    format: date
+                  totalRevenue:
+                    type: integer
+                    format: int64
+                    description: 当日消费总额（分）
+                  transactionCount:
+                    type: integer
+                    description: 当日消费笔数
+                  windows:
+                    type: array
+                    description: 按窗口分组的明细
+                    items:
+                      type: object
+                      required: [windowId, windowName, revenue, transactionCount]
+                      properties:
+                        windowId:
+                          type: integer
+                          format: int64
+                        windowName:
+                          type: string
+                        revenue:
+                          type: integer
+                          format: int64
+                          description: 该窗口当日收入（分）
+                        transactionCount:
+                          type: integer
+                          description: 该窗口当日消费笔数
+
+  /api/statistics/yearly-report:
+    get:
+      tags: [statistics]
+      summary: 年餐报表
+      description: 按指定年份汇总每月消费数据。
+      operationId: getYearlyReport
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: 年份，如 2026
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [year, totalRevenue, transactionCount, months]
+                properties:
+                  year:
+                    type: integer
+                  totalRevenue:
+                    type: integer
+                    format: int64
+                    description: 全年消费总额（分）
+                  transactionCount:
+                    type: integer
+                    description: 全年消费笔数
+                  months:
+                    type: array
+                    description: 按月汇总
+                    items:
+                      type: object
+                      required: [month, revenue, transactionCount]
+                      properties:
+                        month:
+                          type: integer
+                          description: 月份（1-12）
+                        revenue:
+                          type: integer
+                          format: int64
+                          description: 当月消费总额（分）
+                        transactionCount:
+                          type: integer
+                          description: 当月消费笔数
+
+  # ==================== 窗口管理 ====================
+  /api/windows:
+    get:
+      tags: [windows]
+      summary: 获取窗口列表
+      operationId: listWindows
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [windows]
+                properties:
+                  windows:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Window"
+
+    post:
+      tags: [windows]
+      summary: 创建窗口
+      operationId: createWindow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  description: 窗口名称
+      responses:
+        "200":
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Window"
+        "400":
+          description: 参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: 服务端内部错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: INTERNAL_ERROR
+                message: 服务端内部错误
+
+# ==================== 组件定义 ====================
+components:
+  parameters:
+    CardId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+      description: 卡号（即卡的自增 ID）
+
+    StartTime:
+      name: startTime
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date-time
+      description: 起始时间（ISO 8601）
+
+    EndTime:
+      name: endTime
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date-time
+      description: 结束时间（ISO 8601）
+
+  schemas:
+    # ---------- 通用错误 ----------
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: |
+            错误码枚举：
+            - CARD_NOT_FOUND: 卡号不存在
+            - CARD_ALREADY_ACTIVE: 该证件号已有 active 卡
+            - CARD_NOT_ACTIVE: 卡不是 active 状态
+            - CARD_NOT_LOST: 卡不是 lost 状态
+            - CARD_CANCELLED: 卡已注销
+            - CARD_LOST: 卡已挂失
+            - CARD_ALREADY_CANCELLED: 卡已注销，不能重复注销
+            - INSUFFICIENT_BALANCE: 余额不足
+            - INVALID_AMOUNT: 金额无效
+            - WINDOW_NOT_FOUND: 窗口不存在
+            - VALIDATION_ERROR: 通用校验错误
+            - INTERNAL_ERROR: 服务端内部错误（所有未预期的异常统一返回 500）
+        message:
+          type: string
+          description: 人类可读的错误描述
+
+    # ---------- 基础实体 ----------
+    CardHolder:
+      type: object
+      required: [id, name, idNumber, createdAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          description: 姓名
+        idNumber:
+          type: string
+          description: 证件号
+        createdAt:
+          type: string
+          format: date-time
+
+    Card:
+      type: object
+      required: [id, cardHolderId, deposit, balance, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 卡号（自增 ID）
+        cardHolderId:
+          type: integer
+          format: int64
+        deposit:
+          type: integer
+          format: int64
+          description: 押金（分）
+        balance:
+          type: integer
+          format: int64
+          description: 余额（分）
+        status:
+          type: string
+          enum: [active, lost, cancelled]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CardDetail:
+      description: 卡片详情（含持卡人信息）
+      allOf:
+        - $ref: "#/components/schemas/Card"
+        - type: object
+          required: [cardHolder]
+          properties:
+            cardHolder:
+              $ref: "#/components/schemas/CardHolder"
+
+    Window:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+
+    # ---------- 发卡 ----------
+    IssueCardRequest:
+      type: object
+      required: [name, idNumber, deposit]
+      properties:
+        name:
+          type: string
+          description: 持卡人姓名
+        idNumber:
+          type: string
+          description: 持卡人证件号
+        deposit:
+          type: integer
+          format: int64
+          minimum: 1
+          description: 押金（分），必须大于 0
+        preDeposit:
+          type: integer
+          format: int64
+          minimum: 0
+          default: 0
+          description: 预存款（分），可以为 0
+
+    IssueCardResponse:
+      type: object
+      required: [card, cardHolder]
+      properties:
+        card:
+          $ref: "#/components/schemas/Card"
+        cardHolder:
+          $ref: "#/components/schemas/CardHolder"
+        refund:
+          description: 旧卡退款信息（仅当证件号有 lost 卡被自动注销时返回）
+          type: object
+          required: [oldCardId, deposit, balance, total]
+          properties:
+            oldCardId:
+              type: integer
+              format: int64
+              description: 被注销的旧卡号
+            deposit:
+              type: integer
+              format: int64
+              description: 退还押金（分）
+            balance:
+              type: integer
+              format: int64
+              description: 退还余额（分）
+            total:
+              type: integer
+              format: int64
+              description: 应退总额（分）= deposit + balance
+          nullable: true
+
+    # ---------- 存款 ----------
+    DepositRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+          description: 充值金额（分），必须大于 0
+
+    DepositResponse:
+      description: 充值成功的收据信息
+      type: object
+      required: [id, cardId, holderName, amount, newBalance, createdAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 存款记录 ID
+        cardId:
+          type: integer
+          format: int64
+          description: 卡号
+        holderName:
+          type: string
+          description: 持卡人姓名
+        amount:
+          type: integer
+          format: int64
+          description: 充值金额（分）
+        newBalance:
+          type: integer
+          format: int64
+          description: 充值后余额（分）
+        createdAt:
+          type: string
+          format: date-time
+          description: 充值时间
+
+    # ---------- 就餐消费 ----------
+    TransactionRequest:
+      type: object
+      required: [windowId, amount]
+      properties:
+        windowId:
+          type: integer
+          format: int64
+          description: 窗口 ID
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+          description: 消费金额（分），必须大于 0
+
+    TransactionResponse:
+      type: object
+      required: [id, cardId, windowId, amount, newBalance, createdAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 消费记录 ID
+        cardId:
+          type: integer
+          format: int64
+        windowId:
+          type: integer
+          format: int64
+        amount:
+          type: integer
+          format: int64
+          description: 消费金额（分）
+        newBalance:
+          type: integer
+          format: int64
+          description: 扣款后余额（分）
+        createdAt:
+          type: string
+          format: date-time
+
+    # ---------- 注销 ----------
+    CancellationResponse:
+      type: object
+      required: [card, refund]
+      properties:
+        card:
+          $ref: "#/components/schemas/Card"
+        refund:
+          type: object
+          required: [deposit, balance, total]
+          properties:
+            deposit:
+              type: integer
+              format: int64
+              description: 退还押金（分）
+            balance:
+              type: integer
+              format: int64
+              description: 退还余额（分）
+            total:
+              type: integer
+              format: int64
+              description: 应退总额（分）= deposit + balance

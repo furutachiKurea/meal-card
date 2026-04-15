@@ -1,0 +1,27 @@
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Go
+backend/vendor/
+backend/bin/
+backend/tmp/
+
+# Node
+node_modules/
+dist/
+.next/
+.nuxt/
+
+# 环境与密钥
+.env
+.env.*
+*.pem
+*.key
+
+.claude/
+.agents/
