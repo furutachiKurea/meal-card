@@ -155,7 +155,7 @@ export default function StatisticsPage() {
                 rowKey="windowId"
                 dataSource={windowRevenue.windows || []}
                 columns={windowRevenueColumns}
-                pagination={{ pageSize: 10, hideOnSinglePage: true }}
+                pagination={{ pageSize: 10 }}
               />
             )}
           </Card>
@@ -204,7 +204,7 @@ export default function StatisticsPage() {
                       rowKey="id"
                       dataSource={h.deposits || []}
                       columns={depositDetailColumns}
-                      pagination={{ pageSize: 10, hideOnSinglePage: true }}
+                      pagination={{ pageSize: 10 }}
                     />
                   </Card>
                 ))}
@@ -319,7 +319,7 @@ export default function StatisticsPage() {
                   rowKey="windowId"
                   dataSource={dailyReport.windows || []}
                   columns={dailyReportColumns}
-                  pagination={{ pageSize: 10, hideOnSinglePage: true }}
+                  pagination={{ pageSize: 10 }}
                 />
               </>
             )}
@@ -362,7 +362,7 @@ export default function StatisticsPage() {
                   rowKey="month"
                   dataSource={yearlyReport.months || []}
                   columns={yearlyReportColumns}
-                  pagination={{ pageSize: 10, hideOnSinglePage: true }}
+                  pagination={{ pageSize: 10 }}
                 />
               </>
             )}
