@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -61,11 +62,13 @@ func bizErrStatus(code string) int {
 func handleError(c echo.Context, err error) error {
 	var bizErr *service.BizError
 	if errors.As(err, &bizErr) {
+		log.Warn().Str("path", c.Request().URL.Path).Str("method", c.Request().Method).Str("code", bizErr.Code).Msg(bizErr.Message)
 		return c.JSON(bizErrStatus(bizErr.Code), errorResponse{
 			Code:    bizErr.Code,
 			Message: bizErr.Message,
 		})
 	}
+	log.Error().Str("path", c.Request().URL.Path).Str("method", c.Request().Method).Err(err).Msg("内部错误")
 	return c.JSON(http.StatusInternalServerError, errorResponse{
 		Code:    "INTERNAL_ERROR",
 		Message: "服务端内部错误",
@@ -144,6 +147,7 @@ func (h *CardHandler) IssueCard(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, errorResponse{Code: "VALIDATION_ERROR", Message: "请求体格式错误"})
 	}
+	log.Info().Str("path", "POST /api/cards").Str("idNumber", req.IDNumber).Int64("preDeposit", req.PreDeposit).Msg("发卡请求")
 
 	result, err := h.cardSvc.IssueCard(req.IDNumber, req.PreDeposit)
 	if err != nil {
@@ -189,6 +193,7 @@ func (h *CardHandler) Deposit(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, errorResponse{Code: "VALIDATION_ERROR", Message: "请求体格式错误"})
 	}
+	log.Info().Str("path", "POST /api/cards/:cardNo/deposits").Str("cardNo", cardNo).Int64("amount", req.Amount).Msg("存款请求")
 
 	result, err := h.cardSvc.Deposit(cardNo, req.Amount)
 	if err != nil {
@@ -216,6 +221,7 @@ func (h *CardHandler) CreateTransaction(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, errorResponse{Code: "VALIDATION_ERROR", Message: "请求体格式错误"})
 	}
+	log.Info().Str("path", "POST /api/cards/:cardNo/transactions").Str("cardNo", cardNo).Int64("windowId", req.WindowID).Int64("amount", req.Amount).Msg("消费请求")
 
 	result, err := h.cardSvc.CreateTransaction(cardNo, uint(req.WindowID), req.Amount)
 	if err != nil {
@@ -235,6 +241,7 @@ func (h *CardHandler) CreateTransaction(c echo.Context) error {
 // ReportLoss PUT /api/cards/:cardNo/loss-report 挂失
 func (h *CardHandler) ReportLoss(c echo.Context) error {
 	cardNo := c.Param("cardNo")
+	log.Info().Str("path", "PUT /api/cards/:cardNo/loss-report").Str("cardNo", cardNo).Msg("挂失请求")
 
 	card, err := h.cardSvc.ReportLoss(cardNo)
 	if err != nil {
@@ -249,6 +256,7 @@ func (h *CardHandler) ReportLoss(c echo.Context) error {
 // CancelLossReport DELETE /api/cards/:cardNo/loss-report 取消挂失
 func (h *CardHandler) CancelLossReport(c echo.Context) error {
 	cardNo := c.Param("cardNo")
+	log.Info().Str("path", "DELETE /api/cards/:cardNo/loss-report").Str("cardNo", cardNo).Msg("取消挂失请求")
 
 	card, err := h.cardSvc.CancelLossReport(cardNo)
 	if err != nil {
@@ -263,6 +271,7 @@ func (h *CardHandler) CancelLossReport(c echo.Context) error {
 // CancelCard POST /api/cards/:cardNo/cancellation 注销
 func (h *CardHandler) CancelCard(c echo.Context) error {
 	cardNo := c.Param("cardNo")
+	log.Info().Str("path", "POST /api/cards/:cardNo/cancellation").Str("cardNo", cardNo).Msg("注销请求")
 
 	result, err := h.cardSvc.CancelCard(cardNo)
 	if err != nil {

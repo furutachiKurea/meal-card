@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -168,6 +169,7 @@ func (s *CardService) IssueCard(idNumber string, preDeposit int64) (*IssueCardRe
 		if err := s.cardRepo.UpdateCard(lostCard); err != nil {
 			return nil, err
 		}
+		log.Info().Str("oldCardNo", oldCardNo).Int64("refundDeposit", oldDeposit).Int64("refundBalance", oldBalance).Msg("旧挂失卡自动注销")
 		refund = &OldCardRefund{
 			OldCardNo: oldCardNo,
 			Deposit:   oldDeposit,
@@ -197,6 +199,8 @@ func (s *CardService) IssueCard(idNumber string, preDeposit int64) (*IssueCardRe
 			return nil, err
 		}
 	}
+
+	log.Info().Str("cardNo", newCard.CardNo).Str("idNumber", idNumber).Int64("preDeposit", preDeposit).Msg("发卡成功")
 
 	return &IssueCardResult{
 		Card:       newCard,
@@ -250,6 +254,8 @@ func (s *CardService) Deposit(cardNo string, amount int64) (*DepositResult, erro
 	if err := s.cardRepo.CreateDepositRecord(record); err != nil {
 		return nil, err
 	}
+
+	log.Info().Str("cardNo", cardNo).Int64("amount", amount).Int64("newBalance", card.Balance).Msg("存款成功")
 
 	return &DepositResult{
 		ID:         record.ID,
@@ -310,6 +316,8 @@ func (s *CardService) CreateTransaction(cardNo string, windowID uint, amount int
 		return nil, err
 	}
 
+	log.Info().Str("cardNo", cardNo).Uint("windowID", windowID).Int64("amount", amount).Int64("newBalance", card.Balance).Msg("消费成功")
+
 	return &TransactionResult{
 		ID:         tx.ID,
 		CardNo:     card.CardNo,
@@ -338,6 +346,8 @@ func (s *CardService) ReportLoss(cardNo string) (*model.Card, error) {
 	if err := s.cardRepo.UpdateCard(card); err != nil {
 		return nil, err
 	}
+
+	log.Info().Str("cardNo", cardNo).Msg("挂失成功")
 	return card, nil
 }
 
@@ -359,6 +369,8 @@ func (s *CardService) CancelLossReport(cardNo string) (*model.Card, error) {
 	if err := s.cardRepo.UpdateCard(card); err != nil {
 		return nil, err
 	}
+
+	log.Info().Str("cardNo", cardNo).Msg("取消挂失成功")
 	return card, nil
 }
 
@@ -383,6 +395,8 @@ func (s *CardService) CancelCard(cardNo string) (*CancellationResult, error) {
 	if err := s.cardRepo.UpdateCard(card); err != nil {
 		return nil, err
 	}
+
+	log.Info().Str("cardNo", cardNo).Int64("refundDeposit", deposit).Int64("refundBalance", balance).Msg("注销成功")
 
 	return &CancellationResult{
 		Card:    card,
