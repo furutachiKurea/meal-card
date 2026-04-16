@@ -3,6 +3,8 @@ package service
 import (
 	"backend/repository"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 // StatisticsService 统计业务逻辑
@@ -195,6 +197,7 @@ func (s *StatisticsService) GetDailyReport(date string) (*DailyReportResult, err
 	// 解析日期
 	day, err := time.Parse("2006-01-02", date)
 	if err != nil {
+		log.Warn().Str("code", ErrCodeValidationError).Str("date", date).Msg("业务错误")
 		return nil, newBizError(ErrCodeValidationError, "日期格式无效，应为 YYYY-MM-DD")
 	}
 
@@ -203,6 +206,7 @@ func (s *StatisticsService) GetDailyReport(date string) (*DailyReportResult, err
 
 	totalRevenue, transactionCount, windows, err := s.cardRepo.GetDailyReport(start, end)
 	if err != nil {
+		log.Error().Err(err).Str("date", date).Msg("获取日餐报表失败")
 		return nil, err
 	}
 
@@ -242,11 +246,13 @@ type YearlyReportResult struct {
 // GetYearlyReport 获取指定年份的年餐报表
 func (s *StatisticsService) GetYearlyReport(year int) (*YearlyReportResult, error) {
 	if year <= 0 {
+		log.Warn().Str("code", ErrCodeValidationError).Int("year", year).Msg("业务错误")
 		return nil, newBizError(ErrCodeValidationError, "年份无效")
 	}
 
 	totalRevenue, transactionCount, months, err := s.cardRepo.GetYearlyReport(year)
 	if err != nil {
+		log.Error().Err(err).Int("year", year).Msg("获取年餐报表失败")
 		return nil, err
 	}
 
