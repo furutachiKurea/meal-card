@@ -14,9 +14,14 @@ import (
 )
 
 func main() {
-	// 初始化日志
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	// 初始化日志：APP_ENV=production 使用 JSON 结构化输出，否则使用彩色控制台输出
+	if os.Getenv("APP_ENV") == "production" {
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		log.Logger = zerolog.New(os.Stderr).With().Timestamp().Logger()
+	} else {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	}
 
 	// 初始化数据库
 	gormDB, err := db.Init("meal_card.db")
