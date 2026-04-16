@@ -48,3 +48,4 @@
 - GetCardByIDNumber 直接注入 CardRepository，绕过 service，因为该查询无业务规则，只是数据读取
 - ValidateStudent 直接注入 StudentValidator，可在发卡前独立调用，供前端二次确认展示
 - 路径参数统一为 `:cardNo`，不再使用 `:id`
+- 日志策略：各写操作入口打 Info（方法/路径/关键参数）；`handleError` 集中打日志——BizError 打 Warn（含 code），系统错误打 Error；service 层关键操作成功后打 Info（含 cardNo、金额等字段）。日志不分散在每个错误分支，统一在 handleError 输出
