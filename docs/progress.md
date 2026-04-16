@@ -32,6 +32,29 @@
 
 ## 变更记录
 
+### 2026-04-16 第 6 轮：前端路由拆分为管理端与窗口机两套入口
+
+新增文件：
+- `frontend/src/layouts/AdminLayout.jsx` — 管理端侧边栏 Layout，使用 Ant Design Sider + Menu，包含返回首页按钮
+
+修改文件：
+- `frontend/src/App.jsx` — 重写路由结构：`/` 首页（双入口卡片）、`/admin/*`（管理端嵌套路由）、`/window`（窗口机独立路由）
+- `frontend/src/pages/MealPage.jsx` — 改为深色全屏窗口机风格，余额大字展示（64px），按钮/输入框放大，支持 `useNavigate` 返回首页
+
+路由映射：
+- `/admin/issue` — 发卡
+- `/admin/deposit` — 存款
+- `/admin/loss` — 挂失管理
+- `/admin/cancel` — 注销
+- `/admin/statistics` — 汇总统计
+- `/admin/windows` — 窗口管理
+- `/window` — 窗口机就餐消费
+
+关键决策：
+- 管理端使用固定宽度（180px）侧边栏，Content 区 `marginLeft: 180` 避免遮挡
+- 窗口机页面完全独立于管理导航，使用深色主题（`#0a1628` 背景）与大字体，方便站立操作
+- 首页不含任何业务功能，仅作两个入口的跳板
+
 ### 2026-04-16 第 5 轮：前端全面迁移至 Ant Design
 
 新增依赖：
