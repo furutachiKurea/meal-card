@@ -238,3 +238,67 @@ func TestGetWindowRevenue(t *testing.T) {
 		t.Errorf("窗口收入期望 500，得到 %d", result.Windows[0].Revenue)
 	}
 }
+
+func TestGetDepositDetails_Pagination(t *testing.T) {
+	statsSvc, cardSvc, _ := setupStatisticsService(t)
+
+	// 发 3 张卡，每人各充一笔款（ID001/ID002/ID003）
+	for _, id := range []string{"ID001", "ID002", "ID003"} {
+		r, err := cardSvc.IssueCard(id, 0)
+		if err != nil {
+			t.Fatalf("发卡失败 %s: %v", id, err)
+		}
+		if _, err := cardSvc.Deposit(r.Card.CardNo, 100); err != nil {
+			t.Fatalf("充值失败 %s: %v", id, err)
+		}
+	}
+
+	// 第 1 页 pageSize=2：应返回 2 条，total=3
+	result, err := statsSvc.GetDepositDetails(nil, nil, 1, 2)
+	if err != nil {
+		t.Fatalf("GetDepositDetails 失败: %v", err)
+	}
+	if result.Total != 3 {
+		t.Errorf("total 期望 3，得到 %d", result.Total)
+	}
+	if len(result.Holders) != 2 {
+		t.Errorf("第 1 页 holders 数量期望 2，得到 %d", len(result.Holders))
+	}
+	if result.Page != 1 {
+		t.Errorf("page 期望 1，得到 %d", result.Page)
+	}
+	if result.PageSize != 2 {
+		t.Errorf("pageSize 期望 2，得到 %d", result.PageSize)
+	}
+
+	// 第 2 页 pageSize=2：应返回 1 条
+	result2, err := statsSvc.GetDepositDetails(nil, nil, 2, 2)
+	if err != nil {
+		t.Fatalf("GetDepositDetails 第 2 页失败: %v", err)
+	}
+	if result2.Total != 3 {
+		t.Errorf("第 2 页 total 期望 3，得到 %d", result2.Total)
+	}
+	if len(result2.Holders) != 1 {
+		t.Errorf("第 2 页 holders 数量期望 1，得到 %d", len(result2.Holders))
+	}
+
+	// 超出范围的页：应返回空列表，total 不变
+	result3, err := statsSvc.GetDepositDetails(nil, nil, 99, 2)
+	if err != nil {
+		t.Fatalf("GetDepositDetails 超出范围失败: %v", err)
+	}
+	if result3.Total != 3 {
+		t.Errorf("超出范围 total 期望 3，得到 %d", result3.Total)
+	}
+	if len(result3.Holders) != 0 {
+		t.Errorf("超出范围 holders 应为空，得到 %d 条", len(result3.Holders))
+	}
+
+	// 每条持卡人的存款记录应包含正确金额
+	for _, h := range result.Holders {
+		if h.TotalAmount != 100 {
+			t.Errorf("持卡人 %s 存款总额期望 100，得到 %d", h.IDNumber, h.TotalAmount)
+		}
+	}
+}

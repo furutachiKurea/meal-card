@@ -15,6 +15,8 @@
 - OpenAPI 契约（`docs/api/openapi.yaml`），覆盖 16 个接口（6 项核心业务 + 7 项统计 + 窗口管理）
 - 后端全量适配 cardNo + StudentValidator（Task #1 完成）
 - 前端全量适配 cardNo（Task #2 完成）
+- 修复发卡预存款不生成 DepositRecord（Task #10 完成）
+- deposit-details 接口后端分页支持（Task #13 完成）
 
 ## 进行中
 
@@ -33,6 +35,21 @@
 前后端联调，启动后端服务后通过前端页面进行功能验收。
 
 ## 变更记录
+
+### 2026-04-16 第 15 轮：deposit-details 接口后端分页支持
+
+修改文件：
+- `backend/repository/card_repository.go` — GetDepositDetails 新增 page/pageSize 参数，改为返回 (holders, total, err)；先 DISTINCT COUNT 统计持卡人总数，再 GROUP BY + LIMIT/OFFSET 分页取持卡人 ID，最后 IN 查询本页全量存款明细
+- `backend/service/statistics_service.go` — GetDepositDetails 新增 page/pageSize 参数，page/pageSize < 1 时自动修正；DepositDetailsResult 新增 Total/Page/PageSize 字段
+- `backend/handler/statistics_handler.go` — 解析 page/pageSize query 参数（非法值使用默认值）；响应体新增 total/page/pageSize
+- `backend/service/statistics_service_test.go` — 新增 TestGetDepositDetails_Pagination，覆盖：全量查询、分页第 1 页、第 2 页、超出范围页
+
+测试结果：go test -count=1 ./... 全部通过
+
+关键决策：
+- 分页单位为「持卡人」（不是存款记录），与前端展示逻辑一致
+- 排序以 card_holders.id ASC 保证跨页稳定
+- 分两次查询（先 COUNT+分页持卡人，再查明细），避免大结果集一次性加载
 
 ### 2026-04-16 第 14 轮：修复发卡预存款不生成流水记录
 

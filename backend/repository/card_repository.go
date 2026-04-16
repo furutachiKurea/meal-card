@@ -154,9 +154,54 @@ type HolderDepositDetail struct {
 	TotalAmount int64
 }
 
-// GetDepositDetails 获取各持卡人存款明细，可选时间范围
-func (r *CardRepository) GetDepositDetails(start, end *time.Time) ([]HolderDepositDetail, error) {
-	// 先查询满足条件的存款记录（关联 card 和 card_holder）
+// GetDepositDetails 获取各持卡人存款明细，支持可选时间范围和分页（以持卡人为单位）。
+// page 从 1 开始，pageSize 为每页持卡人数量。
+// 返回当前页持卡人列表和满足条件的持卡人总数。
+func (r *CardRepository) GetDepositDetails(start, end *time.Time, page, pageSize int) (holders []HolderDepositDetail, total int64, err error) {
+	// 构建基础过滤条件（关联 deposit_records → cards → card_holders）
+	baseQuery := r.db.Model(&model.DepositRecord{}).
+		Joins("LEFT JOIN cards ON cards.id = deposit_records.card_id").
+		Joins("LEFT JOIN card_holders ON card_holders.id = cards.card_holder_id")
+	if start != nil {
+		baseQuery = baseQuery.Where("deposit_records.created_at >= ?", *start)
+	}
+	if end != nil {
+		baseQuery = baseQuery.Where("deposit_records.created_at <= ?", *end)
+	}
+
+	// 统计满足条件的不重复持卡人总数
+	err = baseQuery.Distinct("card_holders.id").Count(&total).Error
+	if err != nil {
+		return
+	}
+
+	// 分页查询持卡人 ID（按 card_holders.id 排序保证稳定分页）
+	offset := (page - 1) * pageSize
+	type holderIDRow struct {
+		HolderID uint
+	}
+	var holderIDs []holderIDRow
+	err = baseQuery.
+		Select("card_holders.id as holder_id").
+		Group("card_holders.id").
+		Order("card_holders.id ASC").
+		Limit(pageSize).Offset(offset).
+		Scan(&holderIDs).Error
+	if err != nil {
+		return
+	}
+	if len(holderIDs) == 0 {
+		holders = []HolderDepositDetail{}
+		return
+	}
+
+	// 收集本页持卡人 ID
+	ids := make([]uint, 0, len(holderIDs))
+	for _, h := range holderIDs {
+		ids = append(ids, h.HolderID)
+	}
+
+	// 查询本页持卡人的全部存款明细
 	type rawRow struct {
 		ID         uint
 		CardNo     string
@@ -166,27 +211,25 @@ func (r *CardRepository) GetDepositDetails(start, end *time.Time) ([]HolderDepos
 		HolderName string
 		IDNumber   string
 	}
-
-	query := r.db.Model(&model.DepositRecord{}).
+	detailQuery := r.db.Model(&model.DepositRecord{}).
 		Select("deposit_records.id, cards.card_no, deposit_records.amount, deposit_records.created_at, card_holders.id as holder_id, card_holders.name as holder_name, card_holders.id_number").
 		Joins("LEFT JOIN cards ON cards.id = deposit_records.card_id").
-		Joins("LEFT JOIN card_holders ON card_holders.id = cards.card_holder_id")
-
+		Joins("LEFT JOIN card_holders ON card_holders.id = cards.card_holder_id").
+		Where("card_holders.id IN ?", ids)
 	if start != nil {
-		query = query.Where("deposit_records.created_at >= ?", *start)
+		detailQuery = detailQuery.Where("deposit_records.created_at >= ?", *start)
 	}
 	if end != nil {
-		query = query.Where("deposit_records.created_at <= ?", *end)
+		detailQuery = detailQuery.Where("deposit_records.created_at <= ?", *end)
 	}
 
 	var rows []rawRow
-	if err := query.Scan(&rows).Error; err != nil {
-		return nil, err
+	if err = detailQuery.Scan(&rows).Error; err != nil {
+		return
 	}
 
-	// 按持卡人分组
-	holderMap := make(map[uint]*HolderDepositDetail)
-	order := []uint{}
+	// 按持卡人分组，保持 holderIDs 返回的顺序
+	holderMap := make(map[uint]*HolderDepositDetail, len(ids))
 	for _, row := range rows {
 		if _, ok := holderMap[row.HolderID]; !ok {
 			holderMap[row.HolderID] = &HolderDepositDetail{
@@ -195,7 +238,6 @@ func (r *CardRepository) GetDepositDetails(start, end *time.Time) ([]HolderDepos
 				IDNumber:   row.IDNumber,
 				Deposits:   []DepositDetailItem{},
 			}
-			order = append(order, row.HolderID)
 		}
 		h := holderMap[row.HolderID]
 		h.Deposits = append(h.Deposits, DepositDetailItem{
@@ -207,11 +249,13 @@ func (r *CardRepository) GetDepositDetails(start, end *time.Time) ([]HolderDepos
 		h.TotalAmount += row.Amount
 	}
 
-	result := make([]HolderDepositDetail, 0, len(order))
-	for _, id := range order {
-		result = append(result, *holderMap[id])
+	holders = make([]HolderDepositDetail, 0, len(ids))
+	for _, id := range ids {
+		if h, ok := holderMap[id]; ok {
+			holders = append(holders, *h)
+		}
 	}
-	return result, nil
+	return
 }
 
 // SumDepositsByTimeRange 统计指定时间范围内的存款总额

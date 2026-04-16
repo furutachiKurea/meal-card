@@ -83,7 +83,7 @@ func (h *StatisticsHandler) GetWindowRevenue(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]any{"windows": windows})
 }
 
-// GetDepositDetails GET /api/statistics/deposit-details 各持卡人存款明细
+// GetDepositDetails GET /api/statistics/deposit-details 各持卡人存款明细（支持分页）
 func (h *StatisticsHandler) GetDepositDetails(c echo.Context) error {
 	start, err := parseTimeParam(c, "startTime", false)
 	if err != nil {
@@ -94,7 +94,20 @@ func (h *StatisticsHandler) GetDepositDetails(c echo.Context) error {
 		return handleError(c, err)
 	}
 
-	result, err := h.statsSvc.GetDepositDetails(start, end)
+	page := 1
+	pageSize := 10
+	if p := c.QueryParam("page"); p != "" {
+		if v, err := strconv.Atoi(p); err == nil && v > 0 {
+			page = v
+		}
+	}
+	if ps := c.QueryParam("pageSize"); ps != "" {
+		if v, err := strconv.Atoi(ps); err == nil && v > 0 {
+			pageSize = v
+		}
+	}
+
+	result, err := h.statsSvc.GetDepositDetails(start, end, page, pageSize)
 	if err != nil {
 		return handleError(c, err)
 	}
@@ -118,7 +131,12 @@ func (h *StatisticsHandler) GetDepositDetails(c echo.Context) error {
 			"totalAmount": h.TotalAmount,
 		})
 	}
-	return c.JSON(http.StatusOK, map[string]any{"holders": holders})
+	return c.JSON(http.StatusOK, map[string]any{
+		"holders":  holders,
+		"total":    result.Total,
+		"page":     result.Page,
+		"pageSize": result.PageSize,
+	})
 }
 
 // GetDepositSummary GET /api/statistics/deposit-summary 本日/本月存款金额

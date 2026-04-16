@@ -699,7 +699,7 @@ func TestIssueCard_PreDepositCreatesDepositRecord(t *testing.T) {
 		t.Fatalf("发卡失败: %v", err)
 	}
 
-	details, err := cardRepo.GetDepositDetails(nil, nil)
+	details, _, err := cardRepo.GetDepositDetails(nil, nil, 1, 100)
 	if err != nil {
 		t.Fatalf("查询存款明细失败: %v", err)
 	}
@@ -720,7 +720,7 @@ func TestIssueCard_PreDepositCreatesDepositRecord(t *testing.T) {
 		t.Fatalf("发卡失败: %v", err)
 	}
 
-	details2, err := cardRepo.GetDepositDetails(nil, nil)
+	details2, _, err := cardRepo.GetDepositDetails(nil, nil, 1, 100)
 	if err != nil {
 		t.Fatalf("查询存款明细失败: %v", err)
 	}

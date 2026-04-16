@@ -76,14 +76,24 @@ type DepositDetailEntry struct {
 	CreatedAt time.Time
 }
 
-// DepositDetailsResult 各持卡人存款明细结果
+// DepositDetailsResult 各持卡人存款明细结果（含分页信息）
 type DepositDetailsResult struct {
-	Holders []DepositDetailHolder
+	Holders  []DepositDetailHolder
+	Total    int64
+	Page     int
+	PageSize int
 }
 
-// GetDepositDetails 获取各持卡人存款明细，可选时间范围
-func (s *StatisticsService) GetDepositDetails(start, end *time.Time) (*DepositDetailsResult, error) {
-	details, err := s.cardRepo.GetDepositDetails(start, end)
+// GetDepositDetails 获取各持卡人存款明细，可选时间范围，支持分页
+func (s *StatisticsService) GetDepositDetails(start, end *time.Time, page, pageSize int) (*DepositDetailsResult, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+
+	details, total, err := s.cardRepo.GetDepositDetails(start, end, page, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +117,12 @@ func (s *StatisticsService) GetDepositDetails(start, end *time.Time) (*DepositDe
 			TotalAmount: d.TotalAmount,
 		})
 	}
-	return &DepositDetailsResult{Holders: holders}, nil
+	return &DepositDetailsResult{
+		Holders:  holders,
+		Total:    total,
+		Page:     page,
+		PageSize: pageSize,
+	}, nil
 }
 
 // DepositSummaryResult 本日/本月存款汇总

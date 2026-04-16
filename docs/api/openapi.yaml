@@ -497,6 +497,18 @@ paths:
             type: string
             format: date-time
           description: 结束时间（可选）
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: 页码，从 1 开始（可选，默认 1）
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: 每页持卡人数量（可选，默认 10）
       responses:
         "200":
           description: 查询成功
@@ -504,7 +516,7 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [holders]
+                required: [holders, total, page, pageSize]
                 properties:
                   holders:
                     type: array
@@ -542,6 +554,15 @@ paths:
                           type: integer
                           format: int64
                           description: 该持卡人存款总额（分）
+                  total:
+                    type: integer
+                    description: 满足筛选条件的持卡人总数
+                  page:
+                    type: integer
+                    description: 当前页码
+                  pageSize:
+                    type: integer
+                    description: 每页数量
 
   /api/statistics/deposit-summary:
     get:
