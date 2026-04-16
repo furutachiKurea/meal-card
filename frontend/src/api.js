@@ -95,10 +95,12 @@ export function getWindowRevenue({ startTime, endTime }) {
 }
 
 /** 各持卡人存款明细 GET /api/statistics/deposit-details */
-export function getDepositDetails({ startTime, endTime } = {}) {
+export function getDepositDetails({ startTime, endTime, page, pageSize } = {}) {
   const params = new URLSearchParams()
   if (startTime) params.set('startTime', startTime)
   if (endTime) params.set('endTime', endTime)
+  if (page != null) params.set('page', page)
+  if (pageSize != null) params.set('pageSize', pageSize)
   const qs = params.toString()
   return request(`/api/statistics/deposit-details${qs ? '?' + qs : ''}`)
 }
