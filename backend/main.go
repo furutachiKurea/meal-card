@@ -14,12 +14,19 @@ import (
 )
 
 func main() {
-	// 初始化日志：APP_ENV=production 使用 JSON 结构化输出，否则使用彩色控制台输出
+	// 初始化日志：
+	// APP_ENV=production  → JSON 结构化输出，Info 级别
+	// 其他（开发环境）    → 彩色控制台输出，Info 级别
+	// LOG_LEVEL=debug     → 无论哪个环境，强制开启 Debug 级别（调试开关）
+	level := zerolog.InfoLevel
+	if os.Getenv("LOG_LEVEL") == "debug" {
+		level = zerolog.DebugLevel
+	}
+	zerolog.SetGlobalLevel(level)
+
 	if os.Getenv("APP_ENV") == "production" {
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 		log.Logger = zerolog.New(os.Stderr).With().Timestamp().Logger()
 	} else {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 

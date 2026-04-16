@@ -71,7 +71,7 @@ func (l *zerologGormLogger) Trace(_ context.Context, begin time.Time, fc func() 
 	case elapsed >= l.slowThreshold:
 		baseEvent(zerolog.WarnLevel).Msg("gorm slow query")
 	default:
-		// 正常 SQL 不输出，避免开发环境日志噪音
+		baseEvent(zerolog.DebugLevel).Msg("gorm sql")
 	}
 }
 
