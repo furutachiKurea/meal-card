@@ -30,6 +30,8 @@ export default function StatisticsPage() {
   // 存款明细
   const [depositRange, setDepositRange] = useState(null)
   const [depositDetails, setDepositDetails] = useState(null)
+  const [depositHolderPage, setDepositHolderPage] = useState(1)
+  const depositHolderPageSize = 5
 
   // 本日/本月存款
   const [depositSummary, setDepositSummary] = useState(null)
@@ -153,7 +155,7 @@ export default function StatisticsPage() {
                 rowKey="windowId"
                 dataSource={windowRevenue.windows || []}
                 columns={windowRevenueColumns}
-                pagination={false}
+                pagination={{ pageSize: 10, hideOnSinglePage: true }}
               />
             )}
           </Card>
@@ -185,22 +187,49 @@ export default function StatisticsPage() {
               </Button>
             </Space>
             {errors.depositDetails && <Alert type="error" message={errors.depositDetails} style={{ marginTop: 8 }} showIcon />}
-            {depositDetails && (depositDetails.holders || []).map(h => (
-              <Card
-                key={h.holderId}
-                size="small"
-                style={{ marginTop: 8 }}
-                title={`${h.holderName}（${h.idNumber}）— 合计：${formatYuan(h.totalAmount)}`}
-              >
-                <Table
-                  size="small"
-                  rowKey="id"
-                  dataSource={h.deposits || []}
-                  columns={depositDetailColumns}
-                  pagination={false}
-                />
-              </Card>
-            ))}
+            {depositDetails && (() => {
+              const holders = depositDetails.holders || []
+              const start = (depositHolderPage - 1) * depositHolderPageSize
+              const pageHolders = holders.slice(start, start + depositHolderPageSize)
+              return (
+                <>
+                  {pageHolders.map(h => (
+                    <Card
+                      key={h.holderId}
+                      size="small"
+                      style={{ marginTop: 8 }}
+                      title={`${h.holderName}（${h.idNumber}）— 合计：${formatYuan(h.totalAmount)}`}
+                    >
+                      <Table
+                        size="small"
+                        rowKey="id"
+                        dataSource={h.deposits || []}
+                        columns={depositDetailColumns}
+                        pagination={{ pageSize: 10, hideOnSinglePage: true }}
+                      />
+                    </Card>
+                  ))}
+                  {holders.length > depositHolderPageSize && (
+                    <div style={{ marginTop: 12, textAlign: 'right' }}>
+                      <span style={{ marginRight: 8, fontSize: 13, color: '#666' }}>
+                        共 {holders.length} 位持卡人
+                      </span>
+                      {Array.from({ length: Math.ceil(holders.length / depositHolderPageSize) }, (_, i) => i + 1).map(p => (
+                        <Button
+                          key={p}
+                          size="small"
+                          type={p === depositHolderPage ? 'primary' : 'default'}
+                          style={{ marginLeft: 4 }}
+                          onClick={() => setDepositHolderPage(p)}
+                        >
+                          {p}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )
+            })()}
           </Card>
         </Col>
 
@@ -279,7 +308,7 @@ export default function StatisticsPage() {
                   rowKey="windowId"
                   dataSource={dailyReport.windows || []}
                   columns={dailyReportColumns}
-                  pagination={false}
+                  pagination={{ pageSize: 10, hideOnSinglePage: true }}
                 />
               </>
             )}
@@ -322,7 +351,7 @@ export default function StatisticsPage() {
                   rowKey="month"
                   dataSource={yearlyReport.months || []}
                   columns={yearlyReportColumns}
-                  pagination={false}
+                  pagination={{ pageSize: 10, hideOnSinglePage: true }}
                 />
               </>
             )}
