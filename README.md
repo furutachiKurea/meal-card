@@ -2,6 +2,13 @@
 
 课设项目，前后端分离架构，实现发卡、存款、就餐消费、挂失、注销、汇总统计 6 项功能。
 
+## 环境准备
+
+分别参考各子目录 README 配置运行环境：
+
+- 后端：[backend/README.md](backend/README.md)（需要 Go 1.26+）
+- 前端：[frontend/README.md](frontend/README.md)（需要 Node.js 18+、pnpm 8+）
+
 ## 启动
 
 ```bash
