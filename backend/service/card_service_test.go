@@ -688,3 +688,48 @@ func TestCancelCard_AlreadyCancelled(t *testing.T) {
 		t.Errorf("错误码期望 %s，得到 %s", service.ErrCodeCardAlreadyCancelled, bizErr.Code)
 	}
 }
+
+func TestIssueCard_PreDepositCreatesDepositRecord(t *testing.T) {
+	v := newFakeValidator("ID001", "ID002")
+	svc, cardRepo := setupWithRepo(t, v)
+
+	// preDeposit > 0 时，应生成 DepositRecord
+	_, err := svc.IssueCard("ID001", 500)
+	if err != nil {
+		t.Fatalf("发卡失败: %v", err)
+	}
+
+	details, err := cardRepo.GetDepositDetails(nil, nil)
+	if err != nil {
+		t.Fatalf("查询存款明细失败: %v", err)
+	}
+	if len(details) == 0 {
+		t.Fatal("期望有 DepositRecord，但结果为空")
+	}
+	total := int64(0)
+	for _, d := range details {
+		total += d.TotalAmount
+	}
+	if total != 500 {
+		t.Errorf("存款总额期望 500，得到 %d", total)
+	}
+
+	// preDeposit == 0 时，不应生成 DepositRecord
+	_, err = svc.IssueCard("ID002", 0)
+	if err != nil {
+		t.Fatalf("发卡失败: %v", err)
+	}
+
+	details2, err := cardRepo.GetDepositDetails(nil, nil)
+	if err != nil {
+		t.Fatalf("查询存款明细失败: %v", err)
+	}
+	// 仍然只有 ID001 那条记录，总金额不变
+	total2 := int64(0)
+	for _, d := range details2 {
+		total2 += d.TotalAmount
+	}
+	if total2 != 500 {
+		t.Errorf("preDeposit=0 不应新增记录，总金额期望 500，得到 %d", total2)
+	}
+}

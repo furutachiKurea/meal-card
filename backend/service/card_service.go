@@ -188,6 +188,16 @@ func (s *CardService) IssueCard(idNumber string, preDeposit int64) (*IssueCardRe
 		return nil, err
 	}
 
+	if preDeposit > 0 {
+		record := &model.DepositRecord{
+			CardID: newCard.ID,
+			Amount: preDeposit,
+		}
+		if err := s.cardRepo.CreateDepositRecord(record); err != nil {
+			return nil, err
+		}
+	}
+
 	return &IssueCardResult{
 		Card:       newCard,
 		CardHolder: holder,
