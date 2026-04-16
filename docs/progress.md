@@ -34,6 +34,17 @@
 
 ## 变更记录
 
+### 2026-04-16 第 12 轮：修复就餐页输入框黑色背景
+
+修改文件：
+- `frontend/src/pages/MealPage.jsx` — InputNumber 增加 `styles.input` 直接设置内部 input 背景色与文字色，修复深色主题下黑色背景导致文字不可见问题
+
+新增文件：
+- `frontend/docs/bugfixes/meal-inputnumber-black-background.md`
+
+关键决策：
+- Ant Design v5 InputNumber 的 `style` 只作用于外层 wrapper，需用 `styles={{ input: {...} }}` 才能穿透到内部 input 元素
+
 ### 2026-04-16 第 11 轮：修复两处前端 bug
 
 修改文件：

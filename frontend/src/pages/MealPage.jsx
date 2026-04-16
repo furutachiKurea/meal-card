@@ -277,6 +277,12 @@ export default function MealPage() {
                         borderColor: '#1a3a6b',
                         color: '#e8f4fd',
                       }}
+                      styles={{
+                        input: {
+                          background: '#061020',
+                          color: '#e8f4fd',
+                        },
+                      }}
                       autoFocus
                     />
                   </Form.Item>
