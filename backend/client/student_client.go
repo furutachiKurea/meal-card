@@ -14,7 +14,7 @@ func NewMockStudentValidator() *MockStudentValidator {
 	return &MockStudentValidator{}
 }
 
-// 硬编码的学籍数据，key 为证件号
+// 硬编码的学籍数据，key 为证件号（12位，学生/教职工格式相同）
 var studentDB = map[string]*service.StudentInfo{
 	// 学生
 	"202100010001": {IDNumber: "202100010001", Name: "张三", Type: "student"},
@@ -23,9 +23,9 @@ var studentDB = map[string]*service.StudentInfo{
 	"202100010004": {IDNumber: "202100010004", Name: "赵六", Type: "student"},
 	"202100010005": {IDNumber: "202100010005", Name: "陈七", Type: "student"},
 	// 教职工
-	"T20010001": {IDNumber: "T20010001", Name: "刘老师", Type: "staff"},
-	"T20010002": {IDNumber: "T20010002", Name: "孙老师", Type: "staff"},
-	"T20010003": {IDNumber: "T20010003", Name: "周主任", Type: "staff"},
+	"200900010001": {IDNumber: "200900010001", Name: "刘老师", Type: "staff"},
+	"200900010002": {IDNumber: "200900010002", Name: "孙老师", Type: "staff"},
+	"200900010003": {IDNumber: "200900010003", Name: "周主任", Type: "staff"},
 }
 
 // Validate 查询硬编码学籍数据，证件号不在名单中返回 STUDENT_NOT_FOUND
