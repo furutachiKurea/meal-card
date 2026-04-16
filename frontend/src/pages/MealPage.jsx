@@ -1,35 +1,41 @@
 import { useState, useEffect } from 'react'
+import { Form, Input, InputNumber, Button, Alert, Descriptions, Card, Typography, Select, Space, Steps } from 'antd'
 import { getCard, createTransaction, listWindows } from '../api.js'
+
+const { Title } = Typography
 
 export default function MealPage() {
   const [cardId, setCardId] = useState('')
   const [cardInfo, setCardInfo] = useState(null)
   const [alarm, setAlarm] = useState('')
-  const [amount, setAmount] = useState('')
   const [txResult, setTxResult] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [windows, setWindows] = useState([])
-  const [selectedWindowId, setSelectedWindowId] = useState('')
+  const [selectedWindowId, setSelectedWindowId] = useState(null)
+  const [settleForm] = Form.useForm()
+
+  const currentStep = txResult ? 2 : cardInfo ? 1 : 0
 
   useEffect(() => {
     listWindows().then(res => {
-      setWindows(res.windows || [])
-      if (res.windows && res.windows.length > 0) {
-        setSelectedWindowId(String(res.windows[0].id))
+      const wins = res.windows || []
+      setWindows(wins)
+      if (wins.length > 0) {
+        setSelectedWindowId(wins[0].id)
       }
     }).catch(() => {})
   }, [])
 
-  async function handleQueryCard(e) {
-    e.preventDefault()
+  async function handleQueryCard() {
+    if (!cardId.trim()) return
     setError('')
     setCardInfo(null)
     setAlarm('')
     setTxResult(null)
     setLoading(true)
     try {
-      const res = await getCard(cardId)
+      const res = await getCard(cardId.trim())
       if (res.status === 'cancelled') {
         setAlarm('警报：此卡已注销，禁止就餐！')
         return
@@ -50,19 +56,18 @@ export default function MealPage() {
     }
   }
 
-  async function handleSettle(e) {
-    e.preventDefault()
+  async function handleSettle(values) {
     setError('')
     setLoading(true)
     try {
-      const amountFen = Math.round(parseFloat(amount) * 100)
-      const res = await createTransaction(cardId, {
-        windowId: parseInt(selectedWindowId),
+      const amountFen = Math.round(values.amount * 100)
+      const res = await createTransaction(cardId.trim(), {
+        windowId: selectedWindowId,
         amount: amountFen,
       })
       setTxResult(res)
       setCardInfo(prev => prev ? { ...prev, balance: res.newBalance } : null)
-      setAmount('')
+      settleForm.resetFields()
     } catch (err) {
       setError(err.message || '结算失败')
     } finally {
@@ -70,106 +75,118 @@ export default function MealPage() {
     }
   }
 
+  function handleReset() {
+    setCardId('')
+    setCardInfo(null)
+    setAlarm('')
+    setTxResult(null)
+    setError('')
+    settleForm.resetFields()
+  }
+
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', padding: 24 }}>
-      <h2>就餐消费（窗口机）</h2>
+    <Card style={{ maxWidth: 560, margin: '0 auto' }}>
+      <Title level={4} style={{ marginTop: 0 }}>就餐消费（窗口机）</Title>
 
       {windows.length > 0 && (
-        <div style={{ marginBottom: 12 }}>
-          <label>当前窗口</label>
-          <select
+        <Form.Item label="当前窗口" style={{ marginBottom: 16 }}>
+          <Select
             value={selectedWindowId}
-            onChange={e => setSelectedWindowId(e.target.value)}
-            style={{ display: 'block', width: '100%', padding: 8, marginTop: 4 }}
-          >
-            {windows.map(w => (
-              <option key={w.id} value={String(w.id)}>{w.name}</option>
-            ))}
-          </select>
-        </div>
+            onChange={setSelectedWindowId}
+            options={windows.map(w => ({ value: w.id, label: w.name }))}
+            style={{ width: '100%' }}
+          />
+        </Form.Item>
       )}
 
-      <form onSubmit={handleQueryCard} style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input
+      <Steps
+        current={currentStep}
+        items={[
+          { title: '刷卡验证' },
+          { title: '输入金额' },
+          { title: '结算完成' },
+        ]}
+        style={{ marginBottom: 24 }}
+      />
+
+      {currentStep === 0 && (
+        <Space.Compact style={{ width: '100%' }}>
+          <Input
             placeholder="请输入卡号（模拟刷卡）"
             value={cardId}
-            onChange={e => { setCardId(e.target.value); setCardInfo(null); setAlarm(''); setTxResult(null); setError('') }}
-            required
-            style={{ flex: 1, padding: 8 }}
+            onChange={e => { setCardId(e.target.value); setAlarm(''); setError('') }}
+            onPressEnter={handleQueryCard}
           />
-          <button type="submit" disabled={loading} style={{ padding: '8px 16px' }}>
+          <Button type="primary" loading={loading} onClick={handleQueryCard}>
             刷卡
-          </button>
-        </div>
-      </form>
-
-      {alarm && (
-        <div style={{
-          padding: 16,
-          background: '#ff1744',
-          color: '#fff',
-          borderRadius: 4,
-          marginBottom: 16,
-          fontWeight: 'bold',
-          fontSize: 18,
-          textAlign: 'center',
-        }}>
-          ⚠ {alarm}
-        </div>
+          </Button>
+        </Space.Compact>
       )}
 
-      {cardInfo && (
-        <div style={{ padding: 12, background: '#e3f2fd', borderRadius: 4, marginBottom: 16 }}>
-          <p><strong>持卡人：</strong>{cardInfo.cardHolder.name}</p>
-          <p><strong>卡号：</strong>{cardInfo.id}</p>
-          <p style={{ fontSize: 20, color: '#1565c0' }}>
-            <strong>余额：</strong>{(cardInfo.balance / 100).toFixed(2)} 元
-          </p>
-        </div>
+      {alarm && (
+        <Alert
+          type="error"
+          message={alarm}
+          style={{ marginTop: 16, fontSize: 16, fontWeight: 'bold' }}
+          showIcon
+        />
+      )}
+
+      {cardInfo && currentStep >= 1 && (
+        <Descriptions column={1} size="small" bordered style={{ marginBottom: 16 }}>
+          <Descriptions.Item label="持卡人">{cardInfo.cardHolder.name}</Descriptions.Item>
+          <Descriptions.Item label="卡号">{cardInfo.id}</Descriptions.Item>
+          <Descriptions.Item label="余额">
+            <span style={{ fontSize: 18, fontWeight: 'bold', color: '#1677ff' }}>
+              {(cardInfo.balance / 100).toFixed(2)} 元
+            </span>
+          </Descriptions.Item>
+        </Descriptions>
       )}
 
       {cardInfo && !txResult && (
-        <form onSubmit={handleSettle}>
-          <div style={{ marginBottom: 12 }}>
-            <label>本次消费金额（元）</label>
-            <input
-              type="number"
-              step="0.01"
-              min="0.01"
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
-              required
-              style={{ display: 'block', width: '100%', padding: 8, marginTop: 4, fontSize: 18 }}
+        <Form form={settleForm} layout="vertical" onFinish={handleSettle}>
+          <Form.Item label="本次消费金额（元）" name="amount" rules={[{ required: true, message: '请输入消费金额' }]}>
+            <InputNumber
+              min={0.01}
+              step={0.01}
+              precision={2}
+              placeholder="0.00"
+              style={{ width: '100%', fontSize: 18 }}
+              size="large"
             />
-          </div>
-          <button type="submit" disabled={loading} style={{ padding: '10px 32px', fontSize: 16 }}>
-            {loading ? '结算中...' : '确认结算'}
-          </button>
-        </form>
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={loading} size="large">
+              确认结算
+            </Button>
+          </Form.Item>
+        </Form>
       )}
 
       {error && (
-        <div style={{ marginTop: 16, padding: 12, background: '#ffe0e0', borderRadius: 4, color: '#c00' }}>
-          {error}
-        </div>
+        <Alert type="error" message={error} style={{ marginTop: 8 }} showIcon />
       )}
 
       {txResult && (
-        <div style={{ marginTop: 16, padding: 16, background: '#e8f5e9', borderRadius: 4 }}>
-          <h3>结算成功</h3>
-          <p><strong>消费金额：</strong>{(txResult.amount / 100).toFixed(2)} 元</p>
-          <p style={{ fontSize: 18, color: '#2e7d32' }}>
-            <strong>扣款后余额：</strong>{(txResult.newBalance / 100).toFixed(2)} 元
-          </p>
-          <button
-            onClick={() => { setCardInfo(null); setCardId(''); setTxResult(null); setAmount('') }}
-            style={{ marginTop: 8, padding: '6px 16px' }}
-          >
-            下一位
-          </button>
-        </div>
+        <Card
+          size="small"
+          title="结算成功"
+          style={{ marginTop: 16, background: '#f6ffed', borderColor: '#b7eb8f' }}
+          extra={
+            <Button onClick={handleReset}>下一位</Button>
+          }
+        >
+          <Descriptions column={1} size="small">
+            <Descriptions.Item label="消费金额">{(txResult.amount / 100).toFixed(2)} 元</Descriptions.Item>
+            <Descriptions.Item label="扣款后余额">
+              <span style={{ fontSize: 16, fontWeight: 'bold', color: '#52c41a' }}>
+                {(txResult.newBalance / 100).toFixed(2)} 元
+              </span>
+            </Descriptions.Item>
+          </Descriptions>
+        </Card>
       )}
-    </div>
+    </Card>
   )
 }

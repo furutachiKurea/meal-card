@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Button, Alert, Card, Typography, Table, DatePicker, InputNumber, Space, Descriptions, Row, Col } from 'antd'
+import dayjs from 'dayjs'
 import {
   getMealRevenue,
   getWindowRevenue,
@@ -9,32 +11,24 @@ import {
   getYearlyReport,
 } from '../api.js'
 
+const { Title } = Typography
+const { RangePicker } = DatePicker
+
 function formatYuan(fen) {
   return (fen / 100).toFixed(2) + ' 元'
 }
 
-function today() {
-  return new Date().toISOString().slice(0, 10)
-}
-
-function thisYear() {
-  return new Date().getFullYear()
-}
-
 export default function StatisticsPage() {
   // 本餐售饭总收入
-  const [revenueStart, setRevenueStart] = useState('')
-  const [revenueEnd, setRevenueEnd] = useState('')
+  const [revenueRange, setRevenueRange] = useState(null)
   const [mealRevenue, setMealRevenue] = useState(null)
 
   // 各窗口收入
-  const [winRevenueStart, setWinRevenueStart] = useState('')
-  const [winRevenueEnd, setWinRevenueEnd] = useState('')
+  const [winRevenueRange, setWinRevenueRange] = useState(null)
   const [windowRevenue, setWindowRevenue] = useState(null)
 
   // 存款明细
-  const [depositStart, setDepositStart] = useState('')
-  const [depositEnd, setDepositEnd] = useState('')
+  const [depositRange, setDepositRange] = useState(null)
   const [depositDetails, setDepositDetails] = useState(null)
 
   // 本日/本月存款
@@ -44,11 +38,11 @@ export default function StatisticsPage() {
   const [activeBalance, setActiveBalance] = useState(null)
 
   // 日餐报表
-  const [dailyDate, setDailyDate] = useState(today())
+  const [dailyDate, setDailyDate] = useState(dayjs())
   const [dailyReport, setDailyReport] = useState(null)
 
   // 年餐报表
-  const [yearlyYear, setYearlyYear] = useState(String(thisYear()))
+  const [yearlyYear, setYearlyYear] = useState(new Date().getFullYear())
   const [yearlyReport, setYearlyReport] = useState(null)
 
   const [errors, setErrors] = useState({})
@@ -66,260 +60,275 @@ export default function StatisticsPage() {
     }
   }
 
+  const windowRevenueColumns = [
+    { title: '窗口', dataIndex: 'windowName', key: 'windowName' },
+    { title: '收入', dataIndex: 'revenue', key: 'revenue', align: 'right', render: v => formatYuan(v) },
+  ]
+
+  const dailyReportColumns = [
+    { title: '窗口', dataIndex: 'windowName', key: 'windowName' },
+    { title: '收入', dataIndex: 'revenue', key: 'revenue', align: 'right', render: v => formatYuan(v) },
+    { title: '笔数', dataIndex: 'transactionCount', key: 'transactionCount', align: 'right' },
+  ]
+
+  const yearlyReportColumns = [
+    { title: '月份', dataIndex: 'month', key: 'month', render: v => `${v} 月` },
+    { title: '收入', dataIndex: 'revenue', key: 'revenue', align: 'right', render: v => formatYuan(v) },
+    { title: '笔数', dataIndex: 'transactionCount', key: 'transactionCount', align: 'right' },
+  ]
+
+  const depositDetailColumns = [
+    { title: '卡号', dataIndex: 'cardId', key: 'cardId' },
+    { title: '金额', dataIndex: 'amount', key: 'amount', align: 'right', render: v => formatYuan(v) },
+    { title: '时间', dataIndex: 'createdAt', key: 'createdAt', render: v => new Date(v).toLocaleString('zh-CN') },
+  ]
+
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
-      <h2>汇总统计</h2>
+    <div style={{ maxWidth: 860, margin: '0 auto' }}>
+      <Title level={4}>汇总统计</Title>
 
-      {/* 本餐售饭总收入 */}
-      <section style={{ marginBottom: 24, padding: 16, border: '1px solid #ddd', borderRadius: 4 }}>
-        <h3>本餐售饭总收入</h3>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <input type="datetime-local" value={revenueStart} onChange={e => setRevenueStart(e.target.value)} style={{ padding: 6 }} />
-          <span>至</span>
-          <input type="datetime-local" value={revenueEnd} onChange={e => setRevenueEnd(e.target.value)} style={{ padding: 6 }} />
-          <button
-            onClick={() => wrap('mealRevenue', async () => {
-              const res = await getMealRevenue({ startTime: new Date(revenueStart).toISOString(), endTime: new Date(revenueEnd).toISOString() })
-              setMealRevenue(res)
-            })}
-            disabled={loading.mealRevenue || !revenueStart || !revenueEnd}
-            style={{ padding: '6px 16px' }}
-          >
-            查询
-          </button>
-        </div>
-        {errors.mealRevenue && <p style={{ color: '#c00' }}>{errors.mealRevenue}</p>}
-        {mealRevenue && (
-          <p style={{ marginTop: 8, fontSize: 18 }}>
-            总收入：<strong>{formatYuan(mealRevenue.totalRevenue)}</strong>
-          </p>
-        )}
-      </section>
+      <Row gutter={[16, 16]}>
+        {/* 本餐售饭总收入 */}
+        <Col span={24}>
+          <Card title="本餐售饭总收入" size="small">
+            <Space wrap>
+              <RangePicker
+                showTime
+                value={revenueRange}
+                onChange={setRevenueRange}
+              />
+              <Button
+                type="primary"
+                loading={loading.mealRevenue}
+                disabled={!revenueRange}
+                onClick={() => wrap('mealRevenue', async () => {
+                  const res = await getMealRevenue({
+                    startTime: revenueRange[0].toISOString(),
+                    endTime: revenueRange[1].toISOString(),
+                  })
+                  setMealRevenue(res)
+                })}
+              >
+                查询
+              </Button>
+            </Space>
+            {errors.mealRevenue && <Alert type="error" message={errors.mealRevenue} style={{ marginTop: 8 }} showIcon />}
+            {mealRevenue && (
+              <p style={{ marginTop: 8, fontSize: 16 }}>
+                总收入：<strong>{formatYuan(mealRevenue.totalRevenue)}</strong>
+              </p>
+            )}
+          </Card>
+        </Col>
 
-      {/* 各窗口收入 */}
-      <section style={{ marginBottom: 24, padding: 16, border: '1px solid #ddd', borderRadius: 4 }}>
-        <h3>各窗口收入</h3>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <input type="datetime-local" value={winRevenueStart} onChange={e => setWinRevenueStart(e.target.value)} style={{ padding: 6 }} />
-          <span>至</span>
-          <input type="datetime-local" value={winRevenueEnd} onChange={e => setWinRevenueEnd(e.target.value)} style={{ padding: 6 }} />
-          <button
-            onClick={() => wrap('windowRevenue', async () => {
-              const res = await getWindowRevenue({ startTime: new Date(winRevenueStart).toISOString(), endTime: new Date(winRevenueEnd).toISOString() })
-              setWindowRevenue(res)
-            })}
-            disabled={loading.windowRevenue || !winRevenueStart || !winRevenueEnd}
-            style={{ padding: '6px 16px' }}
-          >
-            查询
-          </button>
-        </div>
-        {errors.windowRevenue && <p style={{ color: '#c00' }}>{errors.windowRevenue}</p>}
-        {windowRevenue && (
-          <table style={{ marginTop: 8, width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: 'left', padding: '4px 8px', borderBottom: '1px solid #ddd' }}>窗口</th>
-                <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ddd' }}>收入</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(windowRevenue.windows || []).map(w => (
-                <tr key={w.windowId}>
-                  <td style={{ padding: '4px 8px' }}>{w.windowName}</td>
-                  <td style={{ textAlign: 'right', padding: '4px 8px' }}>{formatYuan(w.revenue)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+        {/* 各窗口收入 */}
+        <Col span={24}>
+          <Card title="各窗口收入" size="small">
+            <Space wrap>
+              <RangePicker
+                showTime
+                value={winRevenueRange}
+                onChange={setWinRevenueRange}
+              />
+              <Button
+                type="primary"
+                loading={loading.windowRevenue}
+                disabled={!winRevenueRange}
+                onClick={() => wrap('windowRevenue', async () => {
+                  const res = await getWindowRevenue({
+                    startTime: winRevenueRange[0].toISOString(),
+                    endTime: winRevenueRange[1].toISOString(),
+                  })
+                  setWindowRevenue(res)
+                })}
+              >
+                查询
+              </Button>
+            </Space>
+            {errors.windowRevenue && <Alert type="error" message={errors.windowRevenue} style={{ marginTop: 8 }} showIcon />}
+            {windowRevenue && (
+              <Table
+                style={{ marginTop: 8 }}
+                size="small"
+                rowKey="windowId"
+                dataSource={windowRevenue.windows || []}
+                columns={windowRevenueColumns}
+                pagination={false}
+              />
+            )}
+          </Card>
+        </Col>
 
-      {/* 各持卡人存款明细 */}
-      <section style={{ marginBottom: 24, padding: 16, border: '1px solid #ddd', borderRadius: 4 }}>
-        <h3>各持卡人存款明细</h3>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <input type="datetime-local" value={depositStart} onChange={e => setDepositStart(e.target.value)} style={{ padding: 6 }} />
-          <span>至</span>
-          <input type="datetime-local" value={depositEnd} onChange={e => setDepositEnd(e.target.value)} style={{ padding: 6 }} />
-          <button
-            onClick={() => wrap('depositDetails', async () => {
-              const params = {}
-              if (depositStart) params.startTime = new Date(depositStart).toISOString()
-              if (depositEnd) params.endTime = new Date(depositEnd).toISOString()
-              const res = await getDepositDetails(params)
-              setDepositDetails(res)
-            })}
-            disabled={loading.depositDetails}
-            style={{ padding: '6px 16px' }}
-          >
-            查询
-          </button>
-        </div>
-        {errors.depositDetails && <p style={{ color: '#c00' }}>{errors.depositDetails}</p>}
-        {depositDetails && (
-          <div style={{ marginTop: 8 }}>
-            {(depositDetails.holders || []).map(h => (
-              <div key={h.holderId} style={{ marginBottom: 12, padding: 8, background: '#f5f5f5', borderRadius: 4 }}>
-                <strong>{h.holderName}</strong>（{h.idNumber}）— 合计：{formatYuan(h.totalAmount)}
-                <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 4 }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: 'left', padding: '2px 6px', fontSize: 12, color: '#666' }}>卡号</th>
-                      <th style={{ textAlign: 'right', padding: '2px 6px', fontSize: 12, color: '#666' }}>金额</th>
-                      <th style={{ textAlign: 'right', padding: '2px 6px', fontSize: 12, color: '#666' }}>时间</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(h.deposits || []).map(d => (
-                      <tr key={d.id}>
-                        <td style={{ padding: '2px 6px', fontSize: 13 }}>{d.cardId}</td>
-                        <td style={{ textAlign: 'right', padding: '2px 6px', fontSize: 13 }}>{formatYuan(d.amount)}</td>
-                        <td style={{ textAlign: 'right', padding: '2px 6px', fontSize: 13 }}>{new Date(d.createdAt).toLocaleString('zh-CN')}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+        {/* 各持卡人存款明细 */}
+        <Col span={24}>
+          <Card title="各持卡人存款明细" size="small">
+            <Space wrap>
+              <RangePicker
+                showTime
+                value={depositRange}
+                onChange={setDepositRange}
+              />
+              <Button
+                type="primary"
+                loading={loading.depositDetails}
+                onClick={() => wrap('depositDetails', async () => {
+                  const params = {}
+                  if (depositRange) {
+                    params.startTime = depositRange[0].toISOString()
+                    params.endTime = depositRange[1].toISOString()
+                  }
+                  const res = await getDepositDetails(params)
+                  setDepositDetails(res)
+                })}
+              >
+                查询
+              </Button>
+            </Space>
+            {errors.depositDetails && <Alert type="error" message={errors.depositDetails} style={{ marginTop: 8 }} showIcon />}
+            {depositDetails && (depositDetails.holders || []).map(h => (
+              <Card
+                key={h.holderId}
+                size="small"
+                style={{ marginTop: 8 }}
+                title={`${h.holderName}（${h.idNumber}）— 合计：${formatYuan(h.totalAmount)}`}
+              >
+                <Table
+                  size="small"
+                  rowKey="id"
+                  dataSource={h.deposits || []}
+                  columns={depositDetailColumns}
+                  pagination={false}
+                />
+              </Card>
             ))}
-          </div>
-        )}
-      </section>
+          </Card>
+        </Col>
 
-      {/* 本日/本月存款 */}
-      <section style={{ marginBottom: 24, padding: 16, border: '1px solid #ddd', borderRadius: 4 }}>
-        <h3>本日 / 本月存款金额</h3>
-        <button
-          onClick={() => wrap('depositSummary', async () => {
-            const res = await getDepositSummary()
-            setDepositSummary(res)
-          })}
-          disabled={loading.depositSummary}
-          style={{ padding: '6px 16px' }}
-        >
-          {loading.depositSummary ? '加载中...' : '查询'}
-        </button>
-        {errors.depositSummary && <p style={{ color: '#c00' }}>{errors.depositSummary}</p>}
-        {depositSummary && (
-          <div style={{ marginTop: 8, display: 'flex', gap: 24 }}>
-            <p>今日存款：<strong>{formatYuan(depositSummary.todayTotal)}</strong></p>
-            <p>本月存款：<strong>{formatYuan(depositSummary.monthTotal)}</strong></p>
-          </div>
-        )}
-      </section>
+        {/* 本日/本月存款 */}
+        <Col xs={24} md={12}>
+          <Card title="本日 / 本月存款金额" size="small">
+            <Button
+              type="primary"
+              loading={loading.depositSummary}
+              onClick={() => wrap('depositSummary', async () => {
+                const res = await getDepositSummary()
+                setDepositSummary(res)
+              })}
+            >
+              查询
+            </Button>
+            {errors.depositSummary && <Alert type="error" message={errors.depositSummary} style={{ marginTop: 8 }} showIcon />}
+            {depositSummary && (
+              <Descriptions column={1} size="small" style={{ marginTop: 8 }}>
+                <Descriptions.Item label="今日存款">{formatYuan(depositSummary.todayTotal)}</Descriptions.Item>
+                <Descriptions.Item label="本月存款">{formatYuan(depositSummary.monthTotal)}</Descriptions.Item>
+              </Descriptions>
+            )}
+          </Card>
+        </Col>
 
-      {/* 流动资金总额 */}
-      <section style={{ marginBottom: 24, padding: 16, border: '1px solid #ddd', borderRadius: 4 }}>
-        <h3>卡中流动资金总额</h3>
-        <button
-          onClick={() => wrap('activeBalance', async () => {
-            const res = await getActiveBalance()
-            setActiveBalance(res)
-          })}
-          disabled={loading.activeBalance}
-          style={{ padding: '6px 16px' }}
-        >
-          {loading.activeBalance ? '加载中...' : '查询'}
-        </button>
-        {errors.activeBalance && <p style={{ color: '#c00' }}>{errors.activeBalance}</p>}
-        {activeBalance && (
-          <p style={{ marginTop: 8, fontSize: 18 }}>
-            流动资金总额：<strong>{formatYuan(activeBalance.totalBalance)}</strong>
-          </p>
-        )}
-      </section>
+        {/* 流动资金总额 */}
+        <Col xs={24} md={12}>
+          <Card title="卡中流动资金总额" size="small">
+            <Button
+              type="primary"
+              loading={loading.activeBalance}
+              onClick={() => wrap('activeBalance', async () => {
+                const res = await getActiveBalance()
+                setActiveBalance(res)
+              })}
+            >
+              查询
+            </Button>
+            {errors.activeBalance && <Alert type="error" message={errors.activeBalance} style={{ marginTop: 8 }} showIcon />}
+            {activeBalance && (
+              <p style={{ marginTop: 8, fontSize: 16 }}>
+                流动资金总额：<strong>{formatYuan(activeBalance.totalBalance)}</strong>
+              </p>
+            )}
+          </Card>
+        </Col>
 
-      {/* 日餐报表 */}
-      <section style={{ marginBottom: 24, padding: 16, border: '1px solid #ddd', borderRadius: 4 }}>
-        <h3>日餐报表</h3>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <input type="date" value={dailyDate} onChange={e => setDailyDate(e.target.value)} style={{ padding: 6 }} />
-          <button
-            onClick={() => wrap('dailyReport', async () => {
-              const res = await getDailyReport(dailyDate)
-              setDailyReport(res)
-            })}
-            disabled={loading.dailyReport || !dailyDate}
-            style={{ padding: '6px 16px' }}
-          >
-            查询
-          </button>
-        </div>
-        {errors.dailyReport && <p style={{ color: '#c00' }}>{errors.dailyReport}</p>}
-        {dailyReport && (
-          <div style={{ marginTop: 8 }}>
-            <p>日期：{dailyReport.date}</p>
-            <p>总收入：<strong>{formatYuan(dailyReport.totalRevenue)}</strong> | 消费笔数：{dailyReport.transactionCount}</p>
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 4 }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: 'left', padding: '4px 8px', borderBottom: '1px solid #ddd' }}>窗口</th>
-                  <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ddd' }}>收入</th>
-                  <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ddd' }}>笔数</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(dailyReport.windows || []).map(w => (
-                  <tr key={w.windowId}>
-                    <td style={{ padding: '4px 8px' }}>{w.windowName}</td>
-                    <td style={{ textAlign: 'right', padding: '4px 8px' }}>{formatYuan(w.revenue)}</td>
-                    <td style={{ textAlign: 'right', padding: '4px 8px' }}>{w.transactionCount}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+        {/* 日餐报表 */}
+        <Col span={24}>
+          <Card title="日餐报表" size="small">
+            <Space wrap>
+              <DatePicker value={dailyDate} onChange={setDailyDate} />
+              <Button
+                type="primary"
+                loading={loading.dailyReport}
+                disabled={!dailyDate}
+                onClick={() => wrap('dailyReport', async () => {
+                  const res = await getDailyReport(dailyDate.format('YYYY-MM-DD'))
+                  setDailyReport(res)
+                })}
+              >
+                查询
+              </Button>
+            </Space>
+            {errors.dailyReport && <Alert type="error" message={errors.dailyReport} style={{ marginTop: 8 }} showIcon />}
+            {dailyReport && (
+              <>
+                <Descriptions column={2} size="small" style={{ marginTop: 8, marginBottom: 8 }}>
+                  <Descriptions.Item label="日期">{dailyReport.date}</Descriptions.Item>
+                  <Descriptions.Item label="消费笔数">{dailyReport.transactionCount}</Descriptions.Item>
+                  <Descriptions.Item label="总收入">{formatYuan(dailyReport.totalRevenue)}</Descriptions.Item>
+                </Descriptions>
+                <Table
+                  size="small"
+                  rowKey="windowId"
+                  dataSource={dailyReport.windows || []}
+                  columns={dailyReportColumns}
+                  pagination={false}
+                />
+              </>
+            )}
+          </Card>
+        </Col>
 
-      {/* 年餐报表 */}
-      <section style={{ marginBottom: 24, padding: 16, border: '1px solid #ddd', borderRadius: 4 }}>
-        <h3>年餐报表</h3>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <input
-            type="number"
-            value={yearlyYear}
-            onChange={e => setYearlyYear(e.target.value)}
-            min="2000"
-            max="2099"
-            style={{ padding: 6, width: 100 }}
-          />
-          <button
-            onClick={() => wrap('yearlyReport', async () => {
-              const res = await getYearlyReport(parseInt(yearlyYear))
-              setYearlyReport(res)
-            })}
-            disabled={loading.yearlyReport || !yearlyYear}
-            style={{ padding: '6px 16px' }}
-          >
-            查询
-          </button>
-        </div>
-        {errors.yearlyReport && <p style={{ color: '#c00' }}>{errors.yearlyReport}</p>}
-        {yearlyReport && (
-          <div style={{ marginTop: 8 }}>
-            <p>{yearlyReport.year} 年 | 总收入：<strong>{formatYuan(yearlyReport.totalRevenue)}</strong> | 消费笔数：{yearlyReport.transactionCount}</p>
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 4 }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: 'left', padding: '4px 8px', borderBottom: '1px solid #ddd' }}>月份</th>
-                  <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ddd' }}>收入</th>
-                  <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ddd' }}>笔数</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(yearlyReport.months || []).map(m => (
-                  <tr key={m.month}>
-                    <td style={{ padding: '4px 8px' }}>{m.month} 月</td>
-                    <td style={{ textAlign: 'right', padding: '4px 8px' }}>{formatYuan(m.revenue)}</td>
-                    <td style={{ textAlign: 'right', padding: '4px 8px' }}>{m.transactionCount}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+        {/* 年餐报表 */}
+        <Col span={24}>
+          <Card title="年餐报表" size="small">
+            <Space wrap>
+              <InputNumber
+                min={2000}
+                max={2099}
+                value={yearlyYear}
+                onChange={setYearlyYear}
+                style={{ width: 100 }}
+              />
+              <Button
+                type="primary"
+                loading={loading.yearlyReport}
+                disabled={!yearlyYear}
+                onClick={() => wrap('yearlyReport', async () => {
+                  const res = await getYearlyReport(parseInt(yearlyYear))
+                  setYearlyReport(res)
+                })}
+              >
+                查询
+              </Button>
+            </Space>
+            {errors.yearlyReport && <Alert type="error" message={errors.yearlyReport} style={{ marginTop: 8 }} showIcon />}
+            {yearlyReport && (
+              <>
+                <Descriptions column={2} size="small" style={{ marginTop: 8, marginBottom: 8 }}>
+                  <Descriptions.Item label="年份">{yearlyReport.year} 年</Descriptions.Item>
+                  <Descriptions.Item label="消费笔数">{yearlyReport.transactionCount}</Descriptions.Item>
+                  <Descriptions.Item label="总收入">{formatYuan(yearlyReport.totalRevenue)}</Descriptions.Item>
+                </Descriptions>
+                <Table
+                  size="small"
+                  rowKey="month"
+                  dataSource={yearlyReport.months || []}
+                  columns={yearlyReportColumns}
+                  pagination={false}
+                />
+              </>
+            )}
+          </Card>
+        </Col>
+      </Row>
     </div>
   )
 }

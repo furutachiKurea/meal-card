@@ -1,31 +1,30 @@
 import { useState } from 'react'
+import { Form, Input, InputNumber, Button, Alert, Descriptions, Card, Typography } from 'antd'
 import { issueCard } from '../api.js'
 
+const { Title } = Typography
+
 export default function IssuePage() {
-  const [form, setForm] = useState({ name: '', idNumber: '', deposit: '', preDeposit: '' })
+  const [form] = Form.useForm()
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  function handleChange(e) {
-    setForm({ ...form, [e.target.name]: e.target.value })
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault()
+  async function handleSubmit(values) {
     setError('')
     setResult(null)
     setLoading(true)
     try {
-      const depositFen = Math.round(parseFloat(form.deposit) * 100)
-      const preDepositFen = form.preDeposit ? Math.round(parseFloat(form.preDeposit) * 100) : 0
+      const depositFen = Math.round(values.deposit * 100)
+      const preDepositFen = values.preDeposit ? Math.round(values.preDeposit * 100) : 0
       const res = await issueCard({
-        name: form.name,
-        idNumber: form.idNumber,
+        name: values.name,
+        idNumber: values.idNumber,
         deposit: depositFen,
         preDeposit: preDepositFen,
       })
       setResult(res)
+      form.resetFields()
     } catch (err) {
       setError(err.message || '发卡失败')
     } finally {
@@ -34,83 +33,78 @@ export default function IssuePage() {
   }
 
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', padding: 24 }}>
-      <h2>发卡</h2>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: 12 }}>
-          <label>持卡人姓名</label>
-          <input
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            required
-            style={{ display: 'block', width: '100%', padding: 8, marginTop: 4 }}
+    <Card style={{ maxWidth: 520, margin: '0 auto' }}>
+      <Title level={4} style={{ marginTop: 0 }}>发卡</Title>
+
+      <Form form={form} layout="vertical" onFinish={handleSubmit}>
+        <Form.Item label="持卡人姓名" name="name" rules={[{ required: true, message: '请输入持卡人姓名' }]}>
+          <Input placeholder="请输入姓名" />
+        </Form.Item>
+
+        <Form.Item label="证件号" name="idNumber" rules={[{ required: true, message: '请输入证件号' }]}>
+          <Input placeholder="请输入证件号" />
+        </Form.Item>
+
+        <Form.Item label="押金（元）" name="deposit" rules={[{ required: true, message: '请输入押金金额' }]}>
+          <InputNumber
+            min={0.01}
+            step={0.01}
+            precision={2}
+            placeholder="0.00"
+            style={{ width: '100%' }}
           />
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <label>证件号</label>
-          <input
-            name="idNumber"
-            value={form.idNumber}
-            onChange={handleChange}
-            required
-            style={{ display: 'block', width: '100%', padding: 8, marginTop: 4 }}
+        </Form.Item>
+
+        <Form.Item label="预存金额（元）" name="preDeposit">
+          <InputNumber
+            min={0}
+            step={0.01}
+            precision={2}
+            placeholder="0.00"
+            style={{ width: '100%' }}
           />
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <label>押金（元）</label>
-          <input
-            name="deposit"
-            type="number"
-            step="0.01"
-            min="0.01"
-            value={form.deposit}
-            onChange={handleChange}
-            required
-            style={{ display: 'block', width: '100%', padding: 8, marginTop: 4 }}
-          />
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <label>预存金额（元）</label>
-          <input
-            name="preDeposit"
-            type="number"
-            step="0.01"
-            min="0"
-            value={form.preDeposit}
-            onChange={handleChange}
-            style={{ display: 'block', width: '100%', padding: 8, marginTop: 4 }}
-          />
-        </div>
-        <button type="submit" disabled={loading} style={{ padding: '8px 24px' }}>
-          {loading ? '处理中...' : '办理发卡'}
-        </button>
-      </form>
+        </Form.Item>
+
+        <Form.Item>
+          <Button type="primary" htmlType="submit" loading={loading}>
+            办理发卡
+          </Button>
+        </Form.Item>
+      </Form>
 
       {error && (
-        <div style={{ marginTop: 16, padding: 12, background: '#ffe0e0', borderRadius: 4, color: '#c00' }}>
-          {error}
-        </div>
+        <Alert type="error" message={error} style={{ marginTop: 8 }} showIcon />
       )}
 
       {result && (
-        <div style={{ marginTop: 16, padding: 16, background: '#e8f5e9', borderRadius: 4 }}>
-          <h3>发卡成功</h3>
-          <p><strong>卡号：</strong>{result.card.id}</p>
-          <p><strong>持卡人：</strong>{result.cardHolder.name}</p>
-          <p><strong>证件号：</strong>{result.cardHolder.idNumber}</p>
-          <p><strong>押金：</strong>{(result.card.deposit / 100).toFixed(2)} 元</p>
-          <p><strong>余额：</strong>{(result.card.balance / 100).toFixed(2)} 元</p>
+        <Card
+          size="small"
+          title="发卡成功"
+          style={{ marginTop: 16, background: '#f6ffed', borderColor: '#b7eb8f' }}
+        >
+          <Descriptions column={1} size="small">
+            <Descriptions.Item label="卡号">{result.card.id}</Descriptions.Item>
+            <Descriptions.Item label="持卡人">{result.cardHolder.name}</Descriptions.Item>
+            <Descriptions.Item label="证件号">{result.cardHolder.idNumber}</Descriptions.Item>
+            <Descriptions.Item label="押金">{(result.card.deposit / 100).toFixed(2)} 元</Descriptions.Item>
+            <Descriptions.Item label="余额">{(result.card.balance / 100).toFixed(2)} 元</Descriptions.Item>
+          </Descriptions>
+
           {result.refund && (
-            <div style={{ marginTop: 8, padding: 8, background: '#fff3e0', borderRadius: 4 }}>
-              <p><strong>旧卡自动注销（卡号 {result.refund.oldCardId}）</strong></p>
-              <p>退还押金：{(result.refund.deposit / 100).toFixed(2)} 元</p>
-              <p>退还余额：{(result.refund.balance / 100).toFixed(2)} 元</p>
-              <p>退还合计：{(result.refund.total / 100).toFixed(2)} 元</p>
-            </div>
+            <Card
+              size="small"
+              title={`旧卡自动注销（卡号 ${result.refund.oldCardId}）`}
+              style={{ marginTop: 8, background: '#fffbe6', borderColor: '#ffe58f' }}
+            >
+              <Descriptions column={1} size="small">
+                <Descriptions.Item label="退还押金">{(result.refund.deposit / 100).toFixed(2)} 元</Descriptions.Item>
+                <Descriptions.Item label="退还余额">{(result.refund.balance / 100).toFixed(2)} 元</Descriptions.Item>
+                <Descriptions.Item label="退还合计">{(result.refund.total / 100).toFixed(2)} 元</Descriptions.Item>
+              </Descriptions>
+            </Card>
           )}
-        </div>
+        </Card>
       )}
-    </div>
+    </Card>
   )
 }

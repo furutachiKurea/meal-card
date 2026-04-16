@@ -1,12 +1,20 @@
 import { useState, useEffect } from 'react'
+import { Form, Input, Button, Alert, Card, Typography, Table } from 'antd'
 import { listWindows, createWindow } from '../api.js'
+
+const { Title } = Typography
 
 export default function WindowsPage() {
   const [windows, setWindows] = useState([])
-  const [name, setName] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [form] = Form.useForm()
+
+  const columns = [
+    { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
+    { title: '窗口名称', dataIndex: 'name', key: 'name' },
+  ]
 
   async function fetchWindows() {
     setLoading(true)
@@ -24,13 +32,12 @@ export default function WindowsPage() {
     fetchWindows()
   }, [])
 
-  async function handleCreate(e) {
-    e.preventDefault()
+  async function handleCreate(values) {
     setError('')
     setCreating(true)
     try {
-      await createWindow(name)
-      setName('')
+      await createWindow(values.name)
+      form.resetFields()
       await fetchWindows()
     } catch (err) {
       setError(err.message || '创建失败')
@@ -40,54 +47,36 @@ export default function WindowsPage() {
   }
 
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', padding: 24 }}>
-      <h2>窗口管理</h2>
+    <Card style={{ maxWidth: 520, margin: '0 auto' }}>
+      <Title level={4} style={{ marginTop: 0 }}>窗口管理</Title>
 
-      <h3>窗口列表</h3>
-      {loading ? (
-        <p>加载中...</p>
-      ) : windows.length === 0 ? (
-        <p style={{ color: '#999' }}>暂无窗口</p>
-      ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 16 }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', padding: '6px 8px', borderBottom: '2px solid #ddd' }}>ID</th>
-              <th style={{ textAlign: 'left', padding: '6px 8px', borderBottom: '2px solid #ddd' }}>窗口名称</th>
-            </tr>
-          </thead>
-          <tbody>
-            {windows.map(w => (
-              <tr key={w.id}>
-                <td style={{ padding: '6px 8px', borderBottom: '1px solid #eee' }}>{w.id}</td>
-                <td style={{ padding: '6px 8px', borderBottom: '1px solid #eee' }}>{w.name}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      <Title level={5}>窗口列表</Title>
+      <Table
+        rowKey="id"
+        dataSource={windows}
+        columns={columns}
+        loading={loading}
+        pagination={false}
+        size="small"
+        locale={{ emptyText: '暂无窗口' }}
+        style={{ marginBottom: 24 }}
+      />
 
-      <h3>新建窗口</h3>
-      <form onSubmit={handleCreate}>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input
-            placeholder="窗口名称"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            required
-            style={{ flex: 1, padding: 8 }}
-          />
-          <button type="submit" disabled={creating} style={{ padding: '8px 16px' }}>
-            {creating ? '创建中...' : '创建'}
-          </button>
-        </div>
-      </form>
+      <Title level={5}>新建窗口</Title>
+      <Form form={form} layout="inline" onFinish={handleCreate}>
+        <Form.Item name="name" rules={[{ required: true, message: '请输入窗口名称' }]} style={{ flex: 1 }}>
+          <Input placeholder="窗口名称" />
+        </Form.Item>
+        <Form.Item>
+          <Button type="primary" htmlType="submit" loading={creating}>
+            创建
+          </Button>
+        </Form.Item>
+      </Form>
 
       {error && (
-        <div style={{ marginTop: 12, padding: 12, background: '#ffe0e0', borderRadius: 4, color: '#c00' }}>
-          {error}
-        </div>
+        <Alert type="error" message={error} style={{ marginTop: 12 }} showIcon />
       )}
-    </div>
+    </Card>
   )
 }

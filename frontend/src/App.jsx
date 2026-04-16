@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { Layout, Menu, Typography } from 'antd'
 import IssuePage from './pages/IssuePage.jsx'
 import DepositPage from './pages/DepositPage.jsx'
 import MealPage from './pages/MealPage.jsx'
@@ -7,49 +8,41 @@ import CancelPage from './pages/CancelPage.jsx'
 import StatisticsPage from './pages/StatisticsPage.jsx'
 import WindowsPage from './pages/WindowsPage.jsx'
 
+const { Header, Content } = Layout
+const { Title } = Typography
+
 const navItems = [
-  { to: '/issue', label: '发卡' },
-  { to: '/deposit', label: '存款' },
-  { to: '/meal', label: '就餐消费' },
-  { to: '/loss', label: '挂失管理' },
-  { to: '/cancel', label: '注销' },
-  { to: '/statistics', label: '汇总统计' },
-  { to: '/windows', label: '窗口管理' },
+  { key: '/issue', label: '发卡' },
+  { key: '/deposit', label: '存款' },
+  { key: '/meal', label: '就餐消费' },
+  { key: '/loss', label: '挂失管理' },
+  { key: '/cancel', label: '注销' },
+  { key: '/statistics', label: '汇总统计' },
+  { key: '/windows', label: '窗口管理' },
 ]
 
-const navStyle = {
-  display: 'flex',
-  gap: 0,
-  background: '#1565c0',
-  padding: '0 16px',
-  flexWrap: 'wrap',
-}
+function AppLayout() {
+  const navigate = useNavigate()
+  const location = useLocation()
 
-const linkStyle = ({ isActive }) => ({
-  color: isActive ? '#fff' : '#bbdefb',
-  padding: '12px 16px',
-  textDecoration: 'none',
-  fontWeight: isActive ? 'bold' : 'normal',
-  borderBottom: isActive ? '3px solid #fff' : '3px solid transparent',
-  display: 'inline-block',
-})
+  const selectedKey = location.pathname === '/' ? '/issue' : location.pathname
 
-export default function App() {
   return (
-    <BrowserRouter>
-      <header>
-        <div style={{ background: '#0d47a1', color: '#fff', padding: '12px 24px' }}>
-          <h1 style={{ margin: 0, fontSize: 20 }}>食堂饭卡管理系统</h1>
-        </div>
-        <nav style={navStyle}>
-          {navItems.map(item => (
-            <NavLink key={item.to} to={item.to} style={linkStyle}>
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-      </header>
-      <main style={{ padding: '16px 0' }}>
+    <Layout style={{ minHeight: '100vh' }}>
+      <Header style={{ display: 'flex', alignItems: 'center', padding: '0 24px', gap: 24 }}>
+        <Title level={4} style={{ color: '#fff', margin: 0, whiteSpace: 'nowrap' }}>
+          食堂饭卡管理系统
+        </Title>
+        <Menu
+          theme="dark"
+          mode="horizontal"
+          selectedKeys={[selectedKey]}
+          items={navItems}
+          onClick={({ key }) => navigate(key)}
+          style={{ flex: 1, minWidth: 0 }}
+        />
+      </Header>
+      <Content style={{ padding: '24px', background: '#f5f5f5' }}>
         <Routes>
           <Route path="/" element={<IssuePage />} />
           <Route path="/issue" element={<IssuePage />} />
@@ -60,7 +53,15 @@ export default function App() {
           <Route path="/statistics" element={<StatisticsPage />} />
           <Route path="/windows" element={<WindowsPage />} />
         </Routes>
-      </main>
+      </Content>
+    </Layout>
+  )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppLayout />
     </BrowserRouter>
   )
 }

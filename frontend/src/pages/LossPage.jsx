@@ -1,7 +1,11 @@
 import { useState } from 'react'
+import { Input, Button, Alert, Descriptions, Card, Typography, Space, Tag } from 'antd'
 import { getCard, reportLoss, cancelLossReport } from '../api.js'
 
+const { Title } = Typography
+
 const STATUS_LABEL = { active: '正常', lost: '已挂失', cancelled: '已注销' }
+const STATUS_COLOR = { active: 'success', lost: 'warning', cancelled: 'default' }
 
 export default function LossPage() {
   const [cardId, setCardId] = useState('')
@@ -10,14 +14,14 @@ export default function LossPage() {
   const [loading, setLoading] = useState(false)
   const [successMsg, setSuccessMsg] = useState('')
 
-  async function handleQuery(e) {
-    e.preventDefault()
+  async function handleQuery() {
+    if (!cardId.trim()) return
     setError('')
     setCardInfo(null)
     setSuccessMsg('')
     setLoading(true)
     try {
-      const res = await getCard(cardId)
+      const res = await getCard(cardId.trim())
       setCardInfo(res)
     } catch (err) {
       setError(err.message || '查询失败')
@@ -31,7 +35,7 @@ export default function LossPage() {
     setSuccessMsg('')
     setLoading(true)
     try {
-      const res = await reportLoss(cardId)
+      const res = await reportLoss(cardId.trim())
       setCardInfo(res)
       setSuccessMsg('挂失成功，该卡已被标记为挂失状态')
     } catch (err) {
@@ -46,7 +50,7 @@ export default function LossPage() {
     setSuccessMsg('')
     setLoading(true)
     try {
-      const res = await cancelLossReport(cardId)
+      const res = await cancelLossReport(cardId.trim())
       setCardInfo(res)
       setSuccessMsg('取消挂失成功，该卡已恢复正常')
     } catch (err) {
@@ -57,77 +61,58 @@ export default function LossPage() {
   }
 
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', padding: 24 }}>
-      <h2>挂失管理</h2>
+    <Card style={{ maxWidth: 520, margin: '0 auto' }}>
+      <Title level={4} style={{ marginTop: 0 }}>挂失管理</Title>
 
-      <form onSubmit={handleQuery} style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input
-            placeholder="请输入卡号"
-            value={cardId}
-            onChange={e => { setCardId(e.target.value); setCardInfo(null); setSuccessMsg(''); setError('') }}
-            required
-            style={{ flex: 1, padding: 8 }}
-          />
-          <button type="submit" disabled={loading} style={{ padding: '8px 16px' }}>
-            查询
-          </button>
-        </div>
-      </form>
+      <Space.Compact style={{ width: '100%', marginBottom: 16 }}>
+        <Input
+          placeholder="请输入卡号"
+          value={cardId}
+          onChange={e => { setCardId(e.target.value); setCardInfo(null); setSuccessMsg(''); setError('') }}
+          onPressEnter={handleQuery}
+        />
+        <Button type="primary" loading={loading} onClick={handleQuery}>
+          查询
+        </Button>
+      </Space.Compact>
 
       {cardInfo && (
-        <div style={{ padding: 12, background: '#f5f5f5', borderRadius: 4, marginBottom: 16 }}>
-          <p><strong>卡号：</strong>{cardInfo.id}</p>
-          <p><strong>持卡人：</strong>{cardInfo.cardHolder.name}</p>
-          <p><strong>证件号：</strong>{cardInfo.cardHolder.idNumber}</p>
-          <p>
-            <strong>状态：</strong>
-            <span style={{
-              color: cardInfo.status === 'active' ? '#2e7d32' : cardInfo.status === 'lost' ? '#e65100' : '#757575',
-              fontWeight: 'bold',
-            }}>
-              {STATUS_LABEL[cardInfo.status]}
-            </span>
-          </p>
-          <p><strong>余额：</strong>{(cardInfo.balance / 100).toFixed(2)} 元</p>
+        <Card size="small" style={{ marginBottom: 16 }}>
+          <Descriptions column={1} size="small">
+            <Descriptions.Item label="卡号">{cardInfo.id}</Descriptions.Item>
+            <Descriptions.Item label="持卡人">{cardInfo.cardHolder.name}</Descriptions.Item>
+            <Descriptions.Item label="证件号">{cardInfo.cardHolder.idNumber}</Descriptions.Item>
+            <Descriptions.Item label="状态">
+              <Tag color={STATUS_COLOR[cardInfo.status]}>{STATUS_LABEL[cardInfo.status]}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="余额">{(cardInfo.balance / 100).toFixed(2)} 元</Descriptions.Item>
+          </Descriptions>
 
-          <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+          <div style={{ marginTop: 12 }}>
             {cardInfo.status === 'active' && (
-              <button
-                onClick={handleReportLoss}
-                disabled={loading}
-                style={{ padding: '8px 20px', background: '#e65100', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}
-              >
+              <Button danger onClick={handleReportLoss} loading={loading}>
                 申请挂失
-              </button>
+              </Button>
             )}
             {cardInfo.status === 'lost' && (
-              <button
-                onClick={handleCancelLoss}
-                disabled={loading}
-                style={{ padding: '8px 20px', background: '#1565c0', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}
-              >
+              <Button type="primary" onClick={handleCancelLoss} loading={loading}>
                 取消挂失
-              </button>
+              </Button>
             )}
             {cardInfo.status === 'cancelled' && (
-              <span style={{ color: '#757575' }}>该卡已注销，无法操作</span>
+              <span style={{ color: '#999' }}>该卡已注销，无法操作</span>
             )}
           </div>
-        </div>
+        </Card>
       )}
 
       {successMsg && (
-        <div style={{ padding: 12, background: '#e8f5e9', borderRadius: 4, color: '#2e7d32' }}>
-          {successMsg}
-        </div>
+        <Alert type="success" message={successMsg} style={{ marginBottom: 8 }} showIcon />
       )}
 
       {error && (
-        <div style={{ padding: 12, background: '#ffe0e0', borderRadius: 4, color: '#c00' }}>
-          {error}
-        </div>
+        <Alert type="error" message={error} style={{ marginBottom: 8 }} showIcon />
       )}
-    </div>
+    </Card>
   )
 }

@@ -32,6 +32,30 @@
 
 ## 变更记录
 
+### 2026-04-16 第 5 轮：前端全面迁移至 Ant Design
+
+新增依赖：
+- `antd` 6.3.5
+- `@ant-design/icons` 6.1.1
+- `dayjs` 1.11.20（antd DatePicker 所需）
+
+修改文件：
+- `frontend/src/main.jsx` — 引入 `antd/dist/reset.css`
+- `frontend/src/App.jsx` — 改用 Layout + Header + Menu 导航，Menu 通过 react-router-dom navigate 切换路由
+- `frontend/src/pages/IssuePage.jsx` — Form + InputNumber + Descriptions + Card 展示结果
+- `frontend/src/pages/DepositPage.jsx` — Space.Compact 查询栏 + Descriptions 展示卡信息 + Descriptions 收据
+- `frontend/src/pages/MealPage.jsx` — Select 切换窗口 + Steps 两步流程 + Alert 报警
+- `frontend/src/pages/LossPage.jsx` — Tag 显示状态 + Button danger 申请挂失
+- `frontend/src/pages/CancelPage.jsx` — Modal.confirm 二次确认 + Descriptions 退款明细
+- `frontend/src/pages/StatisticsPage.jsx` — Row/Col 响应式布局 + Card 分区块 + RangePicker + DatePicker + Table
+- `frontend/src/pages/WindowsPage.jsx` — Table 窗口列表 + Form inline 新建窗口
+
+关键决策：
+- 使用 Ant Design 默认商务风格，不引入深色主题或自定义视觉效果
+- StatisticsPage 中 RangePicker 的值类型为 dayjs 对象，调用 .toISOString() 转 ISO 字符串传给 API
+- CancelPage 改用 Modal.confirm 替代内联二次确认按钮，体验更清晰
+- 所有页面业务逻辑（api.js 调用、金额换算规则）保持不变
+
 ### 2026-04-15 第 1 轮：项目初始化与数据库设计
 
 新增文件：
