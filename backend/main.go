@@ -41,8 +41,8 @@ func main() {
 	cardRepo := repository.NewCardRepository(gormDB)
 	windowRepo := repository.NewWindowRepository(gormDB)
 
-	// 初始化学籍验证客户端
-	studentValidator := client.NewHttpStudentValidator()
+	// 初始化学籍验证（硬编码 mock 数据，无需外部服务）
+	studentValidator := client.NewMockStudentValidator()
 
 	// 初始化 service
 	cardSvc := service.NewCardService(cardRepo, windowRepo, studentValidator)
