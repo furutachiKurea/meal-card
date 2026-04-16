@@ -10,7 +10,7 @@
 - `StatisticsPage.jsx` 存款明细表格卡号列
 
 ## 根因
-- 第 10 轮后端全量适配 `cardNo` 时，`statistics_handler.go` 中存款明细的字段名由 `cardId` 改为 `cardNo`
+- 后端全量适配 `cardNo` 时，`statistics_handler.go` 中存款明细的字段名由 `cardId` 改为 `cardNo`
 - 但 `StatisticsPage.jsx` 中 `depositDetailColumns` 的 `dataIndex` 和 `key` 仍为旧值 `cardId`，未同步更新
 - Ant Design Table 找不到 `cardId` 字段，渲染为空
 
@@ -18,7 +18,7 @@
 - 将 `depositDetailColumns` 中卡号列的 `dataIndex` 和 `key` 从 `cardId` 改为 `cardNo`
 
 ## 实际改动
-- `frontend/src/pages/StatisticsPage.jsx`：第 81 行 `dataIndex: 'cardId', key: 'cardId'` → `dataIndex: 'cardNo', key: 'cardNo'`
+- `frontend/src/pages/StatisticsPage.jsx`：卡号列 `dataIndex: 'cardId', key: 'cardId'` → `dataIndex: 'cardNo', key: 'cardNo'`
 
 ## 修复结果
 - 存款明细卡号列正常显示 16 位卡号

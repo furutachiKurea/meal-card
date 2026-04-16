@@ -5,20 +5,20 @@
 - 无法触发浏览器打印，只能在页面内查看收据
 
 ## 触发条件
-- 在 `/admin/deposit` 页面完成充值后必现
+- 在存款页面完成充值后必现
 
 ## 影响范围
 - `DepositPage.jsx` 存款收据区块
 
 ## 根因
-- 后端 `DepositResult` 已包含 `ID` 字段，`deposit` 接口响应也返回 `id`
+- 后端 `DepositResult` 已包含 `id` 字段，接口响应正常返回
 - 前端收据展示时未读取 `receipt.id`，故无单号显示
-- 收据区块没有实现打印逻辑（`window.print()` + 打印样式隔离）
+- 收据区块未实现打印逻辑（`window.print()` + 打印样式隔离）
 
 ## 修复思路
 - 收据 `Descriptions` 中补一行"单号"显示 `receipt.id`
 - 收据区块加"打印收据"按钮，点击后调用 `window.print()`
-- 在页面内嵌 `<style>` 或全局 CSS 中通过 `@media print` 隐藏非收据内容，仅打印收据区块
+- 通过 `@media print` 隐藏非收据内容，仅打印收据区块
 
 ## 实际改动
 - `frontend/src/pages/DepositPage.jsx`：收据 Descriptions 加单号行；收据 Card 底部加打印按钮；页面内注入打印样式
