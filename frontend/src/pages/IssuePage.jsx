@@ -139,7 +139,7 @@ export default function IssuePage() {
                   {TYPE_LABEL[studentInfo?.type] || studentInfo?.type}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="押金">20.00 元（系统固定）</Descriptions.Item>
+              <Descriptions.Item label="押金">20.00 元 </Descriptions.Item>
             </Descriptions>
           </Card>
 

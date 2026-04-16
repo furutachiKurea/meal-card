@@ -78,7 +78,7 @@ export default function StatisticsPage() {
   ]
 
   const depositDetailColumns = [
-    { title: '卡号', dataIndex: 'cardId', key: 'cardId' },
+    { title: '卡号', dataIndex: 'cardNo', key: 'cardNo' },
     { title: '金额', dataIndex: 'amount', key: 'amount', align: 'right', render: v => formatYuan(v) },
     { title: '时间', dataIndex: 'createdAt', key: 'createdAt', render: v => new Date(v).toLocaleString('zh-CN') },
   ]

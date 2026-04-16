@@ -102,19 +102,31 @@ export default function DepositPage() {
       )}
 
       {receipt && (
-        <Card
-          size="small"
-          title="存款收据"
-          style={{ marginTop: 16, background: '#f6ffed', borderColor: '#b7eb8f' }}
-        >
-          <Descriptions column={1} size="small">
-            <Descriptions.Item label="卡号">{receipt.cardNo}</Descriptions.Item>
-            <Descriptions.Item label="持卡人">{receipt.holderName}</Descriptions.Item>
-            <Descriptions.Item label="充值金额">{(receipt.amount / 100).toFixed(2)} 元</Descriptions.Item>
-            <Descriptions.Item label="充值后余额">{(receipt.newBalance / 100).toFixed(2)} 元</Descriptions.Item>
-            <Descriptions.Item label="充值时间">{new Date(receipt.createdAt).toLocaleString('zh-CN')}</Descriptions.Item>
-          </Descriptions>
-        </Card>
+        <>
+          <style>{`
+            @media print {
+              body * { visibility: hidden; }
+              .deposit-receipt-print, .deposit-receipt-print * { visibility: visible; }
+              .deposit-receipt-print { position: fixed; top: 0; left: 0; width: 100%; }
+            }
+          `}</style>
+          <Card
+            size="small"
+            title="存款收据"
+            className="deposit-receipt-print"
+            style={{ marginTop: 16, background: '#f6ffed', borderColor: '#b7eb8f' }}
+            extra={<Button size="small" onClick={() => window.print()}>打印收据</Button>}
+          >
+            <Descriptions column={1} size="small">
+              <Descriptions.Item label="单号">{receipt.id}</Descriptions.Item>
+              <Descriptions.Item label="卡号">{receipt.cardNo}</Descriptions.Item>
+              <Descriptions.Item label="持卡人">{receipt.holderName}</Descriptions.Item>
+              <Descriptions.Item label="充值金额">{(receipt.amount / 100).toFixed(2)} 元</Descriptions.Item>
+              <Descriptions.Item label="充值后余额">{(receipt.newBalance / 100).toFixed(2)} 元</Descriptions.Item>
+              <Descriptions.Item label="充值时间">{new Date(receipt.createdAt).toLocaleString('zh-CN')}</Descriptions.Item>
+            </Descriptions>
+          </Card>
+        </>
       )}
     </Card>
   )

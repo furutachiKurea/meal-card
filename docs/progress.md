@@ -34,6 +34,19 @@
 
 ## 变更记录
 
+### 2026-04-16 第 11 轮：修复两处前端 bug
+
+修改文件：
+- `frontend/src/pages/StatisticsPage.jsx` — 存款明细列 `dataIndex: 'cardId'` → `'cardNo'`，修复卡号列空白问题
+- `frontend/src/pages/DepositPage.jsx` — 收据加"单号"（`receipt.id`）字段；加"打印收据"按钮（`window.print()`）及 `@media print` 样式隔离
+
+新增文件：
+- `frontend/docs/bugfixes/statistics-deposit-detail-cardno-missing.md`
+- `frontend/docs/bugfixes/deposit-receipt-missing-id-and-print.md`
+
+关键决策：
+- 打印样式内嵌于组件，用 `.deposit-receipt-print` class 隔离打印区域，不影响全局样式
+
 ### 2026-04-16 第 10 轮：后端全量适配 cardNo + StudentValidator
 
 修改文件：
