@@ -10,6 +10,7 @@ Thumbs.db
 backend/vendor/
 backend/bin/
 backend/tmp/
+backend/*.db
 
 # Node
 node_modules/
