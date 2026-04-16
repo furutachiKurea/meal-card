@@ -12,12 +12,12 @@
 | 模块 | 查询控件 | 结果展示 |
 |------|---------|---------|
 | 本餐售饭总收入 | RangePicker（带时间）| 总收入文字 |
-| 各窗口收入 | RangePicker（带时间）| Table（窗口/收入） |
-| 各持卡人存款明细 | RangePicker（可选）| 按持卡人分组的嵌套 Card + Table |
+| 各窗口收入 | RangePicker（带时间）| Table（窗口/收入），每页 10 条 |
+| 各持卡人存款明细 | RangePicker（可选）| 外层持卡人每页 5 条，内层存款记录每页 10 条 |
 | 本日/本月存款金额 | 无（直接查询）| Descriptions（今日/本月） |
 | 卡中流动资金总额 | 无（直接查询）| 总额文字 |
-| 日餐报表 | DatePicker | Descriptions（日期/笔数/总收入）+ Table（窗口明细） |
-| 年餐报表 | InputNumber（年份）| Descriptions（年份/笔数/总收入）+ Table（按月明细） |
+| 日餐报表 | DatePicker | Descriptions（日期/笔数/总收入）+ Table（窗口明细，每页 10 条） |
+| 年餐报表 | InputNumber（年份）| Descriptions（年份/笔数/总收入）+ Table（按月明细，每页 10 条） |
 
 ## 用户操作
 - 各模块独立操作，互不影响
@@ -30,6 +30,14 @@
 - loading/errors 用对象 key 区分（`wrap(key, fn)` 统一处理）
 - 查询中：对应 key 的 loading 为 true，按钮 loading 状态
 - 查询失败：对应 key 的 error 显示 Alert
+- 存款明细模块维护 `depositHolderPage` 状态（当前外层持卡人页码），重新查询时自动重置为 1，避免停留在旧页码显示空白
+
+## 分页规则
+- 各窗口收入 Table：每页 10 条，不足 10 条时隐藏分页条
+- 日餐报表窗口明细 Table：每页 10 条，不足 10 条时隐藏分页条
+- 年餐报表月份明细 Table：每页 10 条，不足 10 条时隐藏分页条
+- 各持卡人存款明细（外层）：每页 5 个持卡人，超过 5 人时底部显示页码按钮，由前端手动切片（非 Ant Design Table 分页）
+- 各持卡人存款明细（内层，每位持卡人的存款 Table）：每页 10 条，不足 10 条时隐藏分页条
 
 ## 接口依赖
 - `GET /api/statistics/meal-revenue?startTime&endTime`
@@ -48,3 +56,4 @@
 - 年餐报表的 Table 按月份（1-12）展示收入和笔数
 - 存款明细按持卡人分组，每组展示 holderName / idNumber / totalAmount，组内 Table 列：卡号/金额/时间
 - 时间控件使用 dayjs（配合 Ant Design DatePicker）
+- 存款明细外层持卡人分页为前端切片实现，不依赖后端分页接口
