@@ -9,7 +9,7 @@ const { Title, Text } = Typography
 
 export default function MealPage() {
   const navigate = useNavigate()
-  const [cardId, setCardId] = useState('')
+  const [cardNo, setCardNo] = useState('')
   const [cardInfo, setCardInfo] = useState(null)
   const [alarm, setAlarm] = useState('')
   const [txResult, setTxResult] = useState(null)
@@ -32,14 +32,14 @@ export default function MealPage() {
   }, [])
 
   async function handleQueryCard() {
-    if (!cardId.trim()) return
+    if (!cardNo.trim()) return
     setError('')
     setCardInfo(null)
     setAlarm('')
     setTxResult(null)
     setLoading(true)
     try {
-      const res = await getCard(cardId.trim())
+      const res = await getCard(cardNo.trim())
       if (res.status === 'cancelled') {
         setAlarm('警报：此卡已注销，禁止就餐！')
         return
@@ -65,7 +65,7 @@ export default function MealPage() {
     setLoading(true)
     try {
       const amountFen = Math.round(values.amount * 100)
-      const res = await createTransaction(cardId.trim(), {
+      const res = await createTransaction(cardNo.trim(), {
         windowId: selectedWindowId,
         amount: amountFen,
       })
@@ -80,7 +80,7 @@ export default function MealPage() {
   }
 
   function handleReset() {
-    setCardId('')
+    setCardNo('')
     setCardInfo(null)
     setAlarm('')
     setTxResult(null)
@@ -190,14 +190,14 @@ export default function MealPage() {
               style={{ background: '#0d1f3c', border: '1px solid #1a3a6b', borderRadius: 12 }}
             >
               <Text style={{ color: '#8bafd4', display: 'block', marginBottom: 16, fontSize: 15 }}>
-                请刷卡或输入卡号
+                请刷卡或输入卡号（16位）
               </Text>
               <div style={{ display: 'flex', gap: 12 }}>
                 <Input
                   size="large"
                   placeholder="卡号"
-                  value={cardId}
-                  onChange={e => { setCardId(e.target.value); setAlarm(''); setError('') }}
+                  value={cardNo}
+                  onChange={e => { setCardNo(e.target.value); setAlarm(''); setError('') }}
                   onPressEnter={handleQueryCard}
                   style={{
                     flex: 1,
@@ -239,7 +239,7 @@ export default function MealPage() {
                 }}
               >
                 <Text style={{ color: '#8bafd4', fontSize: 15, display: 'block', marginBottom: 4 }}>
-                  {cardInfo.cardHolder.name}（{cardInfo.id}）
+                  {cardInfo.cardHolder.name}（{cardInfo.cardNo}）
                 </Text>
                 <div style={{ margin: '16px 0' }}>
                   <Text style={{ color: '#8bafd4', fontSize: 16 }}>卡内余额</Text>

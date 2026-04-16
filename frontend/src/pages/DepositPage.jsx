@@ -5,7 +5,7 @@ import { getCard, deposit } from '../api.js'
 const { Title } = Typography
 
 export default function DepositPage() {
-  const [cardId, setCardId] = useState('')
+  const [cardNo, setCardNo] = useState('')
   const [cardInfo, setCardInfo] = useState(null)
   const [receipt, setReceipt] = useState(null)
   const [error, setError] = useState('')
@@ -13,13 +13,13 @@ export default function DepositPage() {
   const [depositForm] = Form.useForm()
 
   async function handleQueryCard() {
-    if (!cardId.trim()) return
+    if (!cardNo.trim()) return
     setError('')
     setCardInfo(null)
     setReceipt(null)
     setLoading(true)
     try {
-      const res = await getCard(cardId.trim())
+      const res = await getCard(cardNo.trim())
       if (res.status !== 'active') {
         const statusText = res.status === 'lost' ? '已挂失' : '已注销'
         setError(`该卡${statusText}，无法充值`)
@@ -38,7 +38,7 @@ export default function DepositPage() {
     setLoading(true)
     try {
       const amountFen = Math.round(values.amount * 100)
-      const res = await deposit(cardId.trim(), amountFen)
+      const res = await deposit(cardNo.trim(), amountFen)
       setReceipt(res)
       setCardInfo(prev => prev ? { ...prev, balance: res.newBalance } : null)
       depositForm.resetFields()
@@ -55,9 +55,9 @@ export default function DepositPage() {
 
       <Space.Compact style={{ width: '100%', marginBottom: 16 }}>
         <Input
-          placeholder="请输入卡号"
-          value={cardId}
-          onChange={e => { setCardId(e.target.value); setCardInfo(null); setReceipt(null); setError('') }}
+          placeholder="请输入16位卡号"
+          value={cardNo}
+          onChange={e => { setCardNo(e.target.value); setCardInfo(null); setReceipt(null); setError('') }}
           onPressEnter={handleQueryCard}
         />
         <Button type="primary" loading={loading} onClick={handleQueryCard}>
@@ -73,7 +73,7 @@ export default function DepositPage() {
           style={{ marginBottom: 16 }}
         >
           <Descriptions.Item label="持卡人">{cardInfo.cardHolder.name}</Descriptions.Item>
-          <Descriptions.Item label="卡号">{cardInfo.id}</Descriptions.Item>
+          <Descriptions.Item label="卡号">{cardInfo.cardNo}</Descriptions.Item>
           <Descriptions.Item label="当前余额">{(cardInfo.balance / 100).toFixed(2)} 元</Descriptions.Item>
         </Descriptions>
       )}
@@ -108,7 +108,7 @@ export default function DepositPage() {
           style={{ marginTop: 16, background: '#f6ffed', borderColor: '#b7eb8f' }}
         >
           <Descriptions column={1} size="small">
-            <Descriptions.Item label="卡号">{receipt.cardId}</Descriptions.Item>
+            <Descriptions.Item label="卡号">{receipt.cardNo}</Descriptions.Item>
             <Descriptions.Item label="持卡人">{receipt.holderName}</Descriptions.Item>
             <Descriptions.Item label="充值金额">{(receipt.amount / 100).toFixed(2)} 元</Descriptions.Item>
             <Descriptions.Item label="充值后余额">{(receipt.newBalance / 100).toFixed(2)} 元</Descriptions.Item>

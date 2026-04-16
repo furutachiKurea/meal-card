@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Input, Button, Alert, Descriptions, Card, Typography, Space, Tag } from 'antd'
-import { getCard, reportLoss, cancelLossReport } from '../api.js'
+import { getCardByIDNumber, reportLoss, cancelLossReport } from '../api.js'
 
 const { Title } = Typography
 
@@ -8,20 +8,20 @@ const STATUS_LABEL = { active: '正常', lost: '已挂失', cancelled: '已注�
 const STATUS_COLOR = { active: 'success', lost: 'warning', cancelled: 'default' }
 
 export default function LossPage() {
-  const [cardId, setCardId] = useState('')
+  const [idNumber, setIdNumber] = useState('')
   const [cardInfo, setCardInfo] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [successMsg, setSuccessMsg] = useState('')
 
   async function handleQuery() {
-    if (!cardId.trim()) return
+    if (!idNumber.trim()) return
     setError('')
     setCardInfo(null)
     setSuccessMsg('')
     setLoading(true)
     try {
-      const res = await getCard(cardId.trim())
+      const res = await getCardByIDNumber(idNumber.trim())
       setCardInfo(res)
     } catch (err) {
       setError(err.message || '查询失败')
@@ -35,7 +35,7 @@ export default function LossPage() {
     setSuccessMsg('')
     setLoading(true)
     try {
-      const res = await reportLoss(cardId.trim())
+      const res = await reportLoss(cardInfo.cardNo)
       setCardInfo(res)
       setSuccessMsg('挂失成功，该卡已被标记为挂失状态')
     } catch (err) {
@@ -50,7 +50,7 @@ export default function LossPage() {
     setSuccessMsg('')
     setLoading(true)
     try {
-      const res = await cancelLossReport(cardId.trim())
+      const res = await cancelLossReport(cardInfo.cardNo)
       setCardInfo(res)
       setSuccessMsg('取消挂失成功，该卡已恢复正常')
     } catch (err) {
@@ -66,9 +66,9 @@ export default function LossPage() {
 
       <Space.Compact style={{ width: '100%', marginBottom: 16 }}>
         <Input
-          placeholder="请输入卡号"
-          value={cardId}
-          onChange={e => { setCardId(e.target.value); setCardInfo(null); setSuccessMsg(''); setError('') }}
+          placeholder="请输入证件号（12位）"
+          value={idNumber}
+          onChange={e => { setIdNumber(e.target.value); setCardInfo(null); setSuccessMsg(''); setError('') }}
           onPressEnter={handleQuery}
         />
         <Button type="primary" loading={loading} onClick={handleQuery}>
@@ -79,7 +79,7 @@ export default function LossPage() {
       {cardInfo && (
         <Card size="small" style={{ marginBottom: 16 }}>
           <Descriptions column={1} size="small">
-            <Descriptions.Item label="卡号">{cardInfo.id}</Descriptions.Item>
+            <Descriptions.Item label="卡号">{cardInfo.cardNo}</Descriptions.Item>
             <Descriptions.Item label="持卡人">{cardInfo.cardHolder.name}</Descriptions.Item>
             <Descriptions.Item label="证件号">{cardInfo.cardHolder.idNumber}</Descriptions.Item>
             <Descriptions.Item label="状态">

@@ -1,27 +1,27 @@
 import { useState } from 'react'
 import { Input, Button, Alert, Descriptions, Card, Typography, Space, Tag, Modal } from 'antd'
 import { ExclamationCircleFilled } from '@ant-design/icons'
-import { getCard, cancelCard } from '../api.js'
+import { getCardByIDNumber, cancelCard } from '../api.js'
 
 const { Title } = Typography
 const STATUS_LABEL = { active: '正常', lost: '已挂失', cancelled: '已注销' }
 const STATUS_COLOR = { active: 'success', lost: 'warning', cancelled: 'default' }
 
 export default function CancelPage() {
-  const [cardId, setCardId] = useState('')
+  const [idNumber, setIdNumber] = useState('')
   const [cardInfo, setCardInfo] = useState(null)
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function handleQuery() {
-    if (!cardId.trim()) return
+    if (!idNumber.trim()) return
     setError('')
     setCardInfo(null)
     setResult(null)
     setLoading(true)
     try {
-      const res = await getCard(cardId.trim())
+      const res = await getCardByIDNumber(idNumber.trim())
       setCardInfo(res)
     } catch (err) {
       setError(err.message || '查询失败')
@@ -42,7 +42,7 @@ export default function CancelPage() {
         setError('')
         setLoading(true)
         try {
-          const res = await cancelCard(cardId.trim())
+          const res = await cancelCard(cardInfo.cardNo)
           setResult(res)
           setCardInfo(null)
         } catch (err) {
@@ -60,9 +60,9 @@ export default function CancelPage() {
 
       <Space.Compact style={{ width: '100%', marginBottom: 16 }}>
         <Input
-          placeholder="请输入卡号"
-          value={cardId}
-          onChange={e => { setCardId(e.target.value); setCardInfo(null); setResult(null); setError('') }}
+          placeholder="请输入证件号（12位）"
+          value={idNumber}
+          onChange={e => { setIdNumber(e.target.value); setCardInfo(null); setResult(null); setError('') }}
           onPressEnter={handleQuery}
         />
         <Button type="primary" loading={loading} onClick={handleQuery}>
@@ -73,13 +73,13 @@ export default function CancelPage() {
       {cardInfo && (
         <Card size="small" style={{ marginBottom: 16 }}>
           <Descriptions column={1} size="small">
-            <Descriptions.Item label="卡号">{cardInfo.id}</Descriptions.Item>
+            <Descriptions.Item label="卡号">{cardInfo.cardNo}</Descriptions.Item>
             <Descriptions.Item label="持卡人">{cardInfo.cardHolder.name}</Descriptions.Item>
             <Descriptions.Item label="证件号">{cardInfo.cardHolder.idNumber}</Descriptions.Item>
             <Descriptions.Item label="状态">
               <Tag color={STATUS_COLOR[cardInfo.status]}>{STATUS_LABEL[cardInfo.status]}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="余额">{(cardInfo.balance / 100).toFixed(2)} 元</Descriptions.Item>
+            <Descriptions.Item label="当前余额">{(cardInfo.balance / 100).toFixed(2)} 元</Descriptions.Item>
             <Descriptions.Item label="押金">{(cardInfo.deposit / 100).toFixed(2)} 元</Descriptions.Item>
             <Descriptions.Item label="预计退款">
               <span style={{ fontWeight: 'bold' }}>
@@ -111,7 +111,7 @@ export default function CancelPage() {
           style={{ marginTop: 16, background: '#f6ffed', borderColor: '#b7eb8f' }}
         >
           <Descriptions column={1} size="small" title="退款明细">
-            <Descriptions.Item label="卡号">{result.card.id}</Descriptions.Item>
+            <Descriptions.Item label="卡号">{result.card.cardNo}</Descriptions.Item>
             <Descriptions.Item label="退还押金">{(result.refund.deposit / 100).toFixed(2)} 元</Descriptions.Item>
             <Descriptions.Item label="退还余额">{(result.refund.balance / 100).toFixed(2)} 元</Descriptions.Item>
             <Descriptions.Item label="应退合计">

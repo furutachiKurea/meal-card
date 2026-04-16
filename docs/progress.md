@@ -2,7 +2,7 @@
 
 ## 当前迭代目标
 
-前后端联调与功能验收。
+重新对齐设计，完成后端重构与前后端联调。
 
 ## 已完成
 
@@ -16,11 +16,17 @@
 
 ## 进行中
 
-（无）
+- 后端重构：card_no、StudentValidator 接口、mock 服务、repo/service/handler/router 全量适配（Task #1 进行中）
 
 ## 待办
 
-- 前后端联调
+- 后端：repository 新增 FindCardByCardNo、FindCurrentCardByIDNumber 方法
+- 后端：CardService 重构（注入 StudentValidator，IssueCard 改签名，所有方法 cardID→cardNo）
+- 后端：CardHandler 重构（路径参数 :id→:cardNo，新增 ValidateStudent、GetCardByIDNumber handler）
+- 后端：router 更新路由
+- 后端：main.go 接入 HttpStudentValidator
+- 后端：单元测试更新（IssueCardRequest 去掉 Name/Deposit，改用 FakeStudentValidator）
+- 前后端联调，启动后端服务后通过前端页面进行功能验收
 
 ## 阻塞
 
@@ -32,7 +38,52 @@
 
 ## 变更记录
 
-### 2026-04-16 第 6 轮：前端路由拆分为管理端与窗口机两套入口
+### 2026-04-16 第 9 轮：前端 cardNo 全量适配
+
+修改文件：
+- `frontend/src/api.js` — 新增 `validateStudent`、`getCardByIDNumber`；将所有路径参数从 `id` 改为 `cardNo`；`issueCard` 请求体去掉 `name`/`deposit`，只传 `idNumber`/`preDeposit`；`createTransaction` 改名签名对齐
+- `frontend/src/pages/IssuePage.jsx` — 完全重写为两步流程（Step 1 验证证件号调 `validateStudent`；Step 2 录入预存款调 `issueCard`）；移除姓名/押金输入框
+- `frontend/src/pages/LossPage.jsx` — 查询入口由卡号改为证件号，调 `getCardByIDNumber`；操作时使用 `cardInfo.cardNo` 作路径参数
+- `frontend/src/pages/CancelPage.jsx` — 查询入口由卡号改为证件号，调 `getCardByIDNumber`；退款收据卡号字段改为 `result.card.cardNo`
+- `frontend/src/pages/DepositPage.jsx` — 查询入口改为 16 位卡号提示；收据卡号字段从 `receipt.cardId` 改为 `receipt.cardNo`
+- `frontend/src/pages/MealPage.jsx` — 变量名 `cardId`→`cardNo`；卡信息展示改为 `cardInfo.cardNo`
+
+构建验证：`pnpm build` 通过，无报错。
+
+关键决策：
+- 前端所有涉及卡主键的地方统一使用 `cardNo`（16位字符串），不再使用数据库自增 id
+- IssuePage 发卡流程拆分两步，第一步通过学籍验证获得姓名，第二步才提交发卡，避免操作员录错信息
+- 挂失/注销页面统一改用证件号查询，符合 PRD 流程（持卡人到管理处时报证件号，不一定知道卡号）
+
+### 2026-04-16 第 8 轮：后端重构启动（已完成部分）
+
+新增文件：
+- `mock-services/student-service/main.go` — 学籍验证 Mock 服务，硬编码5条学生/教职工记录，GET /validate
+- `backend/service/student_validator.go` — StudentValidator 接口 + StudentInfo 结构体定义
+- `backend/client/student_client.go` — HttpStudentValidator，HTTP 调用 Mock 服务（未完成，缺少错误码定义）
+
+修改文件：
+- `backend/model/card.go` — 新增 CardNo 字段（string，uniqueIndex，size:16），ID json tag 改为 `-` 不对外暴露
+
+待完成（本轮中断）：
+- card_service.go 错误码新增 STUDENT_NOT_FOUND / STUDENT_SERVICE_ERROR
+- repository/service/handler/router/main.go 全量适配
+- 测试更新
+- 前端全量适配
+
+
+
+修改文件：
+- `docs/prd.md` — 发卡流程加入学籍验证+二次确认步骤；押金改为固定20元不可录入；挂失/注销入口改为证件号
+- `docs/architecture.md` — 新增 mock-services/student-service 模块；新增卡号格式约束（16位字符串）；新增押金固定常量；新增学籍服务集成方式（环境变量 STUDENT_SERVICE_URL）
+- `docs/api/openapi.yaml` — v2.0.0：路径参数 {id}(int) 全部替换为 {cardNo}(string)；新增 GET /api/validate-student；新增 GET /api/cards?idNumber=；发卡请求移除 deposit 字段；Card schema 的主标识改为 cardNo；新增错误码 STUDENT_NOT_FOUND/STUDENT_SERVICE_ERROR
+
+关键决策：
+- 卡号用 16 位随机数字字符串（card_no 字段），数据库自增 id 仅作内部 FK，不对外暴露
+- 押金 2000 分（20元）系统常量，不可操作员录入，DB 仍存储以便退款
+- 学籍验证服务（mock）作为独立 Go 进程，通过接口定义与后端解耦，硬编码学生/教职工名单
+- 挂失/注销均以证件号为入口（前端先 GET /api/cards?idNumber= 查卡，再用 cardNo 调用操作接口）
+- 存款和就餐消费依然以卡号（card_no）为入口（持卡到窗口/管理处）
 
 新增文件：
 - `frontend/src/layouts/AdminLayout.jsx` — 管理端侧边栏 Layout，使用 Ant Design Sider + Menu，包含返回首页按钮

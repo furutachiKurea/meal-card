@@ -16,26 +16,38 @@ async function request(path, options = {}) {
   return data
 }
 
+// ==================== 学籍验证 ====================
+
+/** 校验证件号 GET /api/validate-student?idNumber=xxx */
+export function validateStudent(idNumber) {
+  return request(`/api/validate-student?idNumber=${encodeURIComponent(idNumber)}`)
+}
+
 // ==================== 卡管理 ====================
 
-/** 发卡 POST /api/cards */
-export function issueCard({ name, idNumber, deposit, preDeposit = 0 }) {
+/** 发卡 POST /api/cards，请求体只含 idNumber + preDeposit */
+export function issueCard({ idNumber, preDeposit = 0 }) {
   return request('/api/cards', {
     method: 'POST',
-    body: JSON.stringify({ name, idNumber, deposit, preDeposit }),
+    body: JSON.stringify({ idNumber, preDeposit }),
   })
 }
 
-/** 查询卡信息 GET /api/cards/{id} */
-export function getCard(id) {
-  return request(`/api/cards/${id}`)
+/** 按证件号查询当前有效卡 GET /api/cards?idNumber=xxx */
+export function getCardByIDNumber(idNumber) {
+  return request(`/api/cards?idNumber=${encodeURIComponent(idNumber)}`)
+}
+
+/** 按卡号查询卡信息 GET /api/cards/{cardNo} */
+export function getCard(cardNo) {
+  return request(`/api/cards/${cardNo}`)
 }
 
 // ==================== 存款 ====================
 
-/** 存款 POST /api/cards/{id}/deposits */
-export function deposit(id, amount) {
-  return request(`/api/cards/${id}/deposits`, {
+/** 存款 POST /api/cards/{cardNo}/deposits */
+export function deposit(cardNo, amount) {
+  return request(`/api/cards/${cardNo}/deposits`, {
     method: 'POST',
     body: JSON.stringify({ amount }),
   })
@@ -43,9 +55,9 @@ export function deposit(id, amount) {
 
 // ==================== 就餐消费 ====================
 
-/** 就餐消费 POST /api/cards/{id}/transactions */
-export function createTransaction(id, { windowId, amount }) {
-  return request(`/api/cards/${id}/transactions`, {
+/** 就餐消费 POST /api/cards/{cardNo}/transactions */
+export function createTransaction(cardNo, { windowId, amount }) {
+  return request(`/api/cards/${cardNo}/transactions`, {
     method: 'POST',
     body: JSON.stringify({ windowId, amount }),
   })
@@ -53,21 +65,21 @@ export function createTransaction(id, { windowId, amount }) {
 
 // ==================== 挂失 ====================
 
-/** 挂失 PUT /api/cards/{id}/loss-report */
-export function reportLoss(id) {
-  return request(`/api/cards/${id}/loss-report`, { method: 'PUT' })
+/** 挂失 PUT /api/cards/{cardNo}/loss-report */
+export function reportLoss(cardNo) {
+  return request(`/api/cards/${cardNo}/loss-report`, { method: 'PUT' })
 }
 
-/** 取消挂失 DELETE /api/cards/{id}/loss-report */
-export function cancelLossReport(id) {
-  return request(`/api/cards/${id}/loss-report`, { method: 'DELETE' })
+/** 取消挂失 DELETE /api/cards/{cardNo}/loss-report */
+export function cancelLossReport(cardNo) {
+  return request(`/api/cards/${cardNo}/loss-report`, { method: 'DELETE' })
 }
 
 // ==================== 注销 ====================
 
-/** 注销 POST /api/cards/{id}/cancellation */
-export function cancelCard(id) {
-  return request(`/api/cards/${id}/cancellation`, { method: 'POST' })
+/** 注销 POST /api/cards/{cardNo}/cancellation */
+export function cancelCard(cardNo) {
+  return request(`/api/cards/${cardNo}/cancellation`, { method: 'POST' })
 }
 
 // ==================== 汇总统计 ====================
