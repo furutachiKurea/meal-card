@@ -34,6 +34,22 @@
 
 ## 变更记录
 
+### 2026-04-16 第 14 轮：修复发卡预存款不生成流水记录
+
+修改文件：
+- `backend/service/card_service.go` — IssueCard 在 CreateCard 后，若 preDeposit > 0 补建 DepositRecord
+- `backend/service/card_service_test.go` — 新增 TestIssueCard_PreDepositCreatesDepositRecord，覆盖 preDeposit > 0 和 == 0 两个分支
+
+新增文件：
+- `backend/docs/bugfixes/issue-card-pre-deposit-no-record.md`
+
+测试结果：go test ./... 全部通过
+
+### 2026-04-16 第 13 轮：统计页表格加分页
+
+修改文件：
+- `frontend/src/pages/StatisticsPage.jsx` — 各窗口收入、日餐/年餐报表明细表每页 10 条；各持卡人存款明细外层持卡人每页 5 条（手动分页），内层存款记录每页 10 条
+
 ### 2026-04-16 第 12 轮：修复就餐页输入框黑色背景
 
 修改文件：
