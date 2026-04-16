@@ -180,6 +180,7 @@ export default function StatisticsPage() {
                     params.endTime = depositRange[1].toISOString()
                   }
                   const res = await getDepositDetails(params)
+                  setDepositHolderPage(1)
                   setDepositDetails(res)
                 })}
               >
