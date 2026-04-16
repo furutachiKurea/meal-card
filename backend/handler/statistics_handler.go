@@ -139,6 +139,64 @@ func (h *StatisticsHandler) GetDepositDetails(c echo.Context) error {
 	})
 }
 
+// GetHolderDeposits GET /api/statistics/holder-deposits 指定持卡人的存款明细（支持分页）
+func (h *StatisticsHandler) GetHolderDeposits(c echo.Context) error {
+	holderIDStr := c.QueryParam("holderId")
+	if holderIDStr == "" {
+		return c.JSON(http.StatusBadRequest, errorResponse{Code: "VALIDATION_ERROR", Message: "缺少必填参数: holderId"})
+	}
+	holderIDInt, err := strconv.ParseUint(holderIDStr, 10, 64)
+	if err != nil || holderIDInt == 0 {
+		return c.JSON(http.StatusBadRequest, errorResponse{Code: "VALIDATION_ERROR", Message: "holderId 参数无效"})
+	}
+
+	start, err := parseTimeParam(c, "startTime", false)
+	if err != nil {
+		return handleError(c, err)
+	}
+	end, err := parseTimeParam(c, "endTime", false)
+	if err != nil {
+		return handleError(c, err)
+	}
+
+	page := 1
+	pageSize := 10
+	if p := c.QueryParam("page"); p != "" {
+		if v, err := strconv.Atoi(p); err == nil && v > 0 {
+			page = v
+		}
+	}
+	if ps := c.QueryParam("pageSize"); ps != "" {
+		if v, err := strconv.Atoi(ps); err == nil && v > 0 {
+			pageSize = v
+		}
+	}
+
+	result, err := h.statsSvc.GetHolderDeposits(uint(holderIDInt), start, end, page, pageSize)
+	if err != nil {
+		return handleError(c, err)
+	}
+
+	deposits := make([]map[string]any, 0, len(result.Deposits))
+	for _, d := range result.Deposits {
+		deposits = append(deposits, map[string]any{
+			"id":        d.ID,
+			"cardNo":    d.CardNo,
+			"amount":    d.Amount,
+			"createdAt": d.CreatedAt.Format(time.RFC3339),
+		})
+	}
+	return c.JSON(http.StatusOK, map[string]any{
+		"holderId":   result.HolderID,
+		"holderName": result.HolderName,
+		"idNumber":   result.IDNumber,
+		"deposits":   deposits,
+		"total":      result.Total,
+		"page":       result.Page,
+		"pageSize":   result.PageSize,
+	})
+}
+
 // GetDepositSummary GET /api/statistics/deposit-summary 本日/本月存款金额
 func (h *StatisticsHandler) GetDepositSummary(c echo.Context) error {
 	result, err := h.statsSvc.GetDepositSummary()

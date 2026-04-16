@@ -302,3 +302,68 @@ func TestGetDepositDetails_Pagination(t *testing.T) {
 		}
 	}
 }
+
+func TestGetHolderDeposits(t *testing.T) {
+	statsSvc, cardSvc, _ := setupStatisticsService(t)
+
+	// 发卡并存款
+	r, err := cardSvc.IssueCard("ID001", 0)
+	if err != nil {
+		t.Fatalf("发卡失败: %v", err)
+	}
+	cardNo := r.Card.CardNo
+	holderID := uint(r.CardHolder.ID)
+
+	if _, err := cardSvc.Deposit(cardNo, 300); err != nil {
+		t.Fatalf("充值失败: %v", err)
+	}
+	if _, err := cardSvc.Deposit(cardNo, 200); err != nil {
+		t.Fatalf("充值失败: %v", err)
+	}
+	if _, err := cardSvc.Deposit(cardNo, 100); err != nil {
+		t.Fatalf("充值失败: %v", err)
+	}
+
+	// 第 1 页 pageSize=2：应返回 2 条，total=3
+	result, err := statsSvc.GetHolderDeposits(holderID, nil, nil, 1, 2)
+	if err != nil {
+		t.Fatalf("GetHolderDeposits 失败: %v", err)
+	}
+	if result.Total != 3 {
+		t.Errorf("total 期望 3，得到 %d", result.Total)
+	}
+	if len(result.Deposits) != 2 {
+		t.Errorf("第 1 页 deposits 数量期望 2，得到 %d", len(result.Deposits))
+	}
+	if result.Page != 1 {
+		t.Errorf("page 期望 1，得到 %d", result.Page)
+	}
+	if result.PageSize != 2 {
+		t.Errorf("pageSize 期望 2，得到 %d", result.PageSize)
+	}
+	if result.HolderName == "" {
+		t.Error("holderName 不应为空")
+	}
+
+	// 第 2 页 pageSize=2：应返回 1 条
+	result2, err := statsSvc.GetHolderDeposits(holderID, nil, nil, 2, 2)
+	if err != nil {
+		t.Fatalf("GetHolderDeposits 第 2 页失败: %v", err)
+	}
+	if result2.Total != 3 {
+		t.Errorf("第 2 页 total 期望 3，得到 %d", result2.Total)
+	}
+	if len(result2.Deposits) != 1 {
+		t.Errorf("第 2 页 deposits 数量期望 1，得到 %d", len(result2.Deposits))
+	}
+}
+
+func TestGetHolderDeposits_HolderNotFound(t *testing.T) {
+	statsSvc, _, _ := setupStatisticsService(t)
+
+	// holderID 9999 不存在，应返回错误
+	_, err := statsSvc.GetHolderDeposits(9999, nil, nil, 1, 10)
+	if err == nil {
+		t.Fatal("期望持卡人不存在错误，但未返回错误")
+	}
+}

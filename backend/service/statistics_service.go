@@ -127,6 +127,59 @@ func (s *StatisticsService) GetDepositDetails(start, end *time.Time, page, pageS
 	}, nil
 }
 
+// HolderDepositsResult 单个持卡人存款明细结果（含分页信息）
+type HolderDepositsResult struct {
+	HolderID   int64
+	HolderName string
+	IDNumber   string
+	Deposits   []DepositDetailEntry
+	Total      int64
+	Page       int
+	PageSize   int
+}
+
+// GetHolderDeposits 获取指定持卡人（按 holderID）的存款明细，支持可选时间范围和分页
+func (s *StatisticsService) GetHolderDeposits(holderID uint, start, end *time.Time, page, pageSize int) (*HolderDepositsResult, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+
+	holder, err := s.cardRepo.FindCardHolderByID(holderID)
+	if err != nil {
+		log.Error().Err(err).Uint("holderID", holderID).Msg("查询持卡人失败")
+		return nil, err
+	}
+
+	deposits, total, err := s.cardRepo.GetHolderDeposits(holderID, start, end, page, pageSize)
+	if err != nil {
+		log.Error().Err(err).Uint("holderID", holderID).Msg("查询持卡人存款明细失败")
+		return nil, err
+	}
+
+	entries := make([]DepositDetailEntry, 0, len(deposits))
+	for _, d := range deposits {
+		entries = append(entries, DepositDetailEntry{
+			ID:        int64(d.ID),
+			CardNo:    d.CardNo,
+			Amount:    d.Amount,
+			CreatedAt: d.CreatedAt,
+		})
+	}
+
+	return &HolderDepositsResult{
+		HolderID:   int64(holder.ID),
+		HolderName: holder.Name,
+		IDNumber:   holder.IDNumber,
+		Deposits:   entries,
+		Total:      total,
+		Page:       page,
+		PageSize:   pageSize,
+	}, nil
+}
+
 // DepositSummaryResult 本日/本月存款汇总
 type DepositSummaryResult struct {
 	TodayTotal int64

@@ -29,6 +29,16 @@ func (r *CardRepository) FindCardHolderByIDNumber(idNumber string) (*model.CardH
 	return &holder, nil
 }
 
+// FindCardHolderByID 根据数据库自增 ID 查找持卡人，不存在时返回 gorm.ErrRecordNotFound
+func (r *CardRepository) FindCardHolderByID(id uint) (*model.CardHolder, error) {
+	var holder model.CardHolder
+	err := r.db.First(&holder, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &holder, nil
+}
+
 // CreateCardHolder 创建持卡人记录
 func (r *CardRepository) CreateCardHolder(holder *model.CardHolder) error {
 	return r.db.Create(holder).Error
@@ -254,6 +264,55 @@ func (r *CardRepository) GetDepositDetails(start, end *time.Time, page, pageSize
 		if h, ok := holderMap[id]; ok {
 			holders = append(holders, *h)
 		}
+	}
+	return
+}
+
+// GetHolderDeposits 获取指定持卡人的存款明细，支持可选时间范围和分页。
+// page 从 1 开始，pageSize 为每页记录数。
+// 返回当前页存款记录列表和满足条件的总记录数。
+func (r *CardRepository) GetHolderDeposits(holderID uint, start, end *time.Time, page, pageSize int) (deposits []DepositDetailItem, total int64, err error) {
+	baseQuery := r.db.Model(&model.DepositRecord{}).
+		Joins("LEFT JOIN cards ON cards.id = deposit_records.card_id").
+		Joins("LEFT JOIN card_holders ON card_holders.id = cards.card_holder_id").
+		Where("card_holders.id = ?", holderID)
+	if start != nil {
+		baseQuery = baseQuery.Where("deposit_records.created_at >= ?", *start)
+	}
+	if end != nil {
+		baseQuery = baseQuery.Where("deposit_records.created_at <= ?", *end)
+	}
+
+	err = baseQuery.Count(&total).Error
+	if err != nil {
+		return
+	}
+
+	offset := (page - 1) * pageSize
+	type rawRow struct {
+		ID        uint
+		CardNo    string
+		Amount    int64
+		CreatedAt time.Time
+	}
+	var rows []rawRow
+	err = baseQuery.
+		Select("deposit_records.id, cards.card_no, deposit_records.amount, deposit_records.created_at").
+		Order("deposit_records.created_at DESC").
+		Limit(pageSize).Offset(offset).
+		Scan(&rows).Error
+	if err != nil {
+		return
+	}
+
+	deposits = make([]DepositDetailItem, 0, len(rows))
+	for _, row := range rows {
+		deposits = append(deposits, DepositDetailItem{
+			ID:        row.ID,
+			CardNo:    row.CardNo,
+			Amount:    row.Amount,
+			CreatedAt: row.CreatedAt,
+		})
 	}
 	return
 }

@@ -702,6 +702,103 @@ paths:
                         transactionCount:
                           type: integer
 
+  /api/statistics/holder-deposits:
+    get:
+      tags: [statistics]
+      summary: 指定持卡人存款明细
+      description: 按持卡人 ID 查询其所有存款记录，支持可选时间范围和分页。
+      operationId: getHolderDeposits
+      parameters:
+        - name: holderId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: 持卡人数据库 ID
+        - name: startTime
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: 起始时间（可选，ISO 8601）
+        - name: endTime
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: 结束时间（可选，ISO 8601）
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: 页码，从 1 开始（可选，默认 1）
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: 每页记录数（可选，默认 10）
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [holderId, holderName, idNumber, deposits, total, page, pageSize]
+                properties:
+                  holderId:
+                    type: integer
+                    format: int64
+                  holderName:
+                    type: string
+                  idNumber:
+                    type: string
+                    description: 12 位证件号
+                  deposits:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, cardNo, amount, createdAt]
+                      properties:
+                        id:
+                          type: integer
+                          format: int64
+                        cardNo:
+                          type: string
+                          description: 16 位卡号
+                        amount:
+                          type: integer
+                          format: int64
+                          description: 存款金额（分）
+                        createdAt:
+                          type: string
+                          format: date-time
+                  total:
+                    type: integer
+                    description: 满足筛选条件的存款记录总数
+                  page:
+                    type: integer
+                  pageSize:
+                    type: integer
+        "400":
+          description: holderId 缺失或无效
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 持卡人不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: INTERNAL_ERROR
+                message: 服务端内部错误
+
   # ==================== 窗口管理 ====================
   /api/windows:
     get:

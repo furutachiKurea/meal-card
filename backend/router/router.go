@@ -59,6 +59,7 @@ func Register(e *echo.Echo, cardH *handler.CardHandler, statsH *handler.Statisti
 	api.GET("/statistics/meal-revenue", statsH.GetMealRevenue)
 	api.GET("/statistics/window-revenue", statsH.GetWindowRevenue)
 	api.GET("/statistics/deposit-details", statsH.GetDepositDetails)
+	api.GET("/statistics/holder-deposits", statsH.GetHolderDeposits)
 	api.GET("/statistics/deposit-summary", statsH.GetDepositSummary)
 	api.GET("/statistics/active-balance", statsH.GetActiveBalance)
 	api.GET("/statistics/daily-report", statsH.GetDailyReport)
