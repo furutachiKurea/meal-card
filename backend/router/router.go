@@ -3,13 +3,36 @@ package router
 
 import (
 	"backend/handler"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/rs/zerolog/log"
 )
 
-// Register 注册所有路由，并配置 CORS 中间件
+// zerologMiddleware 将每条 HTTP 请求通过 zerolog 输出
+func zerologMiddleware() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			start := time.Now()
+			err := next(c)
+			req := c.Request()
+			res := c.Response()
+			log.Info().
+				Str("method", req.Method).
+				Str("path", req.URL.Path).
+				Int("status", res.Status).
+				Dur("latency", time.Since(start)).
+				Msg("request")
+			return err
+		}
+	}
+}
+
+// Register 注册所有路由，并配置 CORS 与日志中间件
 func Register(e *echo.Echo, cardH *handler.CardHandler, statsH *handler.StatisticsHandler, windowH *handler.WindowHandler) {
+	e.Use(zerologMiddleware())
+
 	// 允许所有来源的跨域请求
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
