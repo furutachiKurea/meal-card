@@ -25,7 +25,8 @@ func setupStatisticsService(t *testing.T) (*service.StatisticsService, *service.
 		t.Fatalf("创建窗口失败: %v", err)
 	}
 
-	cardSvc := service.NewCardService(cardRepo, windowRepo)
+	v := newFakeValidator("ID001", "ID002", "ID003")
+	cardSvc := service.NewCardService(cardRepo, windowRepo, v)
 	statsSvc := service.NewStatisticsService(cardRepo)
 	return statsSvc, cardSvc, w.ID
 }
@@ -49,18 +50,16 @@ func TestGetMealRevenue_WithTransactions(t *testing.T) {
 	statsSvc, cardSvc, windowID := setupStatisticsService(t)
 
 	// 发卡并消费
-	r, err := cardSvc.IssueCard(service.IssueCardRequest{
-		Name: "张三", IDNumber: "ID001", Deposit: 1000, PreDeposit: 5000,
-	})
+	r, err := cardSvc.IssueCard("ID001", 5000)
 	if err != nil {
 		t.Fatalf("发卡失败: %v", err)
 	}
-	cardID := r.Card.ID
+	cardNo := r.Card.CardNo
 
-	if _, err := cardSvc.CreateTransaction(cardID, windowID, 300); err != nil {
+	if _, err := cardSvc.CreateTransaction(cardNo, windowID, 300); err != nil {
 		t.Fatalf("消费失败: %v", err)
 	}
-	if _, err := cardSvc.CreateTransaction(cardID, windowID, 200); err != nil {
+	if _, err := cardSvc.CreateTransaction(cardNo, windowID, 200); err != nil {
 		t.Fatalf("消费失败: %v", err)
 	}
 
@@ -80,12 +79,8 @@ func TestGetActiveBalance(t *testing.T) {
 	statsSvc, cardSvc, windowID := setupStatisticsService(t)
 
 	// 发两张卡，余额分别为 500、300
-	r1, _ := cardSvc.IssueCard(service.IssueCardRequest{
-		Name: "张三", IDNumber: "ID001", Deposit: 1000, PreDeposit: 500,
-	})
-	r2, _ := cardSvc.IssueCard(service.IssueCardRequest{
-		Name: "李四", IDNumber: "ID002", Deposit: 1000, PreDeposit: 300,
-	})
+	r1, _ := cardSvc.IssueCard("ID001", 500)
+	r2, _ := cardSvc.IssueCard("ID002", 300)
 
 	result, err := statsSvc.GetActiveBalance()
 	if err != nil {
@@ -96,7 +91,7 @@ func TestGetActiveBalance(t *testing.T) {
 	}
 
 	// 注销一张卡后，流动资金应减少
-	if _, err := cardSvc.CancelCard(r1.Card.ID); err != nil {
+	if _, err := cardSvc.CancelCard(r1.Card.CardNo); err != nil {
 		t.Fatalf("注销失败: %v", err)
 	}
 	result2, err := statsSvc.GetActiveBalance()
@@ -108,7 +103,7 @@ func TestGetActiveBalance(t *testing.T) {
 	}
 
 	// 消费后流动资金减少
-	if _, err := cardSvc.CreateTransaction(r2.Card.ID, windowID, 100); err != nil {
+	if _, err := cardSvc.CreateTransaction(r2.Card.CardNo, windowID, 100); err != nil {
 		t.Fatalf("消费失败: %v", err)
 	}
 	result3, err := statsSvc.GetActiveBalance()
@@ -124,14 +119,13 @@ func TestGetDepositSummary(t *testing.T) {
 	statsSvc, cardSvc, _ := setupStatisticsService(t)
 
 	// 发卡时没有存款记录（预存款不产生 DepositRecord），执行存款操作
-	r, _ := cardSvc.IssueCard(service.IssueCardRequest{
-		Name: "张三", IDNumber: "ID001", Deposit: 1000, PreDeposit: 0,
-	})
+	r, _ := cardSvc.IssueCard("ID001", 0)
+	cardNo := r.Card.CardNo
 
-	if _, err := cardSvc.Deposit(r.Card.ID, 600); err != nil {
+	if _, err := cardSvc.Deposit(cardNo, 600); err != nil {
 		t.Fatalf("充值失败: %v", err)
 	}
-	if _, err := cardSvc.Deposit(r.Card.ID, 400); err != nil {
+	if _, err := cardSvc.Deposit(cardNo, 400); err != nil {
 		t.Fatalf("充值失败: %v", err)
 	}
 
@@ -150,14 +144,13 @@ func TestGetDepositSummary(t *testing.T) {
 func TestGetDailyReport(t *testing.T) {
 	statsSvc, cardSvc, windowID := setupStatisticsService(t)
 
-	r, _ := cardSvc.IssueCard(service.IssueCardRequest{
-		Name: "张三", IDNumber: "ID001", Deposit: 1000, PreDeposit: 5000,
-	})
+	r, _ := cardSvc.IssueCard("ID001", 5000)
+	cardNo := r.Card.CardNo
 
-	if _, err := cardSvc.CreateTransaction(r.Card.ID, windowID, 150); err != nil {
+	if _, err := cardSvc.CreateTransaction(cardNo, windowID, 150); err != nil {
 		t.Fatalf("消费失败: %v", err)
 	}
-	if _, err := cardSvc.CreateTransaction(r.Card.ID, windowID, 250); err != nil {
+	if _, err := cardSvc.CreateTransaction(cardNo, windowID, 250); err != nil {
 		t.Fatalf("消费失败: %v", err)
 	}
 
@@ -193,14 +186,13 @@ func TestGetDailyReport_InvalidDate(t *testing.T) {
 func TestGetYearlyReport(t *testing.T) {
 	statsSvc, cardSvc, windowID := setupStatisticsService(t)
 
-	r, _ := cardSvc.IssueCard(service.IssueCardRequest{
-		Name: "张三", IDNumber: "ID001", Deposit: 1000, PreDeposit: 5000,
-	})
+	r, _ := cardSvc.IssueCard("ID001", 5000)
+	cardNo := r.Card.CardNo
 
-	if _, err := cardSvc.CreateTransaction(r.Card.ID, windowID, 100); err != nil {
+	if _, err := cardSvc.CreateTransaction(cardNo, windowID, 100); err != nil {
 		t.Fatalf("消费失败: %v", err)
 	}
-	if _, err := cardSvc.CreateTransaction(r.Card.ID, windowID, 200); err != nil {
+	if _, err := cardSvc.CreateTransaction(cardNo, windowID, 200); err != nil {
 		t.Fatalf("消费失败: %v", err)
 	}
 
@@ -223,14 +215,13 @@ func TestGetYearlyReport(t *testing.T) {
 func TestGetWindowRevenue(t *testing.T) {
 	statsSvc, cardSvc, windowID := setupStatisticsService(t)
 
-	r, _ := cardSvc.IssueCard(service.IssueCardRequest{
-		Name: "张三", IDNumber: "ID001", Deposit: 1000, PreDeposit: 5000,
-	})
+	r, _ := cardSvc.IssueCard("ID001", 5000)
+	cardNo := r.Card.CardNo
 
-	if _, err := cardSvc.CreateTransaction(r.Card.ID, windowID, 400); err != nil {
+	if _, err := cardSvc.CreateTransaction(cardNo, windowID, 400); err != nil {
 		t.Fatalf("消费失败: %v", err)
 	}
-	if _, err := cardSvc.CreateTransaction(r.Card.ID, windowID, 100); err != nil {
+	if _, err := cardSvc.CreateTransaction(cardNo, windowID, 100); err != nil {
 		t.Fatalf("消费失败: %v", err)
 	}
 

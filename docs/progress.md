@@ -13,19 +13,15 @@
 - 修复 Card 模型：CardHolderID 改为必填，不再重用旧卡号
 - AGENTS.md 加入文档维护规范（PRD + architecture + progress 每次对话必读）
 - OpenAPI 契约（`docs/api/openapi.yaml`），覆盖 16 个接口（6 项核心业务 + 7 项统计 + 窗口管理）
+- 后端全量适配 cardNo + StudentValidator（Task #1 完成）
+- 前端全量适配 cardNo（Task #2 完成）
 
 ## 进行中
 
-- 后端重构：card_no、StudentValidator 接口、mock 服务、repo/service/handler/router 全量适配（Task #1 进行中）
+（无）
 
 ## 待办
 
-- 后端：repository 新增 FindCardByCardNo、FindCurrentCardByIDNumber 方法
-- 后端：CardService 重构（注入 StudentValidator，IssueCard 改签名，所有方法 cardID→cardNo）
-- 后端：CardHandler 重构（路径参数 :id→:cardNo，新增 ValidateStudent、GetCardByIDNumber handler）
-- 后端：router 更新路由
-- 后端：main.go 接入 HttpStudentValidator
-- 后端：单元测试更新（IssueCardRequest 去掉 Name/Deposit，改用 FakeStudentValidator）
 - 前后端联调，启动后端服务后通过前端页面进行功能验收
 
 ## 阻塞
@@ -37,6 +33,29 @@
 前后端联调，启动后端服务后通过前端页面进行功能验收。
 
 ## 变更记录
+
+### 2026-04-16 第 10 轮：后端全量适配 cardNo + StudentValidator
+
+修改文件：
+- `backend/repository/card_repository.go` — 新增 `FindCardByCardNo`、`FindCurrentCardByIDNumber`；`DepositDetailItem.CardID` → `CardNo`
+- `backend/service/card_service.go` — 新增错误码 `ErrCodeStudentNotFound`/`ErrCodeStudentServiceError`；`CardService` 注入 `StudentValidator`；`IssueCard` 签名改为 `(idNumber string, preDeposit int64)`；押金固定 2000 分由系统写入；Deposit/CreateTransaction/ReportLoss/CancelLossReport/CancelCard 参数由 `uint` → `cardNo string`；`OldCardRefund.OldCardID` → `OldCardNo`；`DepositResult/TransactionResult.CardID` → `CardNo`
+- `backend/service/statistics_service.go` — `DepositDetailEntry.CardID` → `CardNo`
+- `backend/handler/card_handler.go` — 新增 `ValidateStudent`/`GetCardByIDNumber` handler；路径参数 `:id` 全改为 `:cardNo`；响应字段 `cardId` → `cardNo`；`CardHandler` 注入 `StudentValidator` 和 `CardRepository`
+- `backend/handler/statistics_handler.go` — 存款明细响应字段 `cardId` → `cardNo`
+- `backend/router/router.go` — 路径全部改为 `:cardNo`；新增 `GET /api/validate-student` 和 `GET /api/cards`
+- `backend/main.go` — 实例化 `client.NewHttpStudentValidator()`，注入 `NewCardService` 和 `NewCardHandler`
+- `backend/service/card_service_test.go` — 全量重写：`FakeStudentValidator`；所有 `cardID uint` → `cardNo string`；新增 `STUDENT_NOT_FOUND`/`STUDENT_SERVICE_ERROR` 测试用例；新增 `setupWithRepo` 辅助函数
+- `backend/service/statistics_service_test.go` — 全量更新：适配新 `IssueCard` 签名，`cardID` → `cardNo`
+
+新增文件：
+- `backend/docs/course-docs/modules/card-handler.md` — CardHandler 模块说明文档
+
+测试结果：`go test ./...` 全部通过。
+
+关键决策：
+- 对外接口统一以 `cardNo`（16 位字符串）为主键，数据库自增 `id` 仅作内部 FK，不暴露给任何 HTTP 响应
+- 押金 2000 分为系统常量，由后端写入，前端无需也无法传入
+- `GetCardByIDNumber` handler 直接注入 `CardRepository`（无业务规则，纯读取），不走 service 层
 
 ### 2026-04-16 第 9 轮：前端 cardNo 全量适配
 

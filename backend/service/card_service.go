@@ -5,6 +5,8 @@ import (
 	"backend/model"
 	"backend/repository"
 	"errors"
+	"fmt"
+	"math/rand"
 	"time"
 
 	"gorm.io/gorm"
@@ -12,17 +14,19 @@ import (
 
 // 业务错误码常量
 const (
-	ErrCodeCardNotFound        = "CARD_NOT_FOUND"
-	ErrCodeCardAlreadyActive   = "CARD_ALREADY_ACTIVE"
-	ErrCodeCardNotActive       = "CARD_NOT_ACTIVE"
-	ErrCodeCardNotLost         = "CARD_NOT_LOST"
-	ErrCodeCardCancelled       = "CARD_CANCELLED"
-	ErrCodeCardLost            = "CARD_LOST"
+	ErrCodeCardNotFound         = "CARD_NOT_FOUND"
+	ErrCodeCardAlreadyActive    = "CARD_ALREADY_ACTIVE"
+	ErrCodeCardNotActive        = "CARD_NOT_ACTIVE"
+	ErrCodeCardNotLost          = "CARD_NOT_LOST"
+	ErrCodeCardCancelled        = "CARD_CANCELLED"
+	ErrCodeCardLost             = "CARD_LOST"
 	ErrCodeCardAlreadyCancelled = "CARD_ALREADY_CANCELLED"
-	ErrCodeInsufficientBalance = "INSUFFICIENT_BALANCE"
-	ErrCodeInvalidAmount       = "INVALID_AMOUNT"
-	ErrCodeWindowNotFound      = "WINDOW_NOT_FOUND"
-	ErrCodeValidationError     = "VALIDATION_ERROR"
+	ErrCodeInsufficientBalance  = "INSUFFICIENT_BALANCE"
+	ErrCodeInvalidAmount        = "INVALID_AMOUNT"
+	ErrCodeWindowNotFound       = "WINDOW_NOT_FOUND"
+	ErrCodeValidationError      = "VALIDATION_ERROR"
+	ErrCodeStudentNotFound      = "STUDENT_NOT_FOUND"
+	ErrCodeStudentServiceError  = "STUDENT_SERVICE_ERROR"
 )
 
 // BizError 业务错误，携带错误码和人类可读消息
@@ -40,14 +44,6 @@ func newBizError(code, message string) *BizError {
 	return &BizError{Code: code, Message: message}
 }
 
-// IssueCardRequest 发卡请求参数
-type IssueCardRequest struct {
-	Name       string
-	IDNumber   string
-	Deposit    int64
-	PreDeposit int64
-}
-
 // IssueCardResult 发卡结果
 type IssueCardResult struct {
 	Card       *model.Card
@@ -58,7 +54,7 @@ type IssueCardResult struct {
 
 // OldCardRefund 旧卡退款详情
 type OldCardRefund struct {
-	OldCardID uint
+	OldCardNo string
 	Deposit   int64
 	Balance   int64
 	Total     int64
@@ -67,7 +63,7 @@ type OldCardRefund struct {
 // DepositResult 存款结果（收据信息）
 type DepositResult struct {
 	ID         uint
-	CardID     uint
+	CardNo     string
 	HolderName string
 	Amount     int64
 	NewBalance int64
@@ -77,7 +73,7 @@ type DepositResult struct {
 // TransactionResult 消费结果
 type TransactionResult struct {
 	ID         uint
-	CardID     uint
+	CardNo     string
 	WindowID   uint
 	Amount     int64
 	NewBalance int64
@@ -96,45 +92,52 @@ type CancellationResult struct {
 type CardService struct {
 	cardRepo   *repository.CardRepository
 	windowRepo *repository.WindowRepository
+	validator  StudentValidator
 }
 
 // NewCardService 创建 CardService 实例
-func NewCardService(cardRepo *repository.CardRepository, windowRepo *repository.WindowRepository) *CardService {
+func NewCardService(cardRepo *repository.CardRepository, windowRepo *repository.WindowRepository, validator StudentValidator) *CardService {
 	return &CardService{
 		cardRepo:   cardRepo,
 		windowRepo: windowRepo,
+		validator:  validator,
 	}
 }
 
+// generateCardNo 生成 16 位随机数字卡号
+func generateCardNo() string {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return fmt.Sprintf("%016d", r.Int63n(10000000000000000))
+}
+
 // IssueCard 发卡业务
+// 参数：idNumber 证件号，preDeposit 预存款（分）
 // 规则：
-//  1. 同证件号已有 active 卡 → 返回 409 CARD_ALREADY_ACTIVE
-//  2. 同证件号有 lost 卡 → 自动注销旧卡，创建新卡，返回退款信息
-//  3. 无任何卡 → 直接创建
-func (s *CardService) IssueCard(req IssueCardRequest) (*IssueCardResult, error) {
-	if req.Deposit <= 0 {
-		return nil, newBizError(ErrCodeInvalidAmount, "押金必须大于 0")
-	}
-	if req.PreDeposit < 0 {
+//  1. 调用 validator 验证证件号，失败返回对应错误码
+//  2. 同证件号已有 active 卡 → 返回 409 CARD_ALREADY_ACTIVE
+//  3. 同证件号有 lost 卡 → 自动注销旧卡，创建新卡，返回退款信息
+//  4. 无任何卡 → 直接创建，押金固定 2000 分
+func (s *CardService) IssueCard(idNumber string, preDeposit int64) (*IssueCardResult, error) {
+	if preDeposit < 0 {
 		return nil, newBizError(ErrCodeInvalidAmount, "预存款不能为负数")
 	}
-	if req.Name == "" {
-		return nil, newBizError(ErrCodeValidationError, "姓名不能为空")
-	}
-	if req.IDNumber == "" {
-		return nil, newBizError(ErrCodeValidationError, "证件号不能为空")
+
+	// 验证证件号
+	studentInfo, err := s.validator.Validate(idNumber)
+	if err != nil {
+		return nil, err
 	}
 
 	// 查找或创建持卡人
-	holder, err := s.cardRepo.FindCardHolderByIDNumber(req.IDNumber)
+	holder, err := s.cardRepo.FindCardHolderByIDNumber(idNumber)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}
 
 	if holder == nil {
 		holder = &model.CardHolder{
-			Name:     req.Name,
-			IDNumber: req.IDNumber,
+			Name:     studentInfo.Name,
+			IDNumber: idNumber,
 		}
 		if err := s.cardRepo.CreateCardHolder(holder); err != nil {
 			return nil, err
@@ -157,27 +160,28 @@ func (s *CardService) IssueCard(req IssueCardRequest) (*IssueCardResult, error) 
 		return nil, err
 	}
 	if lostCard != nil {
-		// 自动注销旧卡
 		oldDeposit := lostCard.Deposit
 		oldBalance := lostCard.Balance
+		oldCardNo := lostCard.CardNo
 		lostCard.Status = model.CardStatusCancelled
 		lostCard.Balance = 0
 		if err := s.cardRepo.UpdateCard(lostCard); err != nil {
 			return nil, err
 		}
 		refund = &OldCardRefund{
-			OldCardID: lostCard.ID,
+			OldCardNo: oldCardNo,
 			Deposit:   oldDeposit,
 			Balance:   oldBalance,
 			Total:     oldDeposit + oldBalance,
 		}
 	}
 
-	// 创建新卡
+	// 生成新卡号，押金固定 2000 分
 	newCard := &model.Card{
+		CardNo:       generateCardNo(),
 		CardHolderID: holder.ID,
-		Deposit:      req.Deposit,
-		Balance:      req.PreDeposit,
+		Deposit:      2000,
+		Balance:      preDeposit,
 		Status:       model.CardStatusActive,
 	}
 	if err := s.cardRepo.CreateCard(newCard); err != nil {
@@ -191,9 +195,9 @@ func (s *CardService) IssueCard(req IssueCardRequest) (*IssueCardResult, error) 
 	}, nil
 }
 
-// GetCard 根据卡号查询卡片详情
-func (s *CardService) GetCard(cardID uint) (*model.Card, error) {
-	card, err := s.cardRepo.FindCardByID(cardID)
+// GetCard 根据 16 位卡号查询卡片详情
+func (s *CardService) GetCard(cardNo string) (*model.Card, error) {
+	card, err := s.cardRepo.FindCardByCardNo(cardNo)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, newBizError(ErrCodeCardNotFound, "卡号不存在")
@@ -204,12 +208,12 @@ func (s *CardService) GetCard(cardID uint) (*model.Card, error) {
 }
 
 // Deposit 存款（充值）
-func (s *CardService) Deposit(cardID uint, amount int64) (*DepositResult, error) {
+func (s *CardService) Deposit(cardNo string, amount int64) (*DepositResult, error) {
 	if amount <= 0 {
 		return nil, newBizError(ErrCodeInvalidAmount, "充值金额必须大于 0")
 	}
 
-	card, err := s.cardRepo.FindCardByID(cardID)
+	card, err := s.cardRepo.FindCardByCardNo(cardNo)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, newBizError(ErrCodeCardNotFound, "卡号不存在")
@@ -239,7 +243,7 @@ func (s *CardService) Deposit(cardID uint, amount int64) (*DepositResult, error)
 
 	return &DepositResult{
 		ID:         record.ID,
-		CardID:     card.ID,
+		CardNo:     card.CardNo,
 		HolderName: card.CardHolder.Name,
 		Amount:     amount,
 		NewBalance: card.Balance,
@@ -249,12 +253,12 @@ func (s *CardService) Deposit(cardID uint, amount int64) (*DepositResult, error)
 
 // CreateTransaction 就餐消费结算
 // 三重校验：卡存在 → 非 cancelled → 非 lost → 余额充足
-func (s *CardService) CreateTransaction(cardID uint, windowID uint, amount int64) (*TransactionResult, error) {
+func (s *CardService) CreateTransaction(cardNo string, windowID uint, amount int64) (*TransactionResult, error) {
 	if amount <= 0 {
 		return nil, newBizError(ErrCodeInvalidAmount, "消费金额必须大于 0")
 	}
 
-	card, err := s.cardRepo.FindCardByID(cardID)
+	card, err := s.cardRepo.FindCardByCardNo(cardNo)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, newBizError(ErrCodeCardNotFound, "此卡非本单位所发")
@@ -298,7 +302,7 @@ func (s *CardService) CreateTransaction(cardID uint, windowID uint, amount int64
 
 	return &TransactionResult{
 		ID:         tx.ID,
-		CardID:     card.ID,
+		CardNo:     card.CardNo,
 		WindowID:   windowID,
 		Amount:     amount,
 		NewBalance: card.Balance,
@@ -307,8 +311,8 @@ func (s *CardService) CreateTransaction(cardID uint, windowID uint, amount int64
 }
 
 // ReportLoss 挂失：active → lost
-func (s *CardService) ReportLoss(cardID uint) (*model.Card, error) {
-	card, err := s.cardRepo.FindCardByID(cardID)
+func (s *CardService) ReportLoss(cardNo string) (*model.Card, error) {
+	card, err := s.cardRepo.FindCardByCardNo(cardNo)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, newBizError(ErrCodeCardNotFound, "卡号不存在")
@@ -328,8 +332,8 @@ func (s *CardService) ReportLoss(cardID uint) (*model.Card, error) {
 }
 
 // CancelLossReport 取消挂失：lost → active
-func (s *CardService) CancelLossReport(cardID uint) (*model.Card, error) {
-	card, err := s.cardRepo.FindCardByID(cardID)
+func (s *CardService) CancelLossReport(cardNo string) (*model.Card, error) {
+	card, err := s.cardRepo.FindCardByCardNo(cardNo)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, newBizError(ErrCodeCardNotFound, "卡号不存在")
@@ -349,8 +353,8 @@ func (s *CardService) CancelLossReport(cardID uint) (*model.Card, error) {
 }
 
 // CancelCard 注销卡片，退还押金和余额
-func (s *CardService) CancelCard(cardID uint) (*CancellationResult, error) {
-	card, err := s.cardRepo.FindCardByID(cardID)
+func (s *CardService) CancelCard(cardNo string) (*CancellationResult, error) {
+	card, err := s.cardRepo.FindCardByCardNo(cardNo)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, newBizError(ErrCodeCardNotFound, "卡号不存在")

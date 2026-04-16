@@ -49,8 +49,8 @@ currentStep 计算规则：`txResult ? 2 : cardInfo ? 1 : 0`
 
 ## 接口依赖
 - `GET /api/windows`（listWindows）—— 页面加载时获取窗口列表
-- `GET /api/cards/{id}`（getCard）—— 刷卡验证
-- `POST /api/cards/{id}/transactions`（createTransaction）
+- `GET /api/cards/{cardNo}`（getCard）—— 刷卡验证（路径参数为 16 位 cardNo）
+- `POST /api/cards/{cardNo}/transactions`（createTransaction）
   - 入参：windowId, amount（分）
   - 金额处理：显示元，提交前 × 100 转分
 

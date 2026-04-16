@@ -7,15 +7,19 @@
 ## 模块边界
 
 ```
-meal-card/                  ← mono repo
-├── frontend/               ← React SPA（管理端 + 窗口机模拟）
-├── backend/                ← Go HTTP API
-├── docs/                   ← 全局文档
-│   └── api/                ← OpenAPI 契约（yaml）
+meal-card/                    ← mono repo
+├── frontend/                 ← React SPA（管理端 + 窗口机模拟）
+├── backend/                  ← Go HTTP API（:8080）
+├── mock-services/
+│   └── student-service/      ← 学籍验证 Mock 服务（:9090）
+├── docs/                     ← 全局文档
+│   └── api/                  ← OpenAPI 契约（yaml）
 └── Makefile
 ```
 
 前后端通过 RESTful API 通信，接口契约以 `docs/api/` 下的 OpenAPI yaml 为准，双方严格遵照。
+
+后端在发卡时调用学籍验证 Mock 服务（HTTP），验证证件号是否为本校学生/教职工。
 
 ## 技术选型
 
@@ -28,6 +32,7 @@ meal-card/                  ← mono repo
 | 后端架构 | 三层（handler → service → repository） | AGENTS.md 约定，不做过多设计 |
 | 前端框架 | React | 课设指定 |
 | 前端包管理 | pnpm | AGENTS.md 约定 |
+| 学籍验证服务 | Go HTTP（mock） | 独立进程，模拟微服务调用，硬编码学生/教职工名单 |
 
 ## 数据模型
 
@@ -43,12 +48,13 @@ erDiagram
     CardHolder {
         uint ID PK
         string Name
-        string IDNumber UK
+        string IDNumber UK "12位学号/工号"
     }
     Card {
-        uint ID PK
+        uint ID PK "内部自增主键，仅用于FK关联"
+        string CardNo UK "16位数字卡号，对外使用"
         uint CardHolderID FK "not null"
-        int64 Deposit "分"
+        int64 Deposit "分，固定2000"
         int64 Balance "分"
         CardStatus Status "active/lost/cancelled"
     }
@@ -77,23 +83,63 @@ erDiagram
 4. **一人一卡**：同一证件号只能持有一张 active 状态的卡；有 lost 卡时可办新卡，旧卡自动注销
 5. **只做基本需求**：不做任何拓展和额外设计
 6. **绘图用 mermaid**：文档中的图表统一使用 mermaid
+7. **卡号格式**：16 位随机数字字符串（card_no 字段），独立于数据库自增 ID，对外所有接口均使用 card_no 而非 DB id
+8. **押金固定**：押金统一为 20 元（2000 分），系统常量，不由操作员录入
+9. **发卡前须验证证件号**：调用学籍验证服务，证件号无效则拒绝发卡
+10. **挂失/注销以证件号为入口**：操作员输入证件号，系统查找对应卡，再执行操作
+
+## 学籍验证服务集成
+
+### 接口定义（`backend/service/`）
+
+`StudentValidator` interface 定义在 service 层，`CardService` 依赖此接口，不感知底层实现：
+
+```go
+// StudentInfo 学籍验证结果
+type StudentInfo struct {
+    IDNumber string
+    Name     string
+    Type     string // "student" | "staff"
+}
+
+// StudentValidator 学籍验证接口，由 CardService 依赖
+type StudentValidator interface {
+    Validate(idNumber string) (*StudentInfo, error)
+}
+```
+
+### 实现
+
+| 实现 | 位置 | 用途 |
+|---|---|---|
+| `HttpStudentValidator` | `backend/client/student_client.go` | 生产/联调，HTTP 调用 Mock 服务 |
+| `FakeStudentValidator` | `backend/service/card_service_test.go` | 单元测试，硬编码返回 |
+
+### Mock HTTP 服务（`mock-services/student-service/`）
+
+- **端口**：`:9090`
+- **接口**：`GET /validate?idNumber=xxx`
+- **数据**：硬编码在 `mock-services/student-service/main.go` 中，包含若干学生和教职工记录（需要增减直接改代码）
+- **返回**：`{ "valid": true, "idNumber": "...", "name": "...", "type": "student" }`
+- **后端配置**：环境变量 `STUDENT_SERVICE_URL`（默认 `http://localhost:9090`），`HttpStudentValidator` 读取此配置
 
 ## 关键数据流
 
 ### 发卡
-1. 登记持卡人信息 → 创建 CardHolder（已有则复用）
-2. 创建新 Card → 关联 CardHolderID，记录押金，预存金额
+1. 前端调 `GET /api/validate-student?idNumber=xxx` → 后端调学籍服务 → 返回姓名和人员类型
+2. 前端展示，操作员确认
+3. 前端调 `POST /api/cards`（含证件号、预存款）→ 后端再次调学籍服务校验 → 创建 CardHolder（已有则复用）→ 生成 16 位 card_no → 创建 Card（押金固定 2000 分）
+
+### 存款
+1. 操作员输入卡号（card_no）→ `GET /api/cards/{cardNo}` 展示卡信息
+2. 输入充值金额 → `POST /api/cards/{cardNo}/deposits` 结算
 
 ### 就餐消费
-1. 输入卡号 → 三重校验：卡号存在（本单位）、状态非 cancelled（有效）、状态非 lost（未挂失）
+1. 输入卡号（card_no）→ 三重校验：卡号存在（本单位）、状态非 cancelled（有效）、状态非 lost（未挂失）
 2. 校验通过 → 显示余额 → 工作人员输入消费金额
 3. 确认结算 → 校验余额充足 → 扣款 → 创建 Transaction → 显示新余额
 
-### 挂失/取消挂失
-1. 挂失：Card.Status active → lost
-2. 取消挂失：Card.Status lost → active
-3. 窗口机消费时校验状态即可拦截
-
-### 注销
-1. Card.Status → cancelled，余额清零
-2. 退还押金 + 剩余余额
+### 挂失/注销
+1. 操作员输入证件号 → `GET /api/cards?idNumber=xxx` → 返回该证件号当前有效卡（active 或 lost）
+2. 前端展示卡信息，操作员确认
+3. 挂失：`PUT /api/cards/{cardNo}/loss-report`；取消挂失：`DELETE /api/cards/{cardNo}/loss-report`；注销：`POST /api/cards/{cardNo}/cancellation`

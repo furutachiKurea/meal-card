@@ -42,14 +42,18 @@ func Register(e *echo.Echo, cardH *handler.CardHandler, statsH *handler.Statisti
 
 	api := e.Group("/api")
 
+	// 学籍验证
+	api.GET("/validate-student", cardH.ValidateStudent)
+
 	// 饭卡
 	api.POST("/cards", cardH.IssueCard)
-	api.GET("/cards/:id", cardH.GetCard)
-	api.POST("/cards/:id/deposits", cardH.Deposit)
-	api.POST("/cards/:id/transactions", cardH.CreateTransaction)
-	api.PUT("/cards/:id/loss-report", cardH.ReportLoss)
-	api.DELETE("/cards/:id/loss-report", cardH.CancelLossReport)
-	api.POST("/cards/:id/cancellation", cardH.CancelCard)
+	api.GET("/cards", cardH.GetCardByIDNumber)
+	api.GET("/cards/:cardNo", cardH.GetCard)
+	api.POST("/cards/:cardNo/deposits", cardH.Deposit)
+	api.POST("/cards/:cardNo/transactions", cardH.CreateTransaction)
+	api.PUT("/cards/:cardNo/loss-report", cardH.ReportLoss)
+	api.DELETE("/cards/:cardNo/loss-report", cardH.CancelLossReport)
+	api.POST("/cards/:cardNo/cancellation", cardH.CancelCard)
 
 	// 统计
 	api.GET("/statistics/meal-revenue", statsH.GetMealRevenue)

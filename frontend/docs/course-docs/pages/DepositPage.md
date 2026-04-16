@@ -26,8 +26,8 @@ cardId 变化 → 清空 cardInfo / receipt / error
 ```
 
 ## 接口依赖
-- `GET /api/cards/{id}`（getCard）—— 查询卡信息
-- `POST /api/cards/{id}/deposits`（deposit）
+- `GET /api/cards/{cardNo}`（getCard）—— 按 16 位卡号查询卡信息
+- `POST /api/cards/{cardNo}/deposits`（deposit）
   - 入参：amount（分）
   - 金额处理：显示元，提交前 × 100 转分
 

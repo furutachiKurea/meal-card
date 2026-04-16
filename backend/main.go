@@ -1,6 +1,7 @@
 package main
 
 import (
+	"backend/client"
 	"backend/db"
 	"backend/handler"
 	"backend/repository"
@@ -40,13 +41,16 @@ func main() {
 	cardRepo := repository.NewCardRepository(gormDB)
 	windowRepo := repository.NewWindowRepository(gormDB)
 
+	// 初始化学籍验证客户端
+	studentValidator := client.NewHttpStudentValidator()
+
 	// 初始化 service
-	cardSvc := service.NewCardService(cardRepo, windowRepo)
+	cardSvc := service.NewCardService(cardRepo, windowRepo, studentValidator)
 	statsSvc := service.NewStatisticsService(cardRepo)
 	windowSvc := service.NewWindowService(windowRepo)
 
 	// 初始化 handler
-	cardH := handler.NewCardHandler(cardSvc)
+	cardH := handler.NewCardHandler(cardSvc, studentValidator, cardRepo)
 	statsH := handler.NewStatisticsHandler(statsSvc)
 	windowH := handler.NewWindowHandler(windowSvc)
 

@@ -4,8 +4,8 @@
 - 管理饭卡全生命周期：发卡、存款、就餐消费、挂失、取消挂失、注销
 
 ## 职责边界
-- 负责：业务规则校验、卡状态流转、跨实体协调（卡+持卡人）、业务错误定义
-- 不负责：HTTP 参数解析、数据库 SQL、统计聚合
+- 负责：业务规则校验、卡状态流转、跨实体协调（卡+持卡人）、业务错误定义、调用学籍验证接口
+- 不负责：HTTP 参数解析、数据库 SQL、统计聚合、学籍验证的底层实现
 
 ## 卡状态流转
 
@@ -24,23 +24,27 @@ stateDiagram-v2
 ## IssueCard（发卡）
 
 ### 输入
-- name（姓名）、idNumber（证件号）、deposit（押金，必须 > 0）、preDeposit（预存款，必须 >= 0）
+- idNumber（证件号，12位）、preDeposit（预存款，必须 >= 0）
+- 押金不由调用方传入，系统常量 DEPOSIT_AMOUNT = 2000 分
 
 ### 输出
 - IssueCardResult：新卡、持卡人、可选的旧卡退款信息（OldCardRefund）
 
 ### 核心流程
-1. 参数校验（押金 > 0，预存款 >= 0，姓名/证件号非空）
-2. 按 idNumber 查找持卡人，不存在则创建
-3. 查找该持卡人名下 active 卡 → 存在则返回 CARD_ALREADY_ACTIVE
-4. 查找该持卡人名下 lost 卡 → 存在则自动注销（status=cancelled, balance=0），记录 OldCardRefund
-5. 创建新卡（status=active, balance=preDeposit, deposit=deposit）
+1. 参数校验（预存款 >= 0，证件号非空）
+2. 调用 StudentValidator.Validate(idNumber)，失败返回 STUDENT_NOT_FOUND
+3. 按 idNumber 查找持卡人，不存在则用验证结果中的姓名创建
+4. 查找该持卡人名下 active 卡 → 存在则返回 CARD_ALREADY_ACTIVE
+5. 查找该持卡人名下 lost 卡 → 存在则自动注销（status=cancelled, balance=0），记录 OldCardRefund
+6. 生成 16 位随机数字卡号（card_no），创建新卡（status=active, balance=preDeposit, deposit=DEPOSIT_AMOUNT）
 
 ### 异常处理
+- STUDENT_NOT_FOUND（404）：证件号不在学籍库，拒绝发卡
 - CARD_ALREADY_ACTIVE（409）：同证件号已有有效卡，拒绝重复发卡
 - 若有 lost 卡：不拒绝，自动注销旧卡并附上退款信息
 
 ### 关键实现点
+- 持卡人姓名来自学籍验证结果，不由操作员录入
 - 持卡人以 idNumber 唯一，多次发卡复用同一 CardHolder 记录
 - 旧卡自动注销时 balance 清零，deposit 保留在 OldCardRefund 中返回
 
@@ -49,7 +53,7 @@ stateDiagram-v2
 ## Deposit（存款）
 
 ### 输入
-- cardID、amount（> 0）
+- cardNo（16位卡号）、amount（> 0）
 
 ### 输出
 - DepositResult：存款记录 ID、卡 ID、持卡人姓名、充值金额、充值后余额、时间戳
@@ -71,7 +75,7 @@ stateDiagram-v2
 ## CreateTransaction（就餐消费）
 
 ### 输入
-- cardID、windowID、amount（> 0）
+- cardNo（16位卡号）、windowID、amount（> 0）
 
 ### 输出
 - TransactionResult：消费记录 ID、卡 ID、窗口 ID、消费金额、消费后余额、时间戳
@@ -94,7 +98,7 @@ stateDiagram-v2
 ## ReportLoss（挂失）
 
 ### 输入
-- cardID
+- cardNo（16位卡号，由前端先按证件号查卡后得到）
 
 ### 输出
 - 更新后的 Card 对象
@@ -109,7 +113,7 @@ stateDiagram-v2
 ## CancelLossReport（取消挂失）
 
 ### 输入
-- cardID
+- cardNo（16位卡号，由前端先按证件号查卡后得到）
 
 ### 输出
 - 更新后的 Card 对象
@@ -124,7 +128,7 @@ stateDiagram-v2
 ## CancelCard（注销）
 
 ### 输入
-- cardID
+- cardNo（16位卡号，由前端先按证件号查卡后得到）
 
 ### 输出
 - CancellationResult：卡信息、退还押金、退还余额（注销前）、合计

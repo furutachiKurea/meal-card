@@ -29,7 +29,7 @@
 ## 开发前必读
 
 - 我们这个项目永远也不会进入生产环境，你可以随时进行任何的 break change
-- 我们的这个课设有文档编写的需求，所以你在开发到对应场景时及时使用对应的 skill 去编写对应的文档，但是我们不负责编写课设文档(但是给开发用的文档还是要写的)，只需要在必要时按照 skill 去记录信息就行
+- **我们的这个课设有文档编写的需求，所以你在开发到对应场景时及时使用对应的 skill 去编写对应的文档，但是我们不负责编写课设文档(但是给开发用的文档还是要写的)，只需要在必要时按照 skill 去记录信息就行**（这个必须遵守！！！！！！！！！！！！），backend-module-recorder，database-schema-recorder，frontend-page-recorder，usecase-recorder，bugfix-recorder 确保你在应该调用 skill 的时候调用这几个skill
 - 文档应当放在 @docs/ 中，如果有后端独有或者前端独有的文档，则应当放在对应目录下的 docs 中
 - 所有的 API 必须使用 openai 文档进行约束（yaml），前后端之前严格遵照 oepnapi 文档进行开发，避免对齐失败
 - 如果需要在文档中绘图，必须使用 mermaid
@@ -54,7 +54,7 @@
 
 ## 重要信息
 
-- backend-module-recorder，database-schema-recorder，frontend-page-recorder，usecase-recorder 这几个 skill 只是用于记录必要信息给我们的课设文档，与我们实际的开发没有关联，**你不应该参考任何来自这几个 skill 的文档**（位于：`**/course-docs/` 中）
+- backend-module-recorder，database-schema-recorder，frontend-page-recorder，usecase-recorder，bugfix-recorder 这几个 skill 只是用于记录必要信息给我们的课设文档，与我们实际的开发没有关联，**你不应该参考任何来自这几个 skill 的文档**（位于：`**/course-docs/` 中）
 - Git  提交信息应当使用中文编写，不需要写的太复杂太多
 
 ## 命令

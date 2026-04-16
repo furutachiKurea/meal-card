@@ -1,14 +1,23 @@
 openapi: 3.0.3
 info:
   title: 食堂饭卡管理系统 API
-  description: 食堂饭卡管理系统后端接口契约，前后端严格遵照此文档开发。金额单位统一为分（int64）。
-  version: 1.0.0
+  description: |
+    食堂饭卡管理系统后端接口契约，前后端严格遵照此文档开发。
+
+    **金额单位**：统一为分（int64）。
+    **卡号（cardNo）**：16 位数字字符串，独立于数据库自增 ID，所有接口路径参数均使用 cardNo。
+    **押金**：固定 2000 分（20 元），系统常量，不由前端传入。
+  version: 2.0.0
 
 servers:
   - url: http://localhost:8080
-    description: 开发环境
+    description: 主后端（开发环境）
+  - url: http://localhost:9090
+    description: 学籍验证 Mock 服务（开发环境）
 
 tags:
+  - name: validation
+    description: 学籍验证（调用 Mock 服务）
   - name: cards
     description: 饭卡管理（发卡、查询）
   - name: deposits
@@ -25,19 +34,64 @@ tags:
     description: 窗口管理
 
 paths:
+  # ==================== 学籍验证 ====================
+  /api/validate-student:
+    get:
+      tags: [validation]
+      summary: 校验证件号
+      description: |
+        发卡前调用，后端转发至学籍验证 Mock 服务，验证证件号是否为本校学生或教职工。
+        验证通过后返回姓名和人员类型，前端展示给操作员二次确认后再调发卡接口。
+      operationId: validateStudent
+      parameters:
+        - name: idNumber
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{12}$'
+          description: 证件号，12 位数字
+      responses:
+        "200":
+          description: 证件号有效
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentValidationResult"
+        "404":
+          description: 证件号不存在（非本校人员）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: STUDENT_NOT_FOUND
+                message: 证件号不存在，非本校学生/教职工
+        "502":
+          description: 学籍验证服务不可用
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: STUDENT_SERVICE_ERROR
+                message: 学籍验证服务暂时不可用
+
   # ==================== 发卡 ====================
   /api/cards:
     post:
       tags: [cards]
       summary: 发卡
       description: |
-        操作员录入持卡人信息、押金、预存款，系统创建新卡。
+        操作员二次确认后调用此接口发卡。后端会再次调用学籍验证服务校验证件号。
 
         业务规则：
+        - 证件号必须在学籍验证服务中存在
         - 同一证件号只能持有一张 active 卡，已有 active 卡时返回 409
         - 若该证件号有 lost 状态的卡，系统自动注销旧卡（退还旧卡押金和余额），再创建新卡
-        - 每次发卡都生成新卡号，不重用旧卡号
-        - 押金必须 > 0，预存款 >= 0
+        - 每次发卡都生成新的 16 位数字卡号（card_no），不重用旧卡号
+        - 押金固定 2000 分（20 元），由系统写入，请求体无需传入
+        - 预存款 >= 0
       operationId: issueCard
       requestBody:
         required: true
@@ -53,11 +107,20 @@ paths:
               schema:
                 $ref: "#/components/schemas/IssueCardResponse"
         "400":
-          description: 参数校验失败（缺少必填项、押金 <= 0、预存款 < 0 等）
+          description: 参数校验失败（缺少必填项、预存款 < 0 等）
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "404":
+          description: 证件号不存在（非本校人员）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: STUDENT_NOT_FOUND
+                message: 证件号不存在，非本校学生/教职工
         "409":
           description: 该证件号已有 active 状态的卡
           content:
@@ -68,18 +131,51 @@ paths:
                 code: CARD_ALREADY_ACTIVE
                 message: 该证件号已有正在使用的卡
 
-  # ==================== 查卡 ====================
-  /api/cards/{id}:
     get:
       tags: [cards]
-      summary: 查询卡信息
+      summary: 按证件号查询当前有效卡
       description: |
-        根据卡号查询卡片详情，包含持卡人信息。
-        无论卡片状态如何（active/lost/cancelled）都会返回，前端根据 status 字段判断状态。
-        用于就餐刷卡时的第一步校验（卡号是否存在 + 状态展示）。
+        按证件号（学号/工号）查询该持卡人当前最新的非 cancelled 卡（active 或 lost）。
+        主要用于挂失、注销前的查询展示。
+        若只有已注销的历史卡或无任何卡，返回 404。
+      operationId: getCardByIDNumber
+      parameters:
+        - name: idNumber
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{12}$'
+          description: 证件号，12 位数字
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardDetail"
+        "404":
+          description: 该证件号无有效卡
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: CARD_NOT_FOUND
+                message: 该证件号无有效卡
+
+  # ==================== 查卡 ====================
+  /api/cards/{cardNo}:
+    get:
+      tags: [cards]
+      summary: 按卡号查询卡信息
+      description: |
+        根据 16 位卡号查询卡片详情，包含持卡人信息。
+        无论卡片状态如何（active/lost/cancelled）都会返回，前端根据 status 字段判断。
+        用于就餐刷卡和存款时的查询。
       operationId: getCard
       parameters:
-        - $ref: "#/components/parameters/CardId"
+        - $ref: "#/components/parameters/CardNo"
       responses:
         "200":
           description: 查询成功
@@ -98,7 +194,7 @@ paths:
                 message: 卡号不存在
 
   # ==================== 存款 ====================
-  /api/cards/{id}/deposits:
+  /api/cards/{cardNo}/deposits:
     post:
       tags: [deposits]
       summary: 存款（充值）
@@ -110,7 +206,7 @@ paths:
         - 卡必须为 active 状态
       operationId: deposit
       parameters:
-        - $ref: "#/components/parameters/CardId"
+        - $ref: "#/components/parameters/CardNo"
       requestBody:
         required: true
         content:
@@ -147,7 +243,7 @@ paths:
                 message: 该卡已挂失，无法充值
 
   # ==================== 就餐消费 ====================
-  /api/cards/{id}/transactions:
+  /api/cards/{cardNo}/transactions:
     post:
       tags: [transactions]
       summary: 就餐消费（结算扣款）
@@ -160,10 +256,10 @@ paths:
         3. 卡状态不是 lost
         4. 余额充足
 
-        前端流程：先调用 GET /api/cards/{id} 展示卡信息和余额，再调用此接口结算。
+        前端流程：先调用 GET /api/cards/{cardNo} 展示卡信息和余额，再调用此接口结算。
       operationId: createTransaction
       parameters:
-        - $ref: "#/components/parameters/CardId"
+        - $ref: "#/components/parameters/CardNo"
       requestBody:
         required: true
         content:
@@ -216,16 +312,18 @@ paths:
                     message: 余额不足
 
   # ==================== 挂失 ====================
-  /api/cards/{id}/loss-report:
+  /api/cards/{cardNo}/loss-report:
     put:
       tags: [loss-report]
       summary: 挂失
       description: |
         将 active 状态的卡挂失（状态变为 lost）。
         挂失后在任何窗口刷卡都会被拦截报警。
+
+        前端流程：先调用 GET /api/cards?idNumber=xxx 按证件号找到卡，展示后再调用此接口。
       operationId: reportLoss
       parameters:
-        - $ref: "#/components/parameters/CardId"
+        - $ref: "#/components/parameters/CardNo"
       responses:
         "200":
           description: 挂失成功
@@ -249,15 +347,16 @@ paths:
                 code: CARD_NOT_ACTIVE
                 message: 只有正常使用中的卡可以挂失
 
-    # ==================== 取消挂失 ====================
     delete:
       tags: [loss-report]
       summary: 取消挂失
       description: |
         将 lost 状态的卡恢复为 active。
+
+        前端流程：先调用 GET /api/cards?idNumber=xxx 按证件号找到卡，展示后再调用此接口。
       operationId: cancelLossReport
       parameters:
-        - $ref: "#/components/parameters/CardId"
+        - $ref: "#/components/parameters/CardNo"
       responses:
         "200":
           description: 取消挂失成功
@@ -282,7 +381,7 @@ paths:
                 message: 只有已挂失的卡可以取消挂失
 
   # ==================== 注销 ====================
-  /api/cards/{id}/cancellation:
+  /api/cards/{cardNo}/cancellation:
     post:
       tags: [cancellation]
       summary: 注销
@@ -293,9 +392,11 @@ paths:
         - 卡状态为 active 或 lost 时可注销
         - 已注销的卡不能再注销
         - 注销后余额清零，状态变为 cancelled
+
+        前端流程：先调用 GET /api/cards?idNumber=xxx 按证件号找到卡，展示后再调用此接口。
       operationId: cancelCard
       parameters:
-        - $ref: "#/components/parameters/CardId"
+        - $ref: "#/components/parameters/CardNo"
       responses:
         "200":
           description: 注销成功，返回应退金额
@@ -422,14 +523,14 @@ paths:
                           type: array
                           items:
                             type: object
-                            required: [id, cardId, amount, createdAt]
+                            required: [id, cardNo, amount, createdAt]
                             properties:
                               id:
                                 type: integer
                                 format: int64
-                              cardId:
-                                type: integer
-                                format: int64
+                              cardNo:
+                                type: string
+                                description: 16 位卡号
                               amount:
                                 type: integer
                                 format: int64
@@ -521,7 +622,6 @@ paths:
                     description: 当日消费笔数
                   windows:
                     type: array
-                    description: 按窗口分组的明细
                     items:
                       type: object
                       required: [windowId, windowName, revenue, transactionCount]
@@ -534,10 +634,8 @@ paths:
                         revenue:
                           type: integer
                           format: int64
-                          description: 该窗口当日收入（分）
                         transactionCount:
                           type: integer
-                          description: 该窗口当日消费笔数
 
   /api/statistics/yearly-report:
     get:
@@ -566,13 +664,10 @@ paths:
                   totalRevenue:
                     type: integer
                     format: int64
-                    description: 全年消费总额（分）
                   transactionCount:
                     type: integer
-                    description: 全年消费笔数
                   months:
                     type: array
-                    description: 按月汇总
                     items:
                       type: object
                       required: [month, revenue, transactionCount]
@@ -583,10 +678,8 @@ paths:
                         revenue:
                           type: integer
                           format: int64
-                          description: 当月消费总额（分）
                         transactionCount:
                           type: integer
-                          description: 当月消费笔数
 
   # ==================== 窗口管理 ====================
   /api/windows:
@@ -622,7 +715,6 @@ paths:
               properties:
                 name:
                   type: string
-                  description: 窗口名称
       responses:
         "200":
           description: 创建成功
@@ -631,32 +723,29 @@ paths:
               schema:
                 $ref: "#/components/schemas/Window"
         "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
           description: 参数校验失败
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
         "500":
-          description: 服务端内部错误
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-              example:
-                code: INTERNAL_ERROR
-                message: 服务端内部错误
+          description: 服务端内部错误
 
 # ==================== 组件定义 ====================
 components:
   parameters:
-    CardId:
-      name: id
+    CardNo:
+      name: cardNo
       in: path
       required: true
       schema:
-        type: integer
-        format: int64
-      description: 卡号（即卡的自增 ID）
+        type: string
+        pattern: '^\d{16}$'
+      description: 16 位数字卡号（card_no，非数据库自增 ID）
 
     StartTime:
       name: startTime
@@ -697,10 +786,29 @@ components:
             - INVALID_AMOUNT: 金额无效
             - WINDOW_NOT_FOUND: 窗口不存在
             - VALIDATION_ERROR: 通用校验错误
-            - INTERNAL_ERROR: 服务端内部错误（所有未预期的异常统一返回 500）
+            - STUDENT_NOT_FOUND: 证件号不存在（非本校人员）
+            - STUDENT_SERVICE_ERROR: 学籍验证服务不可用
+            - INTERNAL_ERROR: 服务端内部错误
         message:
           type: string
-          description: 人类可读的错误描述
+
+    # ---------- 学籍验证 ----------
+    StudentValidationResult:
+      type: object
+      required: [valid, idNumber, name, type]
+      properties:
+        valid:
+          type: boolean
+        idNumber:
+          type: string
+          description: 12 位证件号
+        name:
+          type: string
+          description: 姓名
+        type:
+          type: string
+          enum: [student, staff]
+          description: 人员类型（学生/教职工）
 
     # ---------- 基础实体 ----------
     CardHolder:
@@ -710,31 +818,31 @@ components:
         id:
           type: integer
           format: int64
+          description: 内部自增 ID
         name:
           type: string
-          description: 姓名
         idNumber:
           type: string
-          description: 证件号
+          description: 12 位证件号
         createdAt:
           type: string
           format: date-time
 
     Card:
       type: object
-      required: [id, cardHolderId, deposit, balance, status, createdAt, updatedAt]
+      required: [cardNo, cardHolderId, deposit, balance, status, createdAt, updatedAt]
       properties:
-        id:
-          type: integer
-          format: int64
-          description: 卡号（自增 ID）
+        cardNo:
+          type: string
+          pattern: '^\d{16}$'
+          description: 16 位数字卡号（对外唯一标识）
         cardHolderId:
           type: integer
           format: int64
         deposit:
           type: integer
           format: int64
-          description: 押金（分）
+          description: 押金（分），固定 2000
         balance:
           type: integer
           format: int64
@@ -772,19 +880,12 @@ components:
     # ---------- 发卡 ----------
     IssueCardRequest:
       type: object
-      required: [name, idNumber, deposit]
+      required: [idNumber]
       properties:
-        name:
-          type: string
-          description: 持卡人姓名
         idNumber:
           type: string
-          description: 持卡人证件号
-        deposit:
-          type: integer
-          format: int64
-          minimum: 1
-          description: 押金（分），必须大于 0
+          pattern: '^\d{12}$'
+          description: 持卡人证件号，12 位数字
         preDeposit:
           type: integer
           format: int64
@@ -802,13 +903,13 @@ components:
           $ref: "#/components/schemas/CardHolder"
         refund:
           description: 旧卡退款信息（仅当证件号有 lost 卡被自动注销时返回）
+          nullable: true
           type: object
-          required: [oldCardId, deposit, balance, total]
+          required: [oldCardNo, deposit, balance, total]
           properties:
-            oldCardId:
-              type: integer
-              format: int64
-              description: 被注销的旧卡号
+            oldCardNo:
+              type: string
+              description: 被注销的旧卡号（16 位）
             deposit:
               type: integer
               format: int64
@@ -821,7 +922,6 @@ components:
               type: integer
               format: int64
               description: 应退总额（分）= deposit + balance
-          nullable: true
 
     # ---------- 存款 ----------
     DepositRequest:
@@ -837,19 +937,17 @@ components:
     DepositResponse:
       description: 充值成功的收据信息
       type: object
-      required: [id, cardId, holderName, amount, newBalance, createdAt]
+      required: [id, cardNo, holderName, amount, newBalance, createdAt]
       properties:
         id:
           type: integer
           format: int64
           description: 存款记录 ID
-        cardId:
-          type: integer
-          format: int64
-          description: 卡号
+        cardNo:
+          type: string
+          description: 16 位卡号
         holderName:
           type: string
-          description: 持卡人姓名
         amount:
           type: integer
           format: int64
@@ -861,7 +959,6 @@ components:
         createdAt:
           type: string
           format: date-time
-          description: 充值时间
 
     # ---------- 就餐消费 ----------
     TransactionRequest:
@@ -871,7 +968,6 @@ components:
         windowId:
           type: integer
           format: int64
-          description: 窗口 ID
         amount:
           type: integer
           format: int64
@@ -880,26 +976,23 @@ components:
 
     TransactionResponse:
       type: object
-      required: [id, cardId, windowId, amount, newBalance, createdAt]
+      required: [id, cardNo, windowId, amount, newBalance, createdAt]
       properties:
         id:
           type: integer
           format: int64
-          description: 消费记录 ID
-        cardId:
-          type: integer
-          format: int64
+        cardNo:
+          type: string
+          description: 16 位卡号
         windowId:
           type: integer
           format: int64
         amount:
           type: integer
           format: int64
-          description: 消费金额（分）
         newBalance:
           type: integer
           format: int64
-          description: 扣款后余额（分）
         createdAt:
           type: string
           format: date-time

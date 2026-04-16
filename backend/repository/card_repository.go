@@ -59,10 +59,34 @@ func (r *CardRepository) CreateCard(card *model.Card) error {
 	return r.db.Create(card).Error
 }
 
-// FindCardByID 根据卡号查询卡片（含持卡人信息）
+// FindCardByID 根据数据库自增 ID 查询卡片（含持卡人信息）
 func (r *CardRepository) FindCardByID(id uint) (*model.Card, error) {
 	var card model.Card
 	err := r.db.Preload("CardHolder").First(&card, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &card, nil
+}
+
+// FindCardByCardNo 根据 16 位业务卡号查询卡片（含持卡人信息）
+func (r *CardRepository) FindCardByCardNo(cardNo string) (*model.Card, error) {
+	var card model.Card
+	err := r.db.Preload("CardHolder").Where("card_no = ?", cardNo).First(&card).Error
+	if err != nil {
+		return nil, err
+	}
+	return &card, nil
+}
+
+// FindCurrentCardByIDNumber 根据证件号查询该持卡人当前有效卡（active 或 lost），不返回 cancelled 卡
+func (r *CardRepository) FindCurrentCardByIDNumber(idNumber string) (*model.Card, error) {
+	var card model.Card
+	err := r.db.Preload("CardHolder").
+		Joins("JOIN card_holders ON card_holders.id = cards.card_holder_id").
+		Where("card_holders.id_number = ? AND cards.status != ?", idNumber, model.CardStatusCancelled).
+		Order("cards.created_at DESC").
+		First(&card).Error
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +140,7 @@ func (r *CardRepository) SumTransactionsByWindowAndTimeRange(start, end time.Tim
 // DepositDetailItem 存款明细中单条存款信息
 type DepositDetailItem struct {
 	ID        uint
-	CardID    uint
+	CardNo    string
 	Amount    int64
 	CreatedAt time.Time
 }
@@ -135,7 +159,7 @@ func (r *CardRepository) GetDepositDetails(start, end *time.Time) ([]HolderDepos
 	// 先查询满足条件的存款记录（关联 card 和 card_holder）
 	type rawRow struct {
 		ID         uint
-		CardID     uint
+		CardNo     string
 		Amount     int64
 		CreatedAt  time.Time
 		HolderID   uint
@@ -144,7 +168,7 @@ func (r *CardRepository) GetDepositDetails(start, end *time.Time) ([]HolderDepos
 	}
 
 	query := r.db.Model(&model.DepositRecord{}).
-		Select("deposit_records.id, deposit_records.card_id, deposit_records.amount, deposit_records.created_at, card_holders.id as holder_id, card_holders.name as holder_name, card_holders.id_number").
+		Select("deposit_records.id, cards.card_no, deposit_records.amount, deposit_records.created_at, card_holders.id as holder_id, card_holders.name as holder_name, card_holders.id_number").
 		Joins("LEFT JOIN cards ON cards.id = deposit_records.card_id").
 		Joins("LEFT JOIN card_holders ON card_holders.id = cards.card_holder_id")
 
@@ -176,7 +200,7 @@ func (r *CardRepository) GetDepositDetails(start, end *time.Time) ([]HolderDepos
 		h := holderMap[row.HolderID]
 		h.Deposits = append(h.Deposits, DepositDetailItem{
 			ID:        row.ID,
-			CardID:    row.CardID,
+			CardNo:    row.CardNo,
 			Amount:    row.Amount,
 			CreatedAt: row.CreatedAt,
 		})

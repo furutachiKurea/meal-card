@@ -71,7 +71,7 @@ type DepositDetailHolder struct {
 // DepositDetailEntry 单条存款记录
 type DepositDetailEntry struct {
 	ID        int64
-	CardID    int64
+	CardNo    string
 	Amount    int64
 	CreatedAt time.Time
 }
@@ -94,7 +94,7 @@ func (s *StatisticsService) GetDepositDetails(start, end *time.Time) (*DepositDe
 		for _, dep := range d.Deposits {
 			entries = append(entries, DepositDetailEntry{
 				ID:        int64(dep.ID),
-				CardID:    int64(dep.CardID),
+				CardNo:    dep.CardNo,
 				Amount:    dep.Amount,
 				CreatedAt: dep.CreatedAt,
 			})

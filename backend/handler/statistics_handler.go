@@ -105,7 +105,7 @@ func (h *StatisticsHandler) GetDepositDetails(c echo.Context) error {
 		for _, d := range h.Deposits {
 			deposits = append(deposits, map[string]any{
 				"id":        d.ID,
-				"cardId":    d.CardID,
+				"cardNo":    d.CardNo,
 				"amount":    d.Amount,
 				"createdAt": d.CreatedAt.Format(time.RFC3339),
 			})
