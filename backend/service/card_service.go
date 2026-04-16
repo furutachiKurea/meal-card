@@ -120,7 +120,7 @@ func generateCardNo() string {
 //  4. 无任何卡 → 直接创建，押金固定 2000 分
 func (s *CardService) IssueCard(idNumber string, preDeposit int64) (*IssueCardResult, error) {
 	if preDeposit < 0 {
-		log.Warn().Str("code", ErrCodeInvalidAmount).Str("msg", "预存款不能为负数").Msg("业务错误")
+		log.Error().Str("code", ErrCodeInvalidAmount).Str("msg", "预存款不能为负数").Msg("业务错误")
 		return nil, newBizError(ErrCodeInvalidAmount, "预存款不能为负数")
 	}
 
@@ -155,7 +155,7 @@ func (s *CardService) IssueCard(idNumber string, preDeposit int64) (*IssueCardRe
 		return nil, err
 	}
 	if activeCard != nil {
-		log.Warn().Str("code", ErrCodeCardAlreadyActive).Str("idNumber", idNumber).Msg("业务错误")
+		log.Error().Str("code", ErrCodeCardAlreadyActive).Str("idNumber", idNumber).Msg("业务错误")
 		return nil, newBizError(ErrCodeCardAlreadyActive, "该证件号已有正在使用的卡")
 	}
 
@@ -220,7 +220,7 @@ func (s *CardService) GetCard(cardNo string) (*model.Card, error) {
 	card, err := s.cardRepo.FindCardByCardNo(cardNo)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Warn().Str("code", ErrCodeCardNotFound).Str("cardNo", cardNo).Msg("业务错误")
+			log.Error().Str("code", ErrCodeCardNotFound).Str("cardNo", cardNo).Msg("业务错误")
 			return nil, newBizError(ErrCodeCardNotFound, "卡号不存在")
 		}
 		log.Error().Err(err).Str("cardNo", cardNo).Msg("查询卡失败")
@@ -232,14 +232,14 @@ func (s *CardService) GetCard(cardNo string) (*model.Card, error) {
 // Deposit 存款（充值）
 func (s *CardService) Deposit(cardNo string, amount int64) (*DepositResult, error) {
 	if amount <= 0 {
-		log.Warn().Str("code", ErrCodeInvalidAmount).Str("cardNo", cardNo).Msg("业务错误")
+		log.Error().Str("code", ErrCodeInvalidAmount).Str("cardNo", cardNo).Msg("业务错误")
 		return nil, newBizError(ErrCodeInvalidAmount, "充值金额必须大于 0")
 	}
 
 	card, err := s.cardRepo.FindCardByCardNo(cardNo)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Warn().Str("code", ErrCodeCardNotFound).Str("cardNo", cardNo).Msg("业务错误")
+			log.Error().Str("code", ErrCodeCardNotFound).Str("cardNo", cardNo).Msg("业务错误")
 			return nil, newBizError(ErrCodeCardNotFound, "卡号不存在")
 		}
 		log.Error().Err(err).Str("cardNo", cardNo).Msg("查询卡失败")
@@ -248,10 +248,10 @@ func (s *CardService) Deposit(cardNo string, amount int64) (*DepositResult, erro
 
 	if card.Status != model.CardStatusActive {
 		if card.Status == model.CardStatusLost {
-			log.Warn().Str("code", ErrCodeCardNotActive).Str("cardNo", cardNo).Msg("业务错误")
+			log.Error().Str("code", ErrCodeCardNotActive).Str("cardNo", cardNo).Msg("业务错误")
 			return nil, newBizError(ErrCodeCardNotActive, "该卡已挂失，无法充值")
 		}
-		log.Warn().Str("code", ErrCodeCardNotActive).Str("cardNo", cardNo).Msg("业务错误")
+		log.Error().Str("code", ErrCodeCardNotActive).Str("cardNo", cardNo).Msg("业务错误")
 		return nil, newBizError(ErrCodeCardNotActive, "该卡已注销，无法充值")
 	}
 
@@ -284,14 +284,14 @@ func (s *CardService) Deposit(cardNo string, amount int64) (*DepositResult, erro
 // 三重校验：卡存在 → 非 cancelled → 非 lost → 余额充足
 func (s *CardService) CreateTransaction(cardNo string, windowID uint, amount int64) (*TransactionResult, error) {
 	if amount <= 0 {
-		log.Warn().Str("code", ErrCodeInvalidAmount).Str("cardNo", cardNo).Msg("业务错误")
+		log.Error().Str("code", ErrCodeInvalidAmount).Str("cardNo", cardNo).Msg("业务错误")
 		return nil, newBizError(ErrCodeInvalidAmount, "消费金额必须大于 0")
 	}
 
 	card, err := s.cardRepo.FindCardByCardNo(cardNo)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Warn().Str("code", ErrCodeCardNotFound).Str("cardNo", cardNo).Msg("业务错误")
+			log.Error().Str("code", ErrCodeCardNotFound).Str("cardNo", cardNo).Msg("业务错误")
 			return nil, newBizError(ErrCodeCardNotFound, "此卡非本单位所发")
 		}
 		log.Error().Err(err).Str("cardNo", cardNo).Msg("查询卡失败")
@@ -299,16 +299,16 @@ func (s *CardService) CreateTransaction(cardNo string, windowID uint, amount int
 	}
 
 	if card.Status == model.CardStatusCancelled {
-		log.Warn().Str("code", ErrCodeCardCancelled).Str("cardNo", cardNo).Msg("业务错误")
+		log.Error().Str("code", ErrCodeCardCancelled).Str("cardNo", cardNo).Msg("业务错误")
 		return nil, newBizError(ErrCodeCardCancelled, "此卡已注销")
 	}
 	if card.Status == model.CardStatusLost {
-		log.Warn().Str("code", ErrCodeCardLost).Str("cardNo", cardNo).Msg("业务错误")
+		log.Error().Str("code", ErrCodeCardLost).Str("cardNo", cardNo).Msg("业务错误")
 		return nil, newBizError(ErrCodeCardLost, "此卡已挂失")
 	}
 
 	if card.Balance < amount {
-		log.Warn().Str("code", ErrCodeInsufficientBalance).Str("cardNo", cardNo).Int64("balance", card.Balance).Int64("amount", amount).Msg("业务错误")
+		log.Error().Str("code", ErrCodeInsufficientBalance).Str("cardNo", cardNo).Int64("balance", card.Balance).Int64("amount", amount).Msg("业务错误")
 		return nil, newBizError(ErrCodeInsufficientBalance, "余额不足")
 	}
 
@@ -316,7 +316,7 @@ func (s *CardService) CreateTransaction(cardNo string, windowID uint, amount int
 	_, err = s.windowRepo.FindWindowByID(windowID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Warn().Str("code", ErrCodeWindowNotFound).Uint("windowID", windowID).Msg("业务错误")
+			log.Error().Str("code", ErrCodeWindowNotFound).Uint("windowID", windowID).Msg("业务错误")
 			return nil, newBizError(ErrCodeWindowNotFound, "窗口不存在")
 		}
 		log.Error().Err(err).Uint("windowID", windowID).Msg("查询窗口失败")
@@ -354,7 +354,7 @@ func (s *CardService) ReportLoss(cardNo string) (*model.Card, error) {
 	card, err := s.cardRepo.FindCardByCardNo(cardNo)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Warn().Str("code", ErrCodeCardNotFound).Str("cardNo", cardNo).Msg("业务错误")
+			log.Error().Str("code", ErrCodeCardNotFound).Str("cardNo", cardNo).Msg("业务错误")
 			return nil, newBizError(ErrCodeCardNotFound, "卡号不存在")
 		}
 		log.Error().Err(err).Str("cardNo", cardNo).Msg("查询卡失败")
@@ -362,7 +362,7 @@ func (s *CardService) ReportLoss(cardNo string) (*model.Card, error) {
 	}
 
 	if card.Status != model.CardStatusActive {
-		log.Warn().Str("code", ErrCodeCardNotActive).Str("cardNo", cardNo).Msg("业务错误")
+		log.Error().Str("code", ErrCodeCardNotActive).Str("cardNo", cardNo).Msg("业务错误")
 		return nil, newBizError(ErrCodeCardNotActive, "只有正常使用中的卡可以挂失")
 	}
 
@@ -380,7 +380,7 @@ func (s *CardService) CancelLossReport(cardNo string) (*model.Card, error) {
 	card, err := s.cardRepo.FindCardByCardNo(cardNo)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Warn().Str("code", ErrCodeCardNotFound).Str("cardNo", cardNo).Msg("业务错误")
+			log.Error().Str("code", ErrCodeCardNotFound).Str("cardNo", cardNo).Msg("业务错误")
 			return nil, newBizError(ErrCodeCardNotFound, "卡号不存在")
 		}
 		log.Error().Err(err).Str("cardNo", cardNo).Msg("查询卡失败")
@@ -388,7 +388,7 @@ func (s *CardService) CancelLossReport(cardNo string) (*model.Card, error) {
 	}
 
 	if card.Status != model.CardStatusLost {
-		log.Warn().Str("code", ErrCodeCardNotLost).Str("cardNo", cardNo).Msg("业务错误")
+		log.Error().Str("code", ErrCodeCardNotLost).Str("cardNo", cardNo).Msg("业务错误")
 		return nil, newBizError(ErrCodeCardNotLost, "只有已挂失的卡可以取消挂失")
 	}
 
@@ -406,7 +406,7 @@ func (s *CardService) CancelCard(cardNo string) (*CancellationResult, error) {
 	card, err := s.cardRepo.FindCardByCardNo(cardNo)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Warn().Str("code", ErrCodeCardNotFound).Str("cardNo", cardNo).Msg("业务错误")
+			log.Error().Str("code", ErrCodeCardNotFound).Str("cardNo", cardNo).Msg("业务错误")
 			return nil, newBizError(ErrCodeCardNotFound, "卡号不存在")
 		}
 		log.Error().Err(err).Str("cardNo", cardNo).Msg("查询卡失败")
@@ -414,7 +414,7 @@ func (s *CardService) CancelCard(cardNo string) (*CancellationResult, error) {
 	}
 
 	if card.Status == model.CardStatusCancelled {
-		log.Warn().Str("code", ErrCodeCardAlreadyCancelled).Str("cardNo", cardNo).Msg("业务错误")
+		log.Error().Str("code", ErrCodeCardAlreadyCancelled).Str("cardNo", cardNo).Msg("业务错误")
 		return nil, newBizError(ErrCodeCardAlreadyCancelled, "该卡已注销")
 	}
 
