@@ -5,6 +5,7 @@ import {
   getMealRevenue,
   getWindowRevenue,
   getDepositDetails,
+  getHolderDeposits,
   getDepositSummary,
   getActiveBalance,
   getDailyReport,
@@ -31,7 +32,9 @@ export default function StatisticsPage() {
   const [depositRange, setDepositRange] = useState(null)
   const [depositDetails, setDepositDetails] = useState(null)
   const [depositPage, setDepositPage] = useState(1)
-  const depositPageSize = 5
+  const [holderPageSize, setHolderPageSize] = useState(10)
+  // { [holderId]: { deposits, total, page, pageSize } }
+  const [depositRecordsData, setDepositRecordsData] = useState({})
 
   // 本日/本月存款
   const [depositSummary, setDepositSummary] = useState(null)
@@ -60,6 +63,25 @@ export default function StatisticsPage() {
     } finally {
       setLoading(l => ({ ...l, [key]: false }))
     }
+  }
+
+  // 加载一批持卡人的第 1 页存款记录，返回 recordsMap
+  async function loadHolderDeposits(holders, pageSize, range) {
+    const recordsMap = {}
+    await Promise.all(holders.map(async h => {
+      try {
+        const rParams = { holderId: h.holderId, page: 1, pageSize }
+        if (range) {
+          rParams.startTime = range[0].toISOString()
+          rParams.endTime = range[1].toISOString()
+        }
+        const r = await getHolderDeposits(rParams)
+        recordsMap[h.holderId] = { deposits: r.deposits || [], total: r.total, page: 1, pageSize }
+      } catch {
+        recordsMap[h.holderId] = { deposits: [], total: 0, page: 1, pageSize }
+      }
+    }))
+    return recordsMap
   }
 
   const windowRevenueColumns = [
@@ -155,7 +177,7 @@ export default function StatisticsPage() {
                 rowKey="windowId"
                 dataSource={windowRevenue.windows || []}
                 columns={windowRevenueColumns}
-                pagination={{ pageSize: 10 }}
+                pagination={{ showSizeChanger: true, defaultPageSize: 10 }}
               />
             )}
           </Card>
@@ -175,14 +197,17 @@ export default function StatisticsPage() {
                 loading={loading.depositDetails}
                 onClick={() => {
                   setDepositPage(1)
+                  setDepositRecordsData({})
                   wrap('depositDetails', async () => {
-                    const params = { page: 1, pageSize: depositPageSize }
+                    const params = { page: 1, pageSize: holderPageSize }
                     if (depositRange) {
                       params.startTime = depositRange[0].toISOString()
                       params.endTime = depositRange[1].toISOString()
                     }
                     const res = await getDepositDetails(params)
                     setDepositDetails(res)
+                    const recordsMap = await loadHolderDeposits(res.holders || [], 10, depositRange)
+                    setDepositRecordsData(recordsMap)
                   })
                 }}
               >
@@ -192,40 +217,70 @@ export default function StatisticsPage() {
             {errors.depositDetails && <Alert type="error" message={errors.depositDetails} style={{ marginTop: 8 }} showIcon />}
             {depositDetails && (
               <>
-                {(depositDetails.holders || []).map(h => (
-                  <Card
-                    key={h.holderId}
-                    size="small"
-                    style={{ marginTop: 8 }}
-                    title={`${h.holderName}（${h.idNumber}）— 合计：${formatYuan(h.totalAmount)}`}
-                  >
-                    <Table
+                {(depositDetails.holders || []).map(h => {
+                  const rec = depositRecordsData[h.holderId] || { deposits: [], total: 0, page: 1, pageSize: 10 }
+                  return (
+                    <Card
+                      key={h.holderId}
                       size="small"
-                      rowKey="id"
-                      dataSource={h.deposits || []}
-                      columns={depositDetailColumns}
-                      pagination={{ pageSize: 10 }}
-                    />
-                  </Card>
-                ))}
+                      style={{ marginTop: 8 }}
+                      title={`${h.holderName}（${h.idNumber}）— 合计：${formatYuan(h.totalAmount)}`}
+                    >
+                      <Table
+                        size="small"
+                        rowKey="id"
+                        dataSource={rec.deposits}
+                        columns={depositDetailColumns}
+                        pagination={{
+                          current: rec.page,
+                          total: rec.total,
+                          pageSize: rec.pageSize,
+                          showSizeChanger: true,
+                          pageSizeOptions: [5, 10, 20, 50],
+                          onChange: async (page, size) => {
+                            try {
+                              const rParams = { holderId: h.holderId, page, pageSize: size }
+                              if (depositRange) {
+                                rParams.startTime = depositRange[0].toISOString()
+                                rParams.endTime = depositRange[1].toISOString()
+                              }
+                              const r = await getHolderDeposits(rParams)
+                              setDepositRecordsData(prev => ({
+                                ...prev,
+                                [h.holderId]: { deposits: r.deposits || [], total: r.total, page, pageSize: size },
+                              }))
+                            } catch {
+                              // 翻页失败保持原数据
+                            }
+                          },
+                        }}
+                      />
+                    </Card>
+                  )
+                })}
                 {depositDetails.total > 0 && (
                   <div style={{ marginTop: 12, textAlign: 'right' }}>
                     <Pagination
                       total={depositDetails.total}
                       current={depositPage}
-                      pageSize={depositPageSize}
-                      showSizeChanger={false}
+                      pageSize={holderPageSize}
+                      showSizeChanger
+                      pageSizeOptions={[5, 10, 20, 50]}
                       showTotal={total => `共 ${total} 位持卡人`}
-                      onChange={(page) => {
+                      onChange={(page, size) => {
                         setDepositPage(page)
+                        if (size !== holderPageSize) setHolderPageSize(size)
+                        setDepositRecordsData({})
                         wrap('depositDetails', async () => {
-                          const params = { page, pageSize: depositPageSize }
+                          const params = { page, pageSize: size }
                           if (depositRange) {
                             params.startTime = depositRange[0].toISOString()
                             params.endTime = depositRange[1].toISOString()
                           }
                           const res = await getDepositDetails(params)
                           setDepositDetails(res)
+                          const recordsMap = await loadHolderDeposits(res.holders || [], 10, depositRange)
+                          setDepositRecordsData(recordsMap)
                         })
                       }}
                     />
@@ -311,7 +366,7 @@ export default function StatisticsPage() {
                   rowKey="windowId"
                   dataSource={dailyReport.windows || []}
                   columns={dailyReportColumns}
-                  pagination={{ pageSize: 10 }}
+                  pagination={{ showSizeChanger: true, defaultPageSize: 10 }}
                 />
               </>
             )}
@@ -354,7 +409,7 @@ export default function StatisticsPage() {
                   rowKey="month"
                   dataSource={yearlyReport.months || []}
                   columns={yearlyReportColumns}
-                  pagination={{ pageSize: 10 }}
+                  pagination={{ showSizeChanger: true, defaultPageSize: 10 }}
                 />
               </>
             )}

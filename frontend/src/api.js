@@ -105,6 +105,18 @@ export function getDepositDetails({ startTime, endTime, page, pageSize } = {}) {
   return request(`/api/statistics/deposit-details${qs ? '?' + qs : ''}`)
 }
 
+/** 单个持卡人存款记录（分页） GET /api/statistics/holder-deposits */
+export function getHolderDeposits({ holderId, page, pageSize, startTime, endTime } = {}) {
+  const params = new URLSearchParams()
+  if (holderId != null) params.set('holderId', holderId)
+  if (page != null) params.set('page', page)
+  if (pageSize != null) params.set('pageSize', pageSize)
+  if (startTime) params.set('startTime', startTime)
+  if (endTime) params.set('endTime', endTime)
+  const qs = params.toString()
+  return request(`/api/statistics/holder-deposits${qs ? '?' + qs : ''}`)
+}
+
 /** 本日/本月存款金额 GET /api/statistics/deposit-summary */
 export function getDepositSummary() {
   return request('/api/statistics/deposit-summary')

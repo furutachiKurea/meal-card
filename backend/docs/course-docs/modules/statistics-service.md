@@ -51,7 +51,15 @@
 - 输出：year、totalRevenue、transactionCount、months 列表（1~12 月，含 revenue 和 transactionCount）
 - 口径：SQLite `strftime('%Y', created_at) = year`，按月份（`strftime('%m')`）分组，只返回有数据的月份
 
+### 8. GetHolderDeposits（单个持卡人存款明细，支持分页）
+- 输入：holderID（uint，必填）；startTime、endTime（ISO 8601，可选）；page（默认 1）、pageSize（默认 10）
+- 输出：HolderDepositsResult，含 holderID、holderName、idNumber、deposits 列表、total、page、pageSize
+- 口径：按指定 holderID 在 deposit_records 表中查询，可选时间范围过滤；分页单位为「存款记录」
+- 分页实现：Repository 层先 COUNT 总数，再 LIMIT/OFFSET 取当页记录
+- 注：先通过 `FindCardHolderByID` 获取持卡人信息，若不存在返回 HOLDER_NOT_FOUND 错误
+
 ## 异常处理
+- holderID 对应的持卡人不存在：HOLDER_NOT_FOUND（404）
 - date 格式非 YYYY-MM-DD：VALIDATION_ERROR（400）
 - year <= 0：VALIDATION_ERROR（400）
 - startTime/endTime 格式非 ISO 8601：VALIDATION_ERROR（400）

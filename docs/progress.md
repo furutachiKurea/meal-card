@@ -22,6 +22,9 @@
 - 统计页外层持卡人分页改为 Ant Design Pagination 组件（常驻）
 - 修复就餐页消费金额输入框黑色背景/文字颜色（Task #8 完成）
 - 后端 zerolog 日志策略：在错误最初产生的 service 层打印一次，handler 层不重复打
+- 新增 `GET /api/statistics/holder-deposits` 接口（服务端分页，单个持卡人存款明细）
+- 统计页内层存款记录改为服务端分页，外层持卡人分页改为 Ant Design Pagination
+- 统计页所有分页加 `showSizeChanger`，用户可在页面上自由切换每页条数
 
 ## 进行中
 
@@ -40,6 +43,25 @@
 前后端联调，启动后端服务后通过前端页面进行功能验收。
 
 ## 变更记录
+
+### 2026-04-16 第 17 轮：holder-deposits 接口 + 统计页分页 showSizeChanger
+
+修改文件：
+- `backend/repository/card_repository.go` — 新增 `GetHolderDeposits`，支持 holderID、可选时间范围、LIMIT/OFFSET 分页
+- `backend/service/statistics_service.go` — 新增 `HolderDepositsResult` 和 `GetHolderDeposits` 方法
+- `backend/handler/statistics_handler.go` — 新增 `GetHolderDeposits` handler，解析 holderId/page/pageSize/startTime/endTime
+- `backend/router/router.go` — 注册 `GET /api/statistics/holder-deposits`
+- `backend/service/statistics_service_test.go` — 新增 GetHolderDeposits 单测
+- `frontend/src/api.js` — 新增 `getHolderDeposits`
+- `frontend/src/pages/StatisticsPage.jsx` — 内层存款改为服务端分页；外层持卡人改用 Ant Design Pagination；所有分页加 `showSizeChanger`（选项 5/10/20/50），用户可在页面实时切换每页条数；内层每个持卡人独立保存自己的 `pageSize`
+- `docs/course-docs/usecases/statistics.md` — 新增汇总统计全部功能的 use case 文档
+- `backend/docs/course-docs/modules/statistics-service.md` — 补充第 8 项 GetHolderDeposits 说明
+
+测试结果：go test ./... 全部通过；pnpm build 无报错
+
+关键决策：
+- 内层存款记录 pageSize 按持卡人独立存储（depositRecordsData[holderId].pageSize），切换某人分页大小不影响其他人
+- 简单表格（窗口收入、日/年报明细）用客户端分页 + showSizeChanger，无需额外状态
 
 ### 2026-04-16 第 16 轮：zerolog 日志策略调整 + 前端 bug 修复
 
