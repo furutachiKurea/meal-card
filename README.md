@@ -6,11 +6,16 @@
 
 ```bash
 # 后端（监听 :8080）
-cd backend && go run main.go
+make dev-backend
 
 # 前端（监听 :5173）
-cd frontend && pnpm install && pnpm dev
+make dev-frontend
+
+# 运行后端单测
+make test
 ```
+
+分两个终端分别运行 `dev-backend` 和 `dev-frontend`。
 
 ## 测试账号
 
