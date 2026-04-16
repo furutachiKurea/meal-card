@@ -17,6 +17,7 @@
 - 前端全量适配 cardNo（Task #2 完成）
 - 修复发卡预存款不生成 DepositRecord（Task #10 完成）
 - deposit-details 接口后端分页支持（Task #13 完成）
+- 存款明细持卡人分页改为服务端分页（Task #14 完成）
 
 ## 进行中
 
