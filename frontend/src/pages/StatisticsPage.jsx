@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Alert, Card, Typography, Table, DatePicker, InputNumber, Space, Descriptions, Row, Col } from 'antd'
+import { Button, Alert, Card, Typography, Table, DatePicker, InputNumber, Space, Descriptions, Row, Col, Pagination } from 'antd'
 import dayjs from 'dayjs'
 import {
   getMealRevenue,
@@ -208,35 +208,27 @@ export default function StatisticsPage() {
                     />
                   </Card>
                 ))}
-                {depositDetails.total > depositPageSize && (
+                {depositDetails.total > 0 && (
                   <div style={{ marginTop: 12, textAlign: 'right' }}>
-                    <Button.Group>
-                      {Array.from({ length: Math.ceil(depositDetails.total / depositPageSize) }, (_, i) => i + 1).map(p => (
-                        <Button
-                          key={p}
-                          size="small"
-                          type={p === depositPage ? 'primary' : 'default'}
-                          loading={loading.depositDetails && p === depositPage}
-                          onClick={() => {
-                            setDepositPage(p)
-                            wrap('depositDetails', async () => {
-                              const params = { page: p, pageSize: depositPageSize }
-                              if (depositRange) {
-                                params.startTime = depositRange[0].toISOString()
-                                params.endTime = depositRange[1].toISOString()
-                              }
-                              const res = await getDepositDetails(params)
-                              setDepositDetails(res)
-                            })
-                          }}
-                        >
-                          {p}
-                        </Button>
-                      ))}
-                    </Button.Group>
-                    <span style={{ marginLeft: 8, fontSize: 13, color: '#666' }}>
-                      共 {depositDetails.total} 位持卡人
-                    </span>
+                    <Pagination
+                      total={depositDetails.total}
+                      current={depositPage}
+                      pageSize={depositPageSize}
+                      showSizeChanger={false}
+                      showTotal={total => `共 ${total} 位持卡人`}
+                      onChange={(page) => {
+                        setDepositPage(page)
+                        wrap('depositDetails', async () => {
+                          const params = { page, pageSize: depositPageSize }
+                          if (depositRange) {
+                            params.startTime = depositRange[0].toISOString()
+                            params.endTime = depositRange[1].toISOString()
+                          }
+                          const res = await getDepositDetails(params)
+                          setDepositDetails(res)
+                        })
+                      }}
+                    />
                   </div>
                 )}
               </>

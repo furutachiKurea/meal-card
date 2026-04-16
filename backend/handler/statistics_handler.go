@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/rs/zerolog/log"
 )
 
 // StatisticsHandler 统计相关 HTTP 处理
@@ -46,7 +45,6 @@ func (h *StatisticsHandler) GetMealRevenue(c echo.Context) error {
 	if err != nil {
 		return handleError(c, err)
 	}
-	log.Info().Str("path", "GET /api/statistics/meal-revenue").Str("startTime", c.QueryParam("startTime")).Str("endTime", c.QueryParam("endTime")).Msg("查询本餐售饭总收入")
 
 	result, err := h.statsSvc.GetMealRevenue(*start, *end)
 	if err != nil {
@@ -68,7 +66,6 @@ func (h *StatisticsHandler) GetWindowRevenue(c echo.Context) error {
 	if err != nil {
 		return handleError(c, err)
 	}
-	log.Info().Str("path", "GET /api/statistics/window-revenue").Str("startTime", c.QueryParam("startTime")).Str("endTime", c.QueryParam("endTime")).Msg("查询各窗口收入")
 
 	result, err := h.statsSvc.GetWindowRevenue(*start, *end)
 	if err != nil {
@@ -109,7 +106,6 @@ func (h *StatisticsHandler) GetDepositDetails(c echo.Context) error {
 			pageSize = v
 		}
 	}
-	log.Info().Str("path", "GET /api/statistics/deposit-details").Int("page", page).Int("pageSize", pageSize).Msg("查询存款明细")
 
 	result, err := h.statsSvc.GetDepositDetails(start, end, page, pageSize)
 	if err != nil {
@@ -145,7 +141,6 @@ func (h *StatisticsHandler) GetDepositDetails(c echo.Context) error {
 
 // GetDepositSummary GET /api/statistics/deposit-summary 本日/本月存款金额
 func (h *StatisticsHandler) GetDepositSummary(c echo.Context) error {
-	log.Info().Str("path", "GET /api/statistics/deposit-summary").Msg("查询本日/本月存款金额")
 	result, err := h.statsSvc.GetDepositSummary()
 	if err != nil {
 		return handleError(c, err)
@@ -159,7 +154,6 @@ func (h *StatisticsHandler) GetDepositSummary(c echo.Context) error {
 
 // GetActiveBalance GET /api/statistics/active-balance 卡中流动资金总额
 func (h *StatisticsHandler) GetActiveBalance(c echo.Context) error {
-	log.Info().Str("path", "GET /api/statistics/active-balance").Msg("查询流动资金总额")
 	result, err := h.statsSvc.GetActiveBalance()
 	if err != nil {
 		return handleError(c, err)
@@ -176,7 +170,6 @@ func (h *StatisticsHandler) GetDailyReport(c echo.Context) error {
 	if date == "" {
 		return c.JSON(http.StatusBadRequest, errorResponse{Code: "VALIDATION_ERROR", Message: "缺少必填参数: date"})
 	}
-	log.Info().Str("path", "GET /api/statistics/daily-report").Str("date", date).Msg("查询日餐报表")
 
 	result, err := h.statsSvc.GetDailyReport(date)
 	if err != nil {
@@ -211,7 +204,6 @@ func (h *StatisticsHandler) GetYearlyReport(c echo.Context) error {
 	if err != nil || year <= 0 {
 		return c.JSON(http.StatusBadRequest, errorResponse{Code: "VALIDATION_ERROR", Message: "year 参数无效"})
 	}
-	log.Info().Str("path", "GET /api/statistics/yearly-report").Int("year", year).Msg("查询年餐报表")
 
 	result, err := h.statsSvc.GetYearlyReport(year)
 	if err != nil {

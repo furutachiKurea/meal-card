@@ -97,6 +97,7 @@ export default function MealPage() {
         flexDirection: 'column',
       }}
     >
+      <style>{'.meal-amount-input .ant-input-number-input { color: #e8f4fd !important; background: #061020 !important; }'}</style>
       {/* 顶栏 */}
       <div
         style={{
@@ -275,6 +276,7 @@ export default function MealPage() {
                       precision={2}
                       placeholder="0.00"
                       size="large"
+                      className="meal-amount-input"
                       style={{
                         width: '100%',
                         fontSize: 28,
@@ -282,12 +284,6 @@ export default function MealPage() {
                         background: '#061020',
                         borderColor: '#1a3a6b',
                         color: '#e8f4fd',
-                      }}
-                      styles={{
-                        input: {
-                          background: '#061020',
-                          color: '#e8f4fd',
-                        },
                       }}
                       autoFocus
                     />

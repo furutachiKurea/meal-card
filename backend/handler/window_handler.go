@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/rs/zerolog/log"
 )
 
 // WindowHandler 窗口管理 HTTP 处理
@@ -49,7 +48,6 @@ func (h *WindowHandler) CreateWindow(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, errorResponse{Code: "VALIDATION_ERROR", Message: "请求体格式错误"})
 	}
-	log.Info().Str("path", "POST /api/windows").Str("name", req.Name).Msg("创建窗口请求")
 
 	w, err := h.windowSvc.CreateWindow(req.Name)
 	if err != nil {

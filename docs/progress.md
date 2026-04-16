@@ -18,6 +18,10 @@
 - 修复发卡预存款不生成 DepositRecord（Task #10 完成）
 - deposit-details 接口后端分页支持（Task #13 完成）
 - 存款明细持卡人分页改为服务端分页（Task #14 完成）
+- 统计页所有表格加分页，分页条常驻显示（Task #9/#15 完成）
+- 统计页外层持卡人分页改为 Ant Design Pagination 组件（常驻）
+- 修复就餐页消费金额输入框黑色背景/文字颜色（Task #8 完成）
+- 后端 zerolog 日志策略：在错误最初产生的 service 层打印一次，handler 层不重复打
 
 ## 进行中
 
@@ -37,7 +41,24 @@
 
 ## 变更记录
 
-### 2026-04-16 第 15 轮：deposit-details 接口后端分页支持
+### 2026-04-16 第 16 轮：zerolog 日志策略调整 + 前端 bug 修复
+
+修改文件：
+- `backend/service/card_service.go` — 删除 log.Info() 成功日志；在 newBizError() 调用点统一加 log.Warn()，在数据库等底层错误处加 log.Error()；日志在错误源头打印一次
+- `backend/handler/card_handler.go` — 删除所有 log.Info()；handleError 不打日志（service 层已打）；去掉 zerolog import
+- `backend/handler/statistics_handler.go` — 删除所有 log.Info()，去掉 zerolog import
+- `backend/handler/window_handler.go` — 删除 log.Info()，去掉 zerolog import
+- `frontend/src/pages/MealPage.jsx` — 消费金额 InputNumber 改用内联 `<style>` + `className` 方案覆盖 Ant Design CSS 变量（`styles.input.color` 因 CSS 变量优先级问题无效）
+- `frontend/src/pages/StatisticsPage.jsx` — 外层持卡人分页由 Button.Group 替换为 Ant Design `<Pagination>` 组件，total > 0 时常驻显示
+- `frontend/docs/bugfixes/meal-inputnumber-black-background.md` — 补充说明第一次方案无效原因及最终方案
+
+测试结果：go build ./... + go test ./... 全部通过；pnpm build 无报错
+
+关键决策：
+- 日志打在错误最初产生的 service 层，handler 层只做 HTTP 响应映射，避免同一错误重复打印
+- Ant Design v5 InputNumber 文字颜色受 CSS 变量控制，`styles.input.color` 优先级不足，需用 CSS className + `!important` 覆盖
+
+
 
 修改文件：
 - `backend/repository/card_repository.go` — GetDepositDetails 新增 page/pageSize 参数，改为返回 (holders, total, err)；先 DISTINCT COUNT 统计持卡人总数，再 GROUP BY + LIMIT/OFFSET 分页取持卡人 ID，最后 IN 查询本页全量存款明细
