@@ -1,0 +1,1909 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>食堂饭卡管理系统 — 代码解密课程</title>
+
+  <!-- Google Fonts: Bricolage Grotesque · DM Sans · JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    :root {
+      --color-accent:       #2A7B9B;
+      --color-accent-hover: #1F6280;
+      --color-accent-light: #E4F2F7;
+      --color-accent-muted: #5A9DB8;
+    }
+  </style>
+
+  <script src="main.js" defer></script>
+</head>
+<body>
+
+  <nav class="nav" id="nav">
+    <div class="progress-bar" id="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+    <div class="nav-inner">
+      <span class="nav-title">食堂饭卡管理系统 — 代码解密课程</span>
+      <div class="nav-dots" id="nav-dots" role="tablist">
+        <button class="nav-dot" data-target="module-1" data-tooltip="刷卡就餐" role="tab" aria-label="Module 1: 刷卡就餐"></button>
+        <button class="nav-dot" data-target="module-2" data-tooltip="认识角色" role="tab" aria-label="Module 2: 认识角色"></button>
+        <button class="nav-dot" data-target="module-3" data-tooltip="数据对话" role="tab" aria-label="Module 3: 数据对话"></button>
+        <button class="nav-dot" data-target="module-4" data-tooltip="状态机器" role="tab" aria-label="Module 4: 状态机器"></button>
+        <button class="nav-dot" data-target="module-5" data-tooltip="全局视角" role="tab" aria-label="Module 5: 全局视角"></button>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main">
+    <!-- modules/*.html content is assembled here by build.sh -->
+<!-- ============================================================
+     MODULE 1 — 刷卡就餐：从你熟悉的操作开始
+     ============================================================ -->
+<section class="module" id="module-1" style="background: var(--color-bg);">
+  <div class="module-content">
+
+    <!-- ── MODULE HEADER ─────────────────────────────────────── -->
+    <header class="module-header animate-in">
+      <span class="module-number">01</span>
+      <h1 class="module-title">刷卡就餐 — 从你熟悉的操作开始</h1>
+      <p class="module-subtitle">把这个系统想象成一台<strong>自动售货机</strong> —— 你插卡，机器验证，扣钱，出货。每一步背后都有代码在默默工作。</p>
+    </header>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SCREEN 1 — 这个系统是什么？
+         ══════════════════════════════════════════════════════════ -->
+    <div class="screen" id="screen-1-1">
+      <h2 class="screen-heading animate-in">这个系统是什么？</h2>
+
+      <p class="animate-in">
+        食堂饭卡管理系统是学校食堂的<strong>电子钱包</strong>。学生和员工拿着一张饭卡，就能完成充值、消费、挂失等所有操作。
+        整个系统由 <span class="term" data-definition="前端是用户直接看到和操作的界面部分，运行在浏览器中。它负责把信息展示给用户，并把用户的操作发送给后端。">前端</span>（操作界面）和 <span class="term" data-definition="后端是运行在服务器上的程序，用户看不到它。它负责处理业务逻辑、校验数据、读写数据库。">后端</span>（核心逻辑）配合完成。
+      </p>
+
+      <p class="animate-in">它一共有 <strong>6 大功能模块</strong>：</p>
+
+      <div class="pattern-cards stagger-children">
+        <div class="pattern-card animate-in">
+          <div class="pattern-icon" style="background: var(--color-accent-light); color: var(--color-accent);">&#x1F4B3;</div>
+          <div class="pattern-title">发卡</div>
+          <p class="pattern-desc">持有效证件办理饭卡，缴押金，预存款项，系统自动生成唯一卡号。</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-icon" style="background: var(--color-info-light); color: var(--color-info);">&#x1F4B0;</div>
+          <div class="pattern-title">存款</div>
+          <p class="pattern-desc">余额不足时到管理处充值，可打印收据。</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-icon" style="background: var(--color-success-light); color: var(--color-success);">&#x1F35C;</div>
+          <div class="pattern-title">就餐消费</div>
+          <p class="pattern-desc">刷卡→验证→显示余额→输入金额→扣款，整个流程几秒完成。</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-icon" style="background: #FEF3C7; color: #D97706;">&#x1F4CA;</div>
+          <div class="pattern-title">汇总统计</div>
+          <p class="pattern-desc">统计每日、每月的售饭收入，各窗口流水，持卡人存款明细等报表。</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-icon" style="background: var(--color-error-light); color: var(--color-error);">&#x1F6A8;</div>
+          <div class="pattern-title">挂失</div>
+          <p class="pattern-desc">饭卡丢失后立即挂失，所有窗口机会拒绝已挂失的卡，保护资金安全。</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-icon" style="background: #EDE9FE; color: #7C3AED;">&#x274C;</div>
+          <div class="pattern-title">注销</div>
+          <p class="pattern-desc">离校或不再就餐时注销饭卡，退还押金，卡号可回收再用。</p>
+        </div>
+      </div>
+
+      <div class="callout callout-info animate-in">
+        <div class="callout-icon">&#x1F4A1;</div>
+        <div class="callout-content">
+          <span class="callout-title">本课程的起点</span>
+          <p>我们从最常见的场景 —— <strong>刷卡吃饭</strong> —— 出发，追踪一次完整的消费流程在代码中是如何发生的。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SCREEN 2 — 一次刷卡消费的旅程
+         ══════════════════════════════════════════════════════════ -->
+    <div class="screen" id="screen-1-2">
+      <h2 class="screen-heading animate-in">一次刷卡消费的旅程</h2>
+
+      <p class="animate-in">
+        一次刷卡消费，数据要经历从界面到服务器再回来的完整旅程。点击下方的 "下一步" 按钮，逐步观看数据是如何流动的。
+      </p>
+
+      <div class="flow-animation animate-in" id="flow-meal"
+           data-steps="[
+             {&quot;highlight&quot;:&quot;flow-frontend&quot;, &quot;label&quot;:&quot;步骤 1：窗口工作人员在前端页面（MealPage）输入卡号&quot;},
+             {&quot;highlight&quot;:&quot;flow-api&quot;, &quot;packet&quot;:true, &quot;from&quot;:&quot;frontend&quot;, &quot;to&quot;:&quot;api&quot;, &quot;label&quot;:&quot;步骤 2：前端通过 api.js 发送 GET /api/cards/:cardNo 请求查询卡信息&quot;},
+             {&quot;highlight&quot;:&quot;flow-backend&quot;, &quot;packet&quot;:true, &quot;from&quot;:&quot;api&quot;, &quot;to&quot;:&quot;backend&quot;, &quot;label&quot;:&quot;步骤 3：后端三重校验 —— 卡是否存在？是否有效？是否已挂失？&quot;},
+             {&quot;highlight&quot;:&quot;flow-frontend&quot;, &quot;packet&quot;:true, &quot;from&quot;:&quot;backend&quot;, &quot;to&quot;:&quot;frontend&quot;, &quot;label&quot;:&quot;步骤 4：校验通过！前端显示余额，工作人员输入消费金额&quot;},
+             {&quot;highlight&quot;:&quot;flow-api&quot;, &quot;packet&quot;:true, &quot;from&quot;:&quot;frontend&quot;, &quot;to&quot;:&quot;api&quot;, &quot;label&quot;:&quot;步骤 5：前端发送 POST /api/cards/:cardNo/transactions 请求进行扣款&quot;},
+             {&quot;highlight&quot;:&quot;flow-db&quot;, &quot;packet&quot;:true, &quot;from&quot;:&quot;backend&quot;, &quot;to&quot;:&quot;db&quot;, &quot;label&quot;:&quot;步骤 6：后端扣款成功，将交易记录写入数据库，返回新余额&quot;}
+           ]">
+
+        <div class="flow-actors">
+          <div class="flow-actor" id="flow-frontend">
+            <div class="flow-actor-icon" style="color: var(--color-actor-1);">&#x1F5A5;</div>
+            <span><span class="term" data-definition="前端是用户直接看到和操作的界面部分，运行在浏览器中。">前端</span><br>MealPage</span>
+          </div>
+          <div class="flow-actor" id="flow-api">
+            <div class="flow-actor-icon" style="color: var(--color-actor-2);">&#x1F310;</div>
+            <span><span class="term" data-definition="API（应用程序编程接口）是前端和后端之间沟通的桥梁。前端通过 API 发送请求，后端通过 API 返回数据。">API</span><br>api.js</span>
+          </div>
+          <div class="flow-actor" id="flow-backend">
+            <div class="flow-actor-icon" style="color: var(--color-actor-3);">&#x2699;</div>
+            <span><span class="term" data-definition="后端是运行在服务器上的程序，负责处理业务逻辑、校验数据、读写数据库。">后端</span><br>card_service.go</span>
+          </div>
+          <div class="flow-actor" id="flow-db">
+            <div class="flow-actor-icon" style="color: var(--color-actor-4);">&#x1F4BE;</div>
+            <span><span class="term" data-definition="数据库是专门存储数据的软件，所有的卡信息、交易记录都保存在这里，断电也不会丢失。">数据库</span><br>SQLite</span>
+          </div>
+        </div>
+
+        <div class="flow-packet"></div>
+
+        <div class="flow-step-label">点击 "下一步" 开始观看数据流动</div>
+
+        <div class="flow-controls">
+          <button class="btn btn-primary flow-next-btn">下一步</button>
+          <button class="btn flow-reset-btn">重置</button>
+          <span class="flow-progress"></span>
+        </div>
+      </div>
+
+      <div class="callout callout-accent animate-in">
+        <div class="callout-icon">&#x1F50D;</div>
+        <div class="callout-content">
+          <span class="callout-title">两种 <span class="term" data-definition="HTTP（超文本传输协议）是浏览器和服务器之间通信的规则。就像写信的格式，双方都要遵守。">HTTP</span> 请求</span>
+          <p>
+            <span class="term" data-definition="GET 是 HTTP 请求的一种类型，意思是「给我看看」，只读取数据，不做任何修改。就像去图书馆借书时先查目录。">GET</span> 请求 = 「查一下这张卡」（只读取，不修改）。
+            <span class="term" data-definition="POST 是 HTTP 请求的一种类型，意思是「帮我做一件事」，会创建或修改数据。就像填写一张表格并提交。">POST</span> 请求 = 「执行这笔消费」（创建新的交易记录）。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SCREEN 3 — 代码翻译：三重校验
+         ══════════════════════════════════════════════════════════ -->
+    <div class="screen" id="screen-1-3">
+      <h2 class="screen-heading animate-in">代码翻译 — 三重校验</h2>
+
+      <p class="animate-in">
+        当一张卡尝试消费时，后端并不会直接扣钱。它会先做三道检查，就像保安查验你的身份一样。下面左侧是真实代码，右侧是逐行翻译。
+      </p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">Go — card_service.go</span>
+<code><span class="code-line"><span class="code-keyword">if</span> card.Status == model.<span class="code-property">CardStatusCancelled</span> {</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, <span class="code-function">newBizError</span>(<span class="code-property">ErrCodeCardCancelled</span>, <span class="code-string">"此卡已注销"</span>)</span>
+<span class="code-line">}</span>
+<span class="code-line"><span class="code-keyword">if</span> card.Status == model.<span class="code-property">CardStatusLost</span> {</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, <span class="code-function">newBizError</span>(<span class="code-property">ErrCodeCardLost</span>, <span class="code-string">"此卡已挂失"</span>)</span>
+<span class="code-line">}</span>
+<span class="code-line"><span class="code-keyword">if</span> card.Balance &lt; amount {</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, <span class="code-function">newBizError</span>(<span class="code-property">ErrCodeInsufficientBalance</span>, <span class="code-string">"余额不足"</span>)</span>
+<span class="code-line">}</span></code>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">逐行翻译</span>
+          <div class="translation-lines">
+            <div class="tl"><strong>第 1 关：</strong>如果这张卡的状态是"已注销" ——</div>
+            <div class="tl">&nbsp;&nbsp;→ 拒绝！返回错误信息："此卡已注销"</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl"><strong>第 2 关：</strong>如果这张卡的状态是"已挂失" ——</div>
+            <div class="tl">&nbsp;&nbsp;→ 拒绝！返回错误信息："此卡已挂失"</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl"><strong>第 3 关：</strong>如果卡里的余额 &lt; 消费金额 ——</div>
+            <div class="tl">&nbsp;&nbsp;→ 拒绝！返回错误信息："余额不足"</div>
+            <div class="tl">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-info animate-in">
+        <div class="callout-icon">&#x1F6E1;</div>
+        <div class="callout-content">
+          <span class="callout-title">什么是「防御性编程」？</span>
+          <p>
+            防御性编程是一种编程思维：<strong>先假设一切都可能出错</strong>，在真正执行操作之前，把所有可能的异常情况都检查一遍。
+            就像你出门前会检查钥匙、手机、钱包一样 —— 宁可多查几遍，也不要事后才发现问题。
+            上面的三重校验就是典型的防御性编程：先排除所有不合法的情况，最后才执行扣款。
+          </p>
+        </div>
+      </div>
+
+      <p class="animate-in">
+        注意：只有三关全部通过，代码才会继续往下执行真正的扣款操作。任何一关失败，都会立刻返回错误，<strong>绝不会多扣一分钱</strong>。
+      </p>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SCREEN 4 — 测验
+         ══════════════════════════════════════════════════════════ -->
+    <div class="screen" id="screen-1-4">
+      <h2 class="screen-heading animate-in">检验你的理解</h2>
+
+      <p class="animate-in">回忆一下刚才学到的内容，试试看能不能答对这三道场景题。</p>
+
+      <div class="quiz-container animate-in" id="quiz-module1">
+
+        <!-- Q1 -->
+        <div class="quiz-question-block" data-correct="a"
+             data-explanation-right="没错！后端发现卡状态为「已挂失」，第二关校验失败，立即拒绝消费并返回警告信息。"
+             data-explanation-wrong="回想一下三重校验的第二关 —— 系统会检查卡是否已挂失。挂失的卡会被直接拒绝，不会执行任何扣款操作。">
+          <div class="scenario-block">
+            <div class="scenario-context">
+              <span class="scenario-label">场景</span>
+              <p>小明的饭卡昨天丢了，他已经到管理处办理了挂失。今天有人捡到了这张卡，拿去窗口刷卡消费。</p>
+            </div>
+          </div>
+          <div class="quiz-question">这张已挂失的卡刷卡时，系统会怎样？</div>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="a" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>系统拒绝消费，提示"此卡已挂失"</span>
+            </button>
+            <button class="quiz-option" data-value="b" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>正常消费，因为卡还没有注销</span>
+            </button>
+            <button class="quiz-option" data-value="c" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>先扣款，再弹出警告</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="quiz-question-block" data-correct="b"
+             data-explanation-right="正确！第三关校验发现余额不足，直接拒绝结算，不会扣除任何金额。防御性编程确保了「要么全扣，要么不扣」。"
+             data-explanation-wrong="回想三重校验的第三关 —— 系统会比较余额和消费金额。余额不足时立刻拒绝，绝不会先扣一部分钱。">
+          <div class="scenario-block">
+            <div class="scenario-context">
+              <span class="scenario-label">场景</span>
+              <p>小红的饭卡里还剩 5 元，她点了一份 12 元的套餐，在窗口刷卡结算。</p>
+            </div>
+          </div>
+          <div class="quiz-question">余额不足时，系统会怎么处理？</div>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="a" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>先扣掉 5 元，欠的 7 元下次补</span>
+            </button>
+            <button class="quiz-option" data-value="b" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>拒绝结算，不会扣除任何金额</span>
+            </button>
+            <button class="quiz-option" data-value="c" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>自动从押金中扣款</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="quiz-question-block" data-correct="c"
+             data-explanation-right="正确！在三重校验之前，系统会先根据卡号在数据库中查找。如果找不到，就说明这张卡不是本单位发的，系统会返回「此卡非本单位所发」的错误。"
+             data-explanation-wrong="想想看 —— 系统要做三重校验，首先得能在数据库中找到这张卡。如果卡号根本不存在，系统会认为它不属于本单位。">
+          <div class="scenario-block">
+            <div class="scenario-context">
+              <span class="scenario-label">场景</span>
+              <p>一位来访者拿着外校的饭卡，想在本校食堂窗口刷卡消费。</p>
+            </div>
+          </div>
+          <div class="quiz-question">一个系统中不存在的卡号刷卡，系统认为这意味着什么？</div>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="a" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>卡已过期，需要续费</span>
+            </button>
+            <button class="quiz-option" data-value="b" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>卡已被注销</span>
+            </button>
+            <button class="quiz-option" data-value="c" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>这不是本单位发的卡</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-module1')">检查答案</button>
+        <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module1')">重新作答</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+<section class="module" id="module-2" style="background: var(--color-bg-warm);">
+  <div class="module-content">
+
+    <!-- ═══ MODULE HEADER ═══ -->
+    <header class="module-header animate-in">
+      <span class="module-number">02</span>
+      <h2 class="module-title">认识演员们 — 系统中的「角色」</h2>
+      <p class="module-subtitle">
+        每部电影都有一群各司其职的演员。软件系统也一样 —— 让我们认识这个饭卡系统里的「角色」们。
+      </p>
+    </header>
+
+    <!-- ═══ SCREEN 1: 前端 ═══ -->
+    <div class="screen" id="screen-2-1">
+      <h3 class="screen-heading animate-in">Screen 1 / 4 &mdash; 前端：用户看到的界面</h3>
+
+      <p class="animate-in">
+        把系统想象成一家<strong>医院</strong>。前端就是<strong>前台大厅</strong> —— 患者（用户）走进来看到的一切：挂号窗口、指示牌、叫号屏幕。
+        前端项目的文件结构长这样：
+      </p>
+
+      <!-- Visual file tree -->
+      <div class="file-tree animate-in" style="background: var(--color-surface); border-radius: var(--radius-md); padding: var(--space-6); box-shadow: var(--shadow-md);">
+        <div class="ft-folder" style="margin-left: 0; border-left: none;">
+          <span class="ft-name">frontend/src/</span>
+          <div class="ft-children">
+            <div class="ft-file">
+              <span class="ft-name">App.jsx</span>
+              <span class="ft-desc">— <span class="term" data-definition="路由决定用户访问不同网址时，显示哪个页面。就像医院大厅的指示牌。">路由</span>总控，决定显示哪个页面</span>
+            </div>
+            <div class="ft-file">
+              <span class="ft-name">api.js</span>
+              <span class="ft-desc">— 「信使」，负责与后端通信</span>
+            </div>
+            <div class="ft-folder">
+              <span class="ft-name">layouts/</span>
+              <div class="ft-children">
+                <div class="ft-file">
+                  <span class="ft-name">AdminLayout.jsx</span>
+                  <span class="ft-desc">— 管理端的外壳（侧边栏 + 内容区）</span>
+                </div>
+              </div>
+            </div>
+            <div class="ft-folder">
+              <span class="ft-name">pages/</span>
+              <span class="ft-desc">— 每个 <span class="term" data-definition="JSX 是 JavaScript 的语法扩展，让你可以在 JS 里写类似 HTML 的代码。React 用它来描述页面长什么样。">JSX</span> 文件 = 一个页面</span>
+              <div class="ft-children">
+                <div class="ft-file">
+                  <span class="ft-name">IssuePage.jsx</span>
+                  <span class="ft-desc">— 发卡页面</span>
+                </div>
+                <div class="ft-file">
+                  <span class="ft-name">DepositPage.jsx</span>
+                  <span class="ft-desc">— 存款页面</span>
+                </div>
+                <div class="ft-file">
+                  <span class="ft-name">MealPage.jsx</span>
+                  <span class="ft-desc">— 就餐消费（窗口机）</span>
+                </div>
+                <div class="ft-file">
+                  <span class="ft-name">LossPage.jsx</span>
+                  <span class="ft-desc">— 挂失管理</span>
+                </div>
+                <div class="ft-file">
+                  <span class="ft-name">CancelPage.jsx</span>
+                  <span class="ft-desc">— 注销退卡</span>
+                </div>
+                <div class="ft-file">
+                  <span class="ft-name">StatisticsPage.jsx</span>
+                  <span class="ft-desc">— 汇总统计</span>
+                </div>
+                <div class="ft-file">
+                  <span class="ft-name">WindowsPage.jsx</span>
+                  <span class="ft-desc">— 窗口管理</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Two worlds diagram -->
+      <p class="animate-in" style="margin-top: var(--space-6);">
+        前端分为两个「世界」：
+      </p>
+      <div class="pattern-cards animate-in stagger-children" style="grid-template-columns: 1fr 1fr;">
+        <div class="pattern-card animate-in" style="border-top-color: var(--color-actor-2);">
+          <div class="pattern-icon" style="background: var(--color-info-light); color: var(--color-info);">&#x1F3E5;</div>
+          <div class="pattern-title">管理端</div>
+          <p class="pattern-desc">
+            AdminLayout 包裹 6 个功能页面（发卡、存款、挂失、注销、统计、窗口管理），带侧边栏导航。就像医院的<strong>行政办公区</strong>。
+          </p>
+        </div>
+        <div class="pattern-card animate-in" style="border-top-color: var(--color-actor-4);">
+          <div class="pattern-icon" style="background: #FFF8E6; color: var(--color-actor-4);">&#x1F37D;&#xFE0F;</div>
+          <div class="pattern-title">窗口机端</div>
+          <p class="pattern-desc">
+            MealPage 独立运行，全屏深色界面，模拟食堂刷卡<span class="term" data-definition="组件是前端页面的积木块。一个按钮、一个表单、一整个页面都可以是一个组件。">组件</span>。就像医院的<strong>自助挂号机</strong>。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN 2: 后端三层 ═══ -->
+    <div class="screen" id="screen-2-2">
+      <h3 class="screen-heading animate-in">Screen 2 / 4 &mdash; 后端：三层架构</h3>
+
+      <p class="animate-in">
+        后端就是医院的「幕后团队」。它被组织成三层，各管各的事情，互不干扰。
+      </p>
+
+      <!-- Icon-label rows -->
+      <div class="icon-rows animate-in stagger-children">
+        <div class="icon-row animate-in" style="--stagger-index: 0;">
+          <div class="icon-circle" style="background: var(--color-accent-light); color: var(--color-accent);">&#x1F469;&#x200D;&#x2695;&#xFE0F;</div>
+          <div>
+            <strong>Handler（护士站）</strong>
+            <p>
+              接收 <span class="term" data-definition="HTTP 请求是浏览器向服务器发送的消息，就像你在前台填表递给护士。常见动作有 GET（查询）和 POST（提交）。">HTTP 请求</span>，解析参数，返回 <span class="term" data-definition="JSON 是一种数据格式，用花括号和键值对组织信息。例：{&quot;name&quot;: &quot;小明&quot;, &quot;balance&quot;: 500}。它是前后端交流的通用语言。">JSON</span> 响应。
+              位置：<code style="font-family: var(--font-mono); font-size: var(--text-sm); background: var(--color-bg-code); color: #89B4FA; padding: 2px 6px; border-radius: 4px;">backend/handler/</code>
+            </p>
+          </div>
+        </div>
+        <div class="icon-row animate-in" style="--stagger-index: 1;">
+          <div class="icon-circle" style="background: var(--color-success-light); color: var(--color-success);">&#x1F468;&#x200D;&#x2695;&#xFE0F;</div>
+          <div>
+            <strong>Service（医生）</strong>
+            <p>
+              核心业务逻辑：校验规则、状态流转、余额计算。系统的「大脑」。
+              位置：<code style="font-family: var(--font-mono); font-size: var(--text-sm); background: var(--color-bg-code); color: #89B4FA; padding: 2px 6px; border-radius: 4px;">backend/service/</code>
+            </p>
+          </div>
+        </div>
+        <div class="icon-row animate-in" style="--stagger-index: 2;">
+          <div class="icon-circle" style="background: #F3EEFF; color: var(--color-actor-3);">&#x1F4C1;</div>
+          <div>
+            <strong>Repository（病历档案室）</strong>
+            <p>
+              数据库读写操作，SQL 查询封装。所有数据的「保险柜」。
+              位置：<code style="font-family: var(--font-mono); font-size: var(--text-sm); background: var(--color-bg-code); color: #89B4FA; padding: 2px 6px; border-radius: 4px;">backend/repository/</code>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flow diagram: request path -->
+      <div class="flow-steps animate-in" style="justify-content: center; margin: var(--space-8) 0;">
+        <div class="flow-step">
+          <div class="flow-step-num" style="background: var(--color-actor-2);">&#x1F310;</div>
+          <p>用户请求</p>
+        </div>
+        <span class="flow-arrow">&rarr;</span>
+        <div class="flow-step">
+          <div class="flow-step-num" style="background: var(--color-accent);">H</div>
+          <p>Handler 接收</p>
+        </div>
+        <span class="flow-arrow">&rarr;</span>
+        <div class="flow-step">
+          <div class="flow-step-num" style="background: var(--color-success);">S</div>
+          <p>Service 处理</p>
+        </div>
+        <span class="flow-arrow">&rarr;</span>
+        <div class="flow-step">
+          <div class="flow-step-num" style="background: var(--color-actor-3);">R</div>
+          <p>Repository 存取</p>
+        </div>
+        <span class="flow-arrow">&rarr;</span>
+        <div class="flow-step">
+          <div class="flow-step-num" style="background: var(--color-actor-4);">&#x1F4BE;</div>
+          <p>数据库</p>
+        </div>
+      </div>
+
+      <!-- Translation block: main.go DI -->
+      <p class="animate-in">
+        三层是怎么「组装」起来的？看 main.go 里的<span class="term" data-definition="依赖注入是把一个模块所需要的「工具」从外部传入，而不是让它自己去创建。好处是方便替换和测试。">依赖注入</span>代码：
+      </p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">Go</span>
+          <span class="code-line"><span class="code-comment">// 1. 创建 Repository（档案室）</span></span>
+          <span class="code-line">cardRepo <span class="code-operator">:=</span> <span class="code-function">repository.NewCardRepository</span>(gormDB)</span>
+          <span class="code-line">windowRepo <span class="code-operator">:=</span> <span class="code-function">repository.NewWindowRepository</span>(gormDB)</span>
+          <span class="code-line">&nbsp;</span>
+          <span class="code-line"><span class="code-comment">// 2. 创建验证器</span></span>
+          <span class="code-line">studentValidator <span class="code-operator">:=</span> <span class="code-function">client.NewMockStudentValidator</span>()</span>
+          <span class="code-line">&nbsp;</span>
+          <span class="code-line"><span class="code-comment">// 3. 创建 Service（医生），把档案室交给它</span></span>
+          <span class="code-line">cardSvc <span class="code-operator">:=</span> <span class="code-function">service.NewCardService</span>(cardRepo, windowRepo, studentValidator)</span>
+          <span class="code-line">&nbsp;</span>
+          <span class="code-line"><span class="code-comment">// 4. 创建 Handler（护士站），把医生交给它</span></span>
+          <span class="code-line">cardH <span class="code-operator">:=</span> <span class="code-function">handler.NewCardHandler</span>(cardSvc, studentValidator, cardRepo)</span>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">翻译成人话</span>
+          <div class="translation-lines">
+            <div class="tl">先准备好<strong>病历档案室</strong>（Repository），告诉它去哪个数据库拿数据。</div>
+            <div class="tl">再准备一个身份<strong>验证器</strong>，用来核查学生证件是否有效。</div>
+            <div class="tl">然后雇一位<strong>医生</strong>（Service），把档案室的钥匙和验证器交给他。</div>
+            <div class="tl">最后安排一位<strong>护士</strong>（Handler），告诉她有问题去找哪位医生。</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Callout: SoC -->
+      <div class="callout callout-info animate-in">
+        <div class="callout-icon">&#x1F4A1;</div>
+        <div class="callout-content">
+          <span class="callout-title">软件设计原则：关注点分离（Separation of Concerns）</span>
+          <p>
+            每一层只管自己的事。护士不开药方，医生不管档案归档，档案员不给病人问诊。改动一层时，其他层不受影响。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN 3: 数据模型 ═══ -->
+    <div class="screen" id="screen-2-3">
+      <h3 class="screen-heading animate-in">Screen 3 / 4 &mdash; 数据模型：5 张表</h3>
+
+      <p class="animate-in">
+        数据库就是医院的<strong>病历档案室</strong>。所有信息分门别类存放在 5 张表中。
+        我们使用 <span class="term" data-definition="SQLite 是一种轻量级数据库，数据存储在一个文件里，不需要安装额外的数据库服务器。">SQLite</span> 数据库，通过 <span class="term" data-definition="ORM（对象关系映射）让你用代码对象操作数据库，不用手写 SQL 语句。">ORM</span> 工具 <span class="term" data-definition="GORM 是 Go 语言最流行的 ORM 库，把 Go 结构体自动映射成数据库表。">GORM</span> 来操作。
+      </p>
+
+      <!-- Pattern cards: 5 tables -->
+      <div class="pattern-cards animate-in stagger-children" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+        <div class="pattern-card animate-in" style="border-top-color: var(--color-actor-1); --stagger-index: 0;">
+          <div class="pattern-icon" style="background: var(--color-accent-light); color: var(--color-accent);">&#x1F464;</div>
+          <div class="pattern-title">CardHolder</div>
+          <p class="pattern-desc">
+            <strong>持卡人</strong> — 存储身份信息：姓名、证件号。每个人是一条记录，有唯一 <span class="term" data-definition="主键是数据库表中每条记录的唯一标识，就像身份证号，绝不重复。">主键</span> ID。
+          </p>
+        </div>
+        <div class="pattern-card animate-in" style="border-top-color: var(--color-actor-2); --stagger-index: 1;">
+          <div class="pattern-icon" style="background: var(--color-info-light); color: var(--color-info);">&#x1F4B3;</div>
+          <div class="pattern-title">Card</div>
+          <p class="pattern-desc">
+            <strong>饭卡</strong> — 16 位卡号、余额、押金、状态（正常/挂失/注销）。通过 <span class="term" data-definition="外键是指向另一张表主键的字段，用来建立表与表之间的关联。就像病历上写的「主治医生工号」。">外键</span>关联到持卡人。
+          </p>
+        </div>
+        <div class="pattern-card animate-in" style="border-top-color: var(--color-actor-5); --stagger-index: 2;">
+          <div class="pattern-icon" style="background: var(--color-success-light); color: var(--color-success);">&#x1F4B0;</div>
+          <div class="pattern-title">DepositRecord</div>
+          <p class="pattern-desc">
+            <strong>存款记录</strong> — 每次充值一条记录，记录金额、时间。
+          </p>
+        </div>
+        <div class="pattern-card animate-in" style="border-top-color: var(--color-actor-4); --stagger-index: 3;">
+          <div class="pattern-icon" style="background: #FFF8E6; color: var(--color-actor-4);">&#x1F4DD;</div>
+          <div class="pattern-title">Transaction</div>
+          <p class="pattern-desc">
+            <strong>消费记录</strong> — 每次刷卡吃饭一条记录，记录消费金额和窗口信息。
+          </p>
+        </div>
+        <div class="pattern-card animate-in" style="border-top-color: var(--color-actor-3); --stagger-index: 4;">
+          <div class="pattern-icon" style="background: #F3EEFF; color: var(--color-actor-3);">&#x1F5A5;&#xFE0F;</div>
+          <div class="pattern-title">Window</div>
+          <p class="pattern-desc">
+            <strong>窗口</strong> — 食堂的每个售饭窗口，记录窗口名称和状态。
+          </p>
+        </div>
+      </div>
+
+      <!-- Callout: cents -->
+      <div class="callout callout-accent animate-in">
+        <div class="callout-icon">&#x1F4B2;</div>
+        <div class="callout-content">
+          <span class="callout-title">为什么金额用「分」存储？</span>
+          <p>
+            所有金额字段都用 <span class="term" data-definition="int64 是一种 64 位整数类型，能存储非常大的整数。在 Go 语言中用来表示金额（单位：分）。">int64</span>（整数）存储，单位是「分」而非「元」。
+            100 分 = 1 元。这是软件工程中处理钱的标准做法 —— 计算机做浮点小数运算会产生误差（例如 0.1 + 0.2 &ne; 0.3），用整数就完全精确。
+          </p>
+        </div>
+      </div>
+
+      <!-- Relationship diagram: simple flow -->
+      <div class="flow-steps animate-in" style="justify-content: center; margin: var(--space-8) 0;">
+        <div class="flow-step">
+          <div class="flow-step-num" style="background: var(--color-actor-1);">&#x1F464;</div>
+          <p>CardHolder</p>
+        </div>
+        <span class="flow-arrow">1:N</span>
+        <div class="flow-step">
+          <div class="flow-step-num" style="background: var(--color-actor-2);">&#x1F4B3;</div>
+          <p>Card</p>
+        </div>
+        <span class="flow-arrow">1:N</span>
+        <div class="flow-step">
+          <div class="flow-step-num" style="background: var(--color-actor-4);">&#x1F4DD;</div>
+          <p>Transaction</p>
+        </div>
+      </div>
+      <p class="animate-in" style="text-align: center; font-size: var(--text-sm); color: var(--color-text-secondary);">
+        一个持卡人可以有多张卡，一张卡可以有多条消费记录 &mdash; 这就是「一对多」关系。
+      </p>
+    </div>
+
+    <!-- ═══ SCREEN 4: 测验 ═══ -->
+    <div class="screen" id="screen-2-4">
+      <h3 class="screen-heading animate-in">Screen 4 / 4 &mdash; 小测验</h3>
+
+      <div class="quiz-container animate-in" id="quiz-module2">
+
+        <!-- Q1 -->
+        <div class="quiz-question-block" data-correct="b" data-explanation-right="Service 层是业务逻辑的大脑，所有业务规则和错误判断都在这里定义。修改错误提示文字，当然要去找「医生」。" data-explanation-wrong="Handler 只负责传话（接收请求、返回响应），Repository 只管读写数据库。业务错误信息（比如「余额不足」）是在 Service 层判定和定义的。">
+          <div class="quiz-question">Q1. 如果你想修改「余额不足」的错误提示文字，应该去哪一层修改？</div>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="a" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              Handler 层 — 因为它负责返回响应给用户
+            </button>
+            <button class="quiz-option" data-value="b" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              Service 层 — 因为业务错误信息定义在这里
+            </button>
+            <button class="quiz-option" data-value="c" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              Repository 层 — 因为余额数据存在数据库里
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="quiz-question-block" data-correct="b" data-explanation-right="api.js 把前端的操作（比如点击「发卡」按钮）翻译成后端能理解的 HTTP 请求，再把后端的回复翻译回前端能显示的数据。名副其实的「信使」！" data-explanation-wrong="api.js 不是路由（那是 App.jsx 的工作），也不是数据库（那在后端）。它是前后端之间的「翻译官」，负责发送 HTTP 请求和接收响应。">
+          <div class="quiz-question">Q2. 前端的 api.js 相当于什么角色？</div>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="a" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              路由总控 — 决定显示哪个页面
+            </button>
+            <button class="quiz-option" data-value="b" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              信使 / 翻译官 — 把前端操作翻译成 HTTP 请求发给后端
+            </button>
+            <button class="quiz-option" data-value="c" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              数据库 — 在前端存储数据
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="quiz-question-block" data-correct="c" data-explanation-right="计算机用二进制表示小数时会有精度丢失。经典例子：0.1 + 0.2 = 0.30000000000000004。改用整数（分）运算就绝对精确。" data-explanation-wrong="用分存储的核心原因是避免浮点数计算误差。100 分 = 1 元，整数运算绝对精确，不会出现 0.1 + 0.2 &ne; 0.3 的问题。">
+          <div class="quiz-question">Q3. 为什么金额用「分」而不是「元」来存储？</div>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="a" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              为了节省存储空间
+            </button>
+            <button class="quiz-option" data-value="b" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              因为数据库不支持小数
+            </button>
+            <button class="quiz-option" data-value="c" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              避免浮点数计算误差，整数运算精确无误
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <!-- Quiz buttons -->
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-module2')">检查答案</button>
+        <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module2')">重新作答</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+<!-- ============================================================
+     MODULE 3 — 数据的对话：前后端如何通信
+     ============================================================ -->
+<section class="module" id="module-3" style="background:var(--color-bg)">
+  <div class="module-content">
+
+    <!-- ── MODULE HEADER ─────────────────────────────────────── -->
+    <header class="module-header animate-in">
+      <span class="module-number">03</span>
+      <h2 class="module-title">数据的对话 — 前后端如何通信</h2>
+      <p class="module-subtitle">前端和后端之间的每一次交互，都像在写信。理解这些「信件」的格式，你就能看懂整个系统的对话。</p>
+    </header>
+
+    <!-- ============================================================
+         SCREEN 1 — 信的格式：HTTP 请求解剖
+         ============================================================ -->
+    <div class="screen" id="m3-screen1">
+      <h3 class="screen-heading animate-in">信的格式 — HTTP 请求解剖</h3>
+
+      <p class="animate-in">想象前端要给后端写一封信，请求办一张新饭卡。这封信由四个部分组成：</p>
+
+      <!-- Step Cards：解剖一个发卡请求 -->
+      <div class="step-cards stagger-children animate-in">
+        <div class="step-card animate-in" style="--stagger-index:0">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <strong>收件地址（<span class="term" data-definition="统一资源定位符，就像信封上的地址，告诉网络你要访问哪里">URL</span>）：/api/cards</strong>
+            <p>告诉后端「我要操作饭卡资源」</p>
+          </div>
+        </div>
+        <div class="step-card animate-in" style="--stagger-index:1">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <strong>信件类型（<span class="term" data-definition="HTTP 方法表示你想对资源做什么操作，常见的有 GET（查询）、POST（创建）、PUT（修改）、DELETE（删除）">HTTP 方法</span>）：<span class="term" data-definition="POST 方法表示「创建新资源」，就像填表提交一个新申请">POST</span></strong>
+            <p>表示「我要创建一个新东西」</p>
+          </div>
+        </div>
+        <div class="step-card animate-in" style="--stagger-index:2">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <strong>信的内容（<span class="term" data-definition="请求体，就是信封里装的内容，通常用 JSON 格式携带你要发送的数据">请求体（Body）</span>）</strong>
+            <p><code style="font-family:var(--font-mono);font-size:var(--text-sm);background:var(--color-bg-code);color:#A6E3A1;padding:var(--space-1) var(--space-2);border-radius:var(--radius-sm)">{ "idNumber": "202100010001", "preDeposit": 5000 }</code></p>
+          </div>
+        </div>
+        <div class="step-card animate-in" style="--stagger-index:3">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <strong>回信（<span class="term" data-definition="服务器处理请求后返回的结果，包含状态码和数据，就像后端写的回信">响应（Response）</span>）</strong>
+            <p>后端返回新创建的饭卡信息，包含自动生成的卡号、余额等</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="animate-in">信件类型决定了你想做什么。这套系统里只用四种：</p>
+
+      <!-- Badge List：HTTP 方法 -->
+      <div class="badge-list stagger-children animate-in">
+        <div class="badge-item animate-in" style="--stagger-index:0">
+          <span class="badge-code"><span class="term" data-definition="GET 方法表示「读取/查询」，不会修改任何数据，就像去查看信件">GET</span></span>
+          <span class="badge-desc">查询 —— 「给我看看」</span>
+        </div>
+        <div class="badge-item animate-in" style="--stagger-index:1">
+          <span class="badge-code">POST</span>
+          <span class="badge-desc">创建 —— 「帮我新建一个」</span>
+        </div>
+        <div class="badge-item animate-in" style="--stagger-index:2">
+          <span class="badge-code"><span class="term" data-definition="PUT 方法表示「更新/修改」，用新内容替换旧内容">PUT</span></span>
+          <span class="badge-desc">修改 —— 「帮我改一下」</span>
+        </div>
+        <div class="badge-item animate-in" style="--stagger-index:3">
+          <span class="badge-code"><span class="term" data-definition="DELETE 方法表示「删除/去掉」，移除指定的资源">DELETE</span></span>
+          <span class="badge-desc">删除 —— 「帮我去掉」</span>
+        </div>
+      </div>
+
+      <div class="callout callout-info animate-in">
+        <span class="callout-icon">&#x1F4EC;</span>
+        <div class="callout-content">
+          <span class="callout-title">写信的隐喻</span>
+          <p>每次前端和后端的交互，就是一次「写信——回信」。信封上写着地址（URL）和类型（方法），信里装着 <span class="term" data-definition="JavaScript Object Notation，一种轻量级的数据交换格式，用大括号和键值对表示数据，人和机器都能轻松阅读">JSON</span> 格式的数据。这个过程遵循 <span class="term" data-definition="一种设计网络接口的风格，用 URL 表示资源、用 HTTP 方法表示操作，让接口直观易懂">RESTful</span> 风格。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         SCREEN 2 — Group Chat：发卡流程的「对话」
+         ============================================================ -->
+    <div class="screen" id="m3-screen2">
+      <h3 class="screen-heading animate-in">发卡流程的「对话」</h3>
+
+      <p class="animate-in">发卡不是一步完成的。让我们看看各个组件之间是怎么「聊天」的：</p>
+
+      <div class="chat-window animate-in" id="chat-module3">
+        <div class="chat-messages">
+
+          <!-- Message 1 -->
+          <div class="chat-message" data-sender="operator" style="display:none">
+            <div class="chat-avatar" style="background:var(--color-actor-1)">O</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color:var(--color-actor-1)">操作员</span>
+              <p>我要给证件号 202100010001 的同学办卡</p>
+            </div>
+          </div>
+
+          <!-- Message 2 -->
+          <div class="chat-message" data-sender="frontend" style="display:none">
+            <div class="chat-avatar" style="background:var(--color-actor-2)">F</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color:var(--color-actor-2)">前端 IssuePage</span>
+              <p>收到，先验证一下这个证件号... api.js 帮我查一下</p>
+            </div>
+          </div>
+
+          <!-- Message 3 -->
+          <div class="chat-message" data-sender="apijs" style="display:none">
+            <div class="chat-avatar" style="background:var(--color-actor-3)">A</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color:var(--color-actor-3)">api.js</span>
+              <p>好的，我发个 <code style="font-family:var(--font-mono);font-size:var(--text-xs);background:var(--color-bg-code);color:#89B4FA;padding:2px 6px;border-radius:4px">GET /api/validate-student?idNumber=202100010001</code> 给后端</p>
+            </div>
+          </div>
+
+          <!-- Message 4 -->
+          <div class="chat-message" data-sender="handler" style="display:none">
+            <div class="chat-avatar" style="background:var(--color-actor-4)">H</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color:var(--color-actor-4)">CardHandler</span>
+              <p>让我查查学籍... 找到了！张三，学生</p>
+            </div>
+          </div>
+
+          <!-- Message 5 -->
+          <div class="chat-message" data-sender="frontend" style="display:none">
+            <div class="chat-avatar" style="background:var(--color-actor-2)">F</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color:var(--color-actor-2)">前端 IssuePage</span>
+              <p>操作员，这位是张三同学，确认要办卡吗？</p>
+            </div>
+          </div>
+
+          <!-- Message 6 -->
+          <div class="chat-message" data-sender="operator" style="display:none">
+            <div class="chat-avatar" style="background:var(--color-actor-1)">O</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color:var(--color-actor-1)">操作员</span>
+              <p>确认，预存 50 元</p>
+            </div>
+          </div>
+
+          <!-- Message 7 -->
+          <div class="chat-message" data-sender="apijs" style="display:none">
+            <div class="chat-avatar" style="background:var(--color-actor-3)">A</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color:var(--color-actor-3)">api.js</span>
+              <p>发送 <code style="font-family:var(--font-mono);font-size:var(--text-xs);background:var(--color-bg-code);color:#89B4FA;padding:2px 6px;border-radius:4px">POST /api/cards</code>，带上证件号和预存款 5000 分</p>
+            </div>
+          </div>
+
+          <!-- Message 8 -->
+          <div class="chat-message" data-sender="service" style="display:none">
+            <div class="chat-avatar" style="background:var(--color-actor-5)">S</div>
+            <div class="chat-bubble">
+              <span class="chat-sender" style="color:var(--color-actor-5)">CardService</span>
+              <p>证件号校验通过，生成 16 位卡号，押金 2000 分，余额 5000 分，发卡成功！</p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Typing indicator -->
+        <div class="chat-typing" style="display:none">
+          <div class="chat-avatar" id="chat-module3-typing-avatar" style="background:var(--color-actor-1)">?</div>
+          <div class="chat-typing-dots">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="chat-controls">
+          <button class="btn btn-primary chat-next-btn">下一条消息</button>
+          <button class="btn chat-all-btn">全部播放</button>
+          <button class="btn chat-reset-btn">重置</button>
+          <span class="chat-progress">0 / 8 messages</span>
+        </div>
+      </div>
+
+      <div class="callout callout-accent animate-in">
+        <span class="callout-icon">&#x1F4A1;</span>
+        <div class="callout-content">
+          <span class="callout-title">注意金额的变化</span>
+          <p>操作员说「50 元」，但 api.js 发送的是「5000 分」。系统内部统一用「分」作为金额单位，避免小数带来的计算误差。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         SCREEN 3 — 代码翻译：api.js 的信使角色
+         ============================================================ -->
+    <div class="screen" id="m3-screen3">
+      <h3 class="screen-heading animate-in">代码翻译 — api.js 的信使角色</h3>
+
+      <p class="animate-in">api.js 就像一个专业信使。它有一个通用的「寄信」函数，所有请求都通过它发出：</p>
+
+      <!-- Translation Block 1: request 函数 -->
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">api.js</span>
+<code><span class="code-line"><span class="code-keyword">async function</span> <span class="code-function">request</span>(path, options = {}) {</span>
+<span class="code-line">  <span class="code-keyword">const</span> url = <span class="code-string">`${BASE_URL}${path}`</span></span>
+<span class="code-line">  <span class="code-keyword">const</span> res = <span class="code-keyword">await</span> <span class="code-function">fetch</span>(url, {</span>
+<span class="code-line">    <span class="code-property">headers</span>: { <span class="code-string">'Content-Type'</span>: <span class="code-string">'application/json'</span> },</span>
+<span class="code-line">    ...options,</span>
+<span class="code-line">  })</span>
+<span class="code-line">  <span class="code-keyword">const</span> data = <span class="code-keyword">await</span> res.<span class="code-function">json</span>()</span>
+<span class="code-line">  <span class="code-keyword">if</span> (!res.ok) {</span>
+<span class="code-line">    <span class="code-keyword">const</span> err = <span class="code-keyword">new</span> <span class="code-function">Error</span>(<span class="code-string">'请求失败'</span>)</span>
+<span class="code-line">    <span class="code-keyword">throw</span> err</span>
+<span class="code-line">  }</span>
+<span class="code-line">  <span class="code-keyword">return</span> data</span>
+<span class="code-line">}</span></code>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">逐行翻译</span>
+          <div class="translation-lines">
+            <div class="tl"><strong><span class="term" data-definition="async 声明这是一个异步函数，内部可以使用 await 等待耗时操作完成，不会卡住页面">async</span> function request</strong> — 定义一个异步的「寄信」函数</div>
+            <div class="tl"><strong>url = BASE_URL + path</strong> — 拼出完整的收件地址</div>
+            <div class="tl"><strong><span class="term" data-definition="await 让代码暂停等待一个异步操作完成，拿到结果后再继续往下执行">await</span> <span class="term" data-definition="浏览器内置的网络请求函数，用于向服务器发送 HTTP 请求并获取响应">fetch</span>(url, ...)</strong> — 把信寄出去，等待回信</div>
+            <div class="tl"><strong>headers: Content-Type</strong> — 标注信的内容是 JSON 格式</div>
+            <div class="tl"><strong>res.json()</strong> — 拆开回信，读取里面的数据</div>
+            <div class="tl"><strong>if (!res.ok)</strong> — 如果回信说「出问题了」</div>
+            <div class="tl"><strong>throw err</strong> — 就大声报告错误</div>
+            <div class="tl"><strong>return data</strong> — 一切顺利，把回信内容交出来</div>
+          </div>
+        </div>
+      </div>
+
+      <p class="animate-in">有了通用信使，发卡请求就变得很简洁：</p>
+
+      <!-- Translation Block 2: issueCard 函数 -->
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">api.js</span>
+<code><span class="code-line"><span class="code-keyword">export function</span> <span class="code-function">issueCard</span>({ idNumber, preDeposit = <span class="code-number">0</span> }) {</span>
+<span class="code-line">  <span class="code-keyword">return</span> <span class="code-function">request</span>(<span class="code-string">'/api/cards'</span>, {</span>
+<span class="code-line">    <span class="code-property">method</span>: <span class="code-string">'POST'</span>,</span>
+<span class="code-line">    <span class="code-property">body</span>: JSON.<span class="code-function">stringify</span>({ idNumber, preDeposit }),</span>
+<span class="code-line">  })</span>
+<span class="code-line">}</span></code>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">逐行翻译</span>
+          <div class="translation-lines">
+            <div class="tl"><strong>issueCard({ idNumber, preDeposit })</strong> — 定义「发卡」函数，接收证件号和预存金额</div>
+            <div class="tl"><strong>request('/api/cards', ...)</strong> — 让信使把信寄到 /api/cards 地址</div>
+            <div class="tl"><strong>method: 'POST'</strong> — 信封上标注「创建」类型</div>
+            <div class="tl"><strong>JSON.stringify({...})</strong> — 把数据打包成 JSON 格式装进信封</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Callout: 契约优先 -->
+      <div class="callout callout-info animate-in">
+        <span class="callout-icon">&#x1F4DC;</span>
+        <div class="callout-content">
+          <span class="callout-title">契约优先 — <span class="term" data-definition="OpenAPI 是一种用来描述 RESTful 接口的标准格式（YAML/JSON），前后端按照这个文档约定接口，就像签合同一样">OpenAPI</span> 文档</span>
+          <p>这个项目先用 OpenAPI 文档定义好所有接口规范：每个 URL 接受什么参数、返回什么数据。前后端严格按照这个契约各自开发，就像签了合同一样，双方都不能违约。这样即使两个团队同时工作也不会「对不上」。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         SCREEN 4 — 测验
+         ============================================================ -->
+    <div class="screen" id="m3-screen4">
+      <h3 class="screen-heading animate-in">检验一下你的理解</h3>
+
+      <div class="quiz-container animate-in" id="quiz-module3">
+
+        <!-- Question 1 -->
+        <div class="quiz-question-block" data-correct="cancel-loss" data-explanation-right="DELETE 表示「去掉/删除」，loss-report 是挂失记录。所以 DELETE /api/cards/1234/loss-report 就是「去掉 1234 这张卡的挂失记录」，也就是取消挂失。" data-explanation-wrong="注意 DELETE 的含义是「去掉」，而 loss-report 指的是「挂失记录」。把这两个组合起来想想看。">
+          <div class="quiz-question">1. 当你看到 <code style="font-family:var(--font-mono);font-size:var(--text-sm);background:var(--color-bg-code);color:#89B4FA;padding:2px 8px;border-radius:4px">DELETE /api/cards/1234/loss-report</code>，这个操作是在做什么？</div>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="delete-card" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>删除这张饭卡</span>
+            </button>
+            <button class="quiz-option" data-value="report-loss" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>挂失这张饭卡</span>
+            </button>
+            <button class="quiz-option" data-value="cancel-loss" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>取消挂失 — DELETE 表示「去掉」，loss-report 是挂失记录</span>
+            </button>
+            <button class="quiz-option" data-value="view-loss" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>查看挂失记录</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <!-- Question 2 -->
+        <div class="quiz-question-block" data-correct="conflict" data-explanation-right="<span class='term' data-definition='HTTP 状态码是服务器在响应中返回的三位数字，表示请求处理的结果。比如 200 表示成功，404 表示找不到，409 表示冲突'>状态码</span> 409 表示 Conflict（冲突），意思是你想做的操作和当前状态矛盾。比如卡已经注销了还想再注销，或者卡已经挂失了还想再挂失。" data-explanation-wrong="409 状态码的关键词是 Conflict（冲突），想想什么情况下操作会和当前状态矛盾。">
+          <div class="quiz-question">2. 如果后端返回状态码 409（Conflict），可能是什么情况？</div>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="not-found" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>找不到这张卡</span>
+            </button>
+            <button class="quiz-option" data-value="no-auth" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>没有操作权限</span>
+            </button>
+            <button class="quiz-option" data-value="conflict" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>业务冲突 — 比如这张卡已经注销了你还想再注销</span>
+            </button>
+            <button class="quiz-option" data-value="server-err" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>服务器崩溃了</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <!-- Question 3 -->
+        <div class="quiz-question-block" data-correct="unit-convert" data-explanation-right="后端统一用「分」存储金额（整数运算），前端显示用「元」（对用户友好）。api.js 在中间负责转换，避免浮点数精度问题——比如 0.1 + 0.2 在计算机里不等于 0.3。" data-explanation-wrong="想想看：为什么金融系统通常不直接存储带小数的金额？提示：0.1 + 0.2 在计算机里并不等于 0.3。">
+          <div class="quiz-question">3. 为什么 api.js 要把金额从「元」转成「分」再发送？</div>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="security" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>为了数据安全，加密金额</span>
+            </button>
+            <button class="quiz-option" data-value="unit-convert" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>后端用「分」存储避免小数精度问题，api.js 负责单位转换</span>
+            </button>
+            <button class="quiz-option" data-value="compress" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>为了压缩数据减小传输量</span>
+            </button>
+            <button class="quiz-option" data-value="tradition" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>只是编程习惯，没有实际意义</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <!-- Quiz buttons -->
+        <div style="margin-top:var(--space-6)">
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module3')">检查答案</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module3')">重新作答</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+<section class="module" id="module-4" style="background: var(--color-bg-warm);">
+  <div class="module-content">
+
+    <!-- ── MODULE HEADER ──────────────────────────────────────── -->
+    <div class="module-header animate-in">
+      <span class="module-number">04</span>
+      <h2 class="module-title">卡的一生 — 状态机与业务规则</h2>
+      <p class="module-subtitle">饭卡就像交通信号灯：绿灯通行，黄灯暂停，红灯永停。系统里有一个「交警」确保每张卡只能按规则变灯。</p>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SCREEN 1 — 卡的三种状态
+         ══════════════════════════════════════════════════════════ -->
+    <div class="screen">
+      <h3 class="screen-heading animate-in">卡的三种状态</h3>
+
+      <p class="animate-in">每张饭卡在任意时刻只能处于以下三种状态之一，就像交通灯不可能同时亮两种颜色。</p>
+
+      <div class="icon-rows stagger-children">
+        <div class="icon-row animate-in">
+          <div class="icon-circle" style="background: var(--color-success-light); color: var(--color-success);">
+            <span style="font-size:1.5rem;">&#x1F7E2;</span>
+          </div>
+          <div>
+            <strong>active — 绿灯</strong>
+            <p>正常使用中。可以刷卡消费、充值，一切功能正常。</p>
+          </div>
+        </div>
+        <div class="icon-row animate-in">
+          <div class="icon-circle" style="background: #FFF3CD; color: #856404;">
+            <span style="font-size:1.5rem;">&#x1F7E1;</span>
+          </div>
+          <div>
+            <strong>lost — 黄灯</strong>
+            <p>已挂失。不能消费也不能充值，但可以取消挂失恢复使用，或办新卡。</p>
+          </div>
+        </div>
+        <div class="icon-row animate-in">
+          <div class="icon-circle" style="background: var(--color-error-light); color: var(--color-error);">
+            <span style="font-size:1.5rem;">&#x1F534;</span>
+          </div>
+          <div>
+            <strong>cancelled — 红灯</strong>
+            <p>已注销，永久停用。押金和余额已退还，这张卡的生命到此结束。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 状态流转图 -->
+      <div class="flow-animation animate-in" style="text-align:center; padding: var(--space-6);">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:var(--space-4);">
+
+          <!-- 主流程线 -->
+          <div style="display:flex; align-items:center; gap:var(--space-3); flex-wrap:wrap; justify-content:center;">
+            <div style="background:var(--color-info-light); border:2px solid var(--color-info); border-radius:var(--radius-sm); padding:var(--space-2) var(--space-4); font-weight:600; font-size:var(--text-sm);">
+              发卡
+            </div>
+            <span class="flow-arrow">&rarr;</span>
+            <div style="background:var(--color-success-light); border:2px solid var(--color-success); border-radius:var(--radius-sm); padding:var(--space-2) var(--space-4); font-weight:700; font-size:var(--text-sm); color:var(--color-success);">
+              active
+            </div>
+            <span class="flow-arrow">&rarr;</span>
+            <div style="background:#FFF3CD; border:2px solid #856404; border-radius:var(--radius-sm); padding:var(--space-2) var(--space-4); font-weight:700; font-size:var(--text-sm); color:#856404;">
+              lost
+            </div>
+            <span class="flow-arrow">&rarr;</span>
+            <div style="background:var(--color-error-light); border:2px solid var(--color-error); border-radius:var(--radius-sm); padding:var(--space-2) var(--space-4); font-weight:700; font-size:var(--text-sm); color:var(--color-error);">
+              cancelled
+            </div>
+          </div>
+
+          <!-- 回环箭头说明 -->
+          <div style="display:flex; gap:var(--space-6); flex-wrap:wrap; justify-content:center; margin-top:var(--space-2);">
+            <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:var(--space-3) var(--space-4); font-size:var(--text-sm); color:var(--color-text-secondary);">
+              <span style="color:var(--color-success); font-weight:700;">lost &rarr; active</span><br>取消挂失
+            </div>
+            <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:var(--space-3) var(--space-4); font-size:var(--text-sm); color:var(--color-text-secondary);">
+              <span style="color:var(--color-error); font-weight:700;">active &rarr; cancelled</span><br>直接注销
+            </div>
+            <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:var(--space-3) var(--space-4); font-size:var(--text-sm); color:var(--color-text-secondary);">
+              <span style="color:var(--color-error); font-weight:700;">lost &rarr; cancelled</span><br>挂失后注销
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-info animate-in">
+        <div class="callout-icon">&#x1F4A1;</div>
+        <div class="callout-content">
+          <span class="callout-title">单向规则</span>
+          <p>注意 <strong>cancelled</strong> 是终态 —— 一旦注销就无法恢复。就像红灯被焊死了，再也变不回绿灯。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SCREEN 2 — 代码翻译：挂失与取消挂失
+         ══════════════════════════════════════════════════════════ -->
+    <div class="screen">
+      <h3 class="screen-heading animate-in">代码翻译 — 挂失与取消挂失</h3>
+
+      <p class="animate-in">下面是 <code>ReportLoss</code> 方法的真实代码。左侧是 Go 代码，右侧是逐行翻译成人话。</p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">Go</span>
+<code><span class="code-line"><span class="code-keyword">func</span> (s *CardService) <span class="code-function">ReportLoss</span>(cardNo <span class="code-keyword">string</span>) (*model.Card, <span class="code-keyword">error</span>) {</span>
+<span class="code-line">    card, err := s.cardRepo.<span class="code-function">FindCardByCardNo</span>(cardNo)</span>
+<span class="code-line">    <span class="code-keyword">if</span> err != <span class="code-keyword">nil</span> {</span>
+<span class="code-line">        <span class="code-keyword">if</span> errors.<span class="code-function">Is</span>(err, gorm.ErrRecordNotFound) {</span>
+<span class="code-line">            <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, <span class="code-function">newBizError</span>(<span class="code-string">"CARD_NOT_FOUND"</span>, <span class="code-string">"卡号不存在"</span>)</span>
+<span class="code-line">        }</span>
+<span class="code-line">        <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, err</span>
+<span class="code-line">    }</span>
+<span class="code-line">    <span class="code-keyword">if</span> card.Status != model.CardStatusActive {</span>
+<span class="code-line">        <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, <span class="code-function">newBizError</span>(<span class="code-string">"CARD_NOT_ACTIVE"</span>, <span class="code-string">"只有正常使用中的卡可以挂失"</span>)</span>
+<span class="code-line">    }</span>
+<span class="code-line">    card.Status = model.CardStatusLost</span>
+<span class="code-line">    <span class="code-keyword">if</span> err := s.cardRepo.<span class="code-function">UpdateCard</span>(card); err != <span class="code-keyword">nil</span> {</span>
+<span class="code-line">        <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, err</span>
+<span class="code-line">    }</span>
+<span class="code-line">    <span class="code-keyword">return</span> card, <span class="code-keyword">nil</span></span>
+<span class="code-line">}</span></code>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">逐行翻译</span>
+          <div class="translation-lines">
+            <div class="tl"><strong>定义挂失方法</strong>：接收一个卡号，返回修改后的卡片或错误信息。</div>
+            <div class="tl"><strong>第一步：找卡。</strong>用卡号去数据库里查这张卡。</div>
+            <div class="tl">如果查询出错了……</div>
+            <div class="tl">特别地，如果根本找不到这个卡号——</div>
+            <div class="tl">返回一个<span class="term" data-definition="业务错误（BizError）是系统预先定义的、表示「这件事在业务规则上不允许」的错误，与程序崩溃不同。每个业务错误都有唯一的错误码和人类可读的消息。">业务错误</span>：「卡号不存在」。</div>
+            <div class="tl">（其他数据库错误，直接返回。）</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl"><strong>第二步：检查状态。</strong>如果卡不是 active（绿灯）——</div>
+            <div class="tl">拒绝操作，返回：「只有绿灯状态的卡才能挂失」。</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl"><strong>第三步：变灯。</strong>把状态从 active（绿灯）改成 lost（黄灯）。</div>
+            <div class="tl">保存到数据库。如果保存失败，返回错误。</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl"><strong>成功！</strong>返回更新后的卡片信息。</div>
+            <div class="tl">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-accent animate-in">
+        <div class="callout-icon">&#x1F6A6;</div>
+        <div class="callout-content">
+          <span class="callout-title">模式：先检查再操作</span>
+          <p>每个状态变更方法都遵循相同的三步：<strong>找到卡 &rarr; 检查当前状态是否允许 &rarr; 执行变更</strong>。这就是「交警」执法的标准流程。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SCREEN 3 — 发卡的特殊规则：一人一卡
+         ══════════════════════════════════════════════════════════ -->
+    <div class="screen">
+      <h3 class="screen-heading animate-in">发卡的特殊规则 — 一人一卡</h3>
+
+      <p class="animate-in">发卡看似简单，其实藏着一条复杂的业务规则链。系统必须处理各种「已有旧卡」的情况。</p>
+
+      <div class="step-cards stagger-children">
+        <div class="step-card animate-in">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <strong>验证证件号</strong>
+            <p>调用学籍验证服务，确认这个证件号对应的是本单位的学生或员工。</p>
+          </div>
+        </div>
+        <div class="step-card animate-in">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <strong>检查 active 卡 &rarr; 拒绝</strong>
+            <p>如果该证件号已有一张绿灯（active）卡，直接拒绝：「该证件号已有正在使用的卡」。<strong>一人一卡</strong>，不能同时持有两张有效卡。</p>
+          </div>
+        </div>
+        <div class="step-card animate-in">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <strong>检查 lost 卡 &rarr; 自动注销旧卡</strong>
+            <p>如果有一张黄灯（lost）卡，系统会自动注销它，退还旧卡的押金和余额，然后继续发新卡。</p>
+          </div>
+        </div>
+        <div class="step-card animate-in">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <strong>生成 16 位随机卡号</strong>
+            <p>用随机数生成器创建一个 16 位的唯一卡号，类似银行卡号。</p>
+          </div>
+        </div>
+        <div class="step-card animate-in">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <strong>创建新卡</strong>
+            <p>押金固定 2000 分（即 20 元），预存款记入卡中余额，状态设为 active（绿灯亮起）。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-info animate-in">
+        <div class="callout-icon">&#x1F9E0;</div>
+        <div class="callout-content">
+          <span class="callout-title">概念：<span class="term" data-definition="状态机（State Machine）是一种数学模型——一个对象在任何时刻只能处于有限状态中的一种，每次状态变化都必须遵循预定义的转换规则。非法的状态跳转会被代码拒绝。">状态机</span></span>
+          <p>饭卡的 active / lost / cancelled 就构成了一个状态机。代码里用 <span class="term" data-definition="枚举（Enum）是一种只允许取预定义值的数据类型。比如 CardStatus 只能是 active、lost 或 cancelled 三个值之一，不能随便填写。">枚举</span> 定义了三种合法状态，每个方法在操作前都会检查当前状态是否允许此操作。这是软件中管理复杂业务规则的核心模式 —— 让代码成为规则的执行者，而不是靠人来记住规则。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SCREEN 4 — 注销的退款逻辑
+         ══════════════════════════════════════════════════════════ -->
+    <div class="screen">
+      <h3 class="screen-heading animate-in">注销的退款逻辑</h3>
+
+      <p class="animate-in">注销是饭卡的「最终告别」。关键在于：先拍照留存退款金额，再清零余额、改状态。</p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">Go</span>
+<code><span class="code-line"><span class="code-keyword">func</span> (s *CardService) <span class="code-function">CancelCard</span>(cardNo <span class="code-keyword">string</span>) (*CancellationResult, <span class="code-keyword">error</span>) {</span>
+<span class="code-line">    card, err := s.cardRepo.<span class="code-function">FindCardByCardNo</span>(cardNo)</span>
+<span class="code-line">    <span class="code-keyword">if</span> err != <span class="code-keyword">nil</span> {</span>
+<span class="code-line">        <span class="code-keyword">if</span> errors.<span class="code-function">Is</span>(err, gorm.ErrRecordNotFound) {</span>
+<span class="code-line">            <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, <span class="code-function">newBizError</span>(<span class="code-string">"CARD_NOT_FOUND"</span>, <span class="code-string">"卡号不存在"</span>)</span>
+<span class="code-line">        }</span>
+<span class="code-line">        <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, err</span>
+<span class="code-line">    }</span>
+<span class="code-line">    <span class="code-keyword">if</span> card.Status == model.CardStatusCancelled {</span>
+<span class="code-line">        <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, <span class="code-function">newBizError</span>(<span class="code-string">"CARD_ALREADY_CANCELLED"</span>, <span class="code-string">"该卡已注销"</span>)</span>
+<span class="code-line">    }</span>
+<span class="code-line">    <span class="code-property">deposit</span> := card.Deposit</span>
+<span class="code-line">    <span class="code-property">balance</span> := card.Balance</span>
+<span class="code-line">    card.Status = model.CardStatusCancelled</span>
+<span class="code-line">    card.Balance = <span class="code-number">0</span></span>
+<span class="code-line">    <span class="code-keyword">if</span> err := s.cardRepo.<span class="code-function">UpdateCard</span>(card); err != <span class="code-keyword">nil</span> {</span>
+<span class="code-line">        <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, err</span>
+<span class="code-line">    }</span>
+<span class="code-line">    <span class="code-keyword">return</span> &CancellationResult{</span>
+<span class="code-line">        Card: card, Deposit: <span class="code-property">deposit</span>, Balance: <span class="code-property">balance</span>,</span>
+<span class="code-line">        Total: <span class="code-property">deposit</span> + <span class="code-property">balance</span>,</span>
+<span class="code-line">    }, <span class="code-keyword">nil</span></span>
+<span class="code-line">}</span></code>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">逐行翻译</span>
+          <div class="translation-lines">
+            <div class="tl"><strong>定义注销方法</strong>：接收卡号，返回退款详情或错误。</div>
+            <div class="tl"><strong>第一步：找卡。</strong>老套路，先查出这张卡。</div>
+            <div class="tl">如果查询出错……</div>
+            <div class="tl">找不到这个卡号？</div>
+            <div class="tl">返回<span class="term" data-definition="错误码（Error Code）是一个简短的英文标识符，用于唯一标记某类错误。前端和后端通过错误码对齐，而不依赖错误消息的文字内容。">错误码</span> CARD_NOT_FOUND。</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl"><strong>第二步：检查状态。</strong>如果已经是红灯（cancelled）——</div>
+            <div class="tl">拒绝：「已经注销过了，不能重复注销」。</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl"><strong>第三步：拍照！</strong>先把押金存到 <code>deposit</code> 变量里。</div>
+            <div class="tl">再把余额存到 <code>balance</code> 变量里。这就是<span class="term" data-definition="快照（Snapshot）是在数据被修改之前，先把当前值复制保存下来。这样即使原始数据被清零或改变，仍然可以知道「改之前是多少」。">快照</span>。</div>
+            <div class="tl"><strong>第四步：变灯。</strong>把状态改为 cancelled（红灯永亮）。</div>
+            <div class="tl">余额清零 —— 钱已经准备退还了。</div>
+            <div class="tl">保存到数据库。</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl"><strong>第五步：返回退款清单。</strong></div>
+            <div class="tl">卡片信息 + 押金快照 + 余额快照。</div>
+            <div class="tl">总退款 = 押金 + 余额。打包返回。</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-accent animate-in">
+        <div class="callout-icon">&#x1F4F8;</div>
+        <div class="callout-content">
+          <span class="callout-title">为什么要「先拍照再清零」？</span>
+          <p>如果先清零再去读金额，读到的就是 0 了 —— 系统就不知道该退多少钱。这种「先保存旧值，再修改」的技巧在编程中非常常见，就像搬家前先拍照留证。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SCREEN 5 — 测验
+         ══════════════════════════════════════════════════════════ -->
+    <div class="screen">
+      <h3 class="screen-heading animate-in">检验你的理解</h3>
+
+      <div class="quiz-container animate-in" id="quiz-module4">
+
+        <!-- Q1 -->
+        <div class="quiz-question-block" data-correct="a"
+             data-explanation-right="正确！只要卡还处于 lost（黄灯）状态，系统就允许调用取消挂失方法，把状态恢复为 active（绿灯）。"
+             data-explanation-wrong="再想想 —— 取消挂失的前提条件是什么？回顾一下代码里 CancelLossReport 方法检查的状态。">
+          <p class="quiz-question">Q1: 一个学生丢了卡，来管理处挂失。第二天又找到了卡，能取消挂失吗？需要满足什么条件？</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="a" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>可以，只要卡状态还是 lost 就能取消挂失恢复为 active</span>
+            </button>
+            <button class="quiz-option" data-value="b" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>不行，挂失后只能注销重新办卡</span>
+            </button>
+            <button class="quiz-option" data-value="c" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>可以，但需要额外缴纳手续费</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="quiz-question-block" data-correct="b"
+             data-explanation-right="正确！系统会检查该证件号是否已有 active 卡，如果有就直接拒绝——这就是「一人一卡」规则。"
+             data-explanation-wrong="回想一下发卡的第 2 步规则链——系统发现已有 active 卡时会怎么做？">
+          <p class="quiz-question">Q2: 如果一个学生已有 active 卡又来办卡，系统会怎样？</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="a" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>自动注销旧卡，办一张新卡</span>
+            </button>
+            <button class="quiz-option" data-value="b" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>系统拒绝，提示「该证件号已有正在使用的卡」</span>
+            </button>
+            <button class="quiz-option" data-value="c" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>允许办卡，一个人可以持有多张卡</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="quiz-question-block" data-correct="c"
+             data-explanation-right="正确！退款总额 = 押金 20 元 + 卡内余额 5.50 元 = 25.50 元。代码里的 Total = deposit + balance 正是这样计算的。"
+             data-explanation-wrong="回看注销代码中 CancellationResult 的 Total 字段是怎么算的 —— deposit + balance。">
+          <p class="quiz-question">Q3: 学生毕业离校注销饭卡，系统退还了 25.50 元。这个钱包含什么？</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="a" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>全部是卡内余额 25.50 元</span>
+            </button>
+            <button class="quiz-option" data-value="b" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>押金 25.50 元，余额不退</span>
+            </button>
+            <button class="quiz-option" data-value="c" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>押金 20 元 + 卡内余额 5.50 元</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-module4')">检查答案</button>
+        <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module4')">重新作答</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+<!-- ============================================================
+     MODULE 5 — 全局视角：架构总览与统计报表
+     ============================================================ -->
+<section class="module" id="module-5" style="background:var(--color-bg)">
+  <div class="module-content">
+
+    <!-- ── MODULE HEADER ──────────────────────────────────────── -->
+    <header class="module-header animate-in">
+      <span class="module-number">05</span>
+      <h2 class="module-title">全局视角 — 架构总览与统计报表</h2>
+      <p class="module-subtitle">
+        把整个系统想象成一座城市的<strong>水务系统</strong> —— 水厂（发卡/充值）把水送进管道（API），各个水龙头（窗口）出水（消费），水表（统计服务）记录用量生成账单。管理员看的不是每一滴水，而是整体的流量、分布和趋势。
+      </p>
+    </header>
+
+    <!-- ════════════════════════════════════════════════════════════
+         SCREEN 1 — 架构全景图
+         ════════════════════════════════════════════════════════ -->
+    <div class="screen" id="m5-screen1">
+      <h3 class="screen-heading animate-in">Screen 1 · 架构全景图</h3>
+
+      <p class="animate-in">
+        下面的交互式图表展示了整个系统的三大层次。<strong>点击任意组件</strong>查看它的职责描述。
+      </p>
+
+      <div class="arch-diagram animate-in" id="m5-arch">
+
+        <!-- LAYER 1: 浏览器层 -->
+        <div class="arch-zone">
+          <div class="arch-zone-label">浏览器层（Browser）</div>
+          <div class="arch-component"
+               data-desc="React SPA（单页应用）：所有页面在浏览器中切换，无需重新加载整个网页。就像一本翻页的画册，切换页面只是翻了一页，而不是换了一本书。"
+               onclick="">
+            <span class="arch-icon">🖥️</span>
+            <span><span class="term" data-definition="Single Page Application，单页应用。整个网站只加载一次 HTML 页面，之后通过 JavaScript 动态更新内容，无需刷新页面。">SPA</span> (React)</span>
+          </div>
+          <div class="arch-component"
+               data-desc="api.js：统一的 HTTP 请求工具。所有前端页面都通过它向后端发送请求，就像一个邮局 —— 不管你寄什么信，都交给同一个窗口处理。"
+               onclick="">
+            <span class="arch-icon">📮</span>
+            <span>api.js</span>
+          </div>
+        </div>
+
+        <!-- LAYER 2: 服务器层 -->
+        <div class="arch-zone">
+          <div class="arch-zone-label">服务器层（Server）</div>
+          <div class="arch-component"
+               data-desc="Echo Router（路由器）：接收所有 HTTP 请求，根据 URL 路径把请求分发到对应的 Handler。就像公司前台，根据来访者的目的把他们引导到不同的部门。"
+               onclick="">
+            <span class="arch-icon">🔀</span>
+            <span><span class="term" data-definition="路由器，负责根据请求的 URL 路径和方法（GET/POST 等），将请求转发到对应的处理函数。类似公司前台的接待员。">Router</span> (Echo)</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-2)">
+            <div class="arch-component"
+                 data-desc="CardHandler：处理与饭卡相关的 HTTP 请求（发卡、充值、挂失、注销等），验证参数后调用 CardService。"
+                 onclick="">
+              <span class="arch-icon">🎫</span>
+              <span>CardHandler</span>
+            </div>
+            <div class="arch-component"
+                 data-desc="StatisticsHandler：处理统计报表相关的 HTTP 请求（日报、月报、窗口收入等），调用 StatisticsService 获取聚合数据。"
+                 onclick="">
+              <span class="arch-icon">📊</span>
+              <span>StatisticsHandler</span>
+            </div>
+            <div class="arch-component"
+                 data-desc="WindowHandler：处理窗口相关的 HTTP 请求（窗口列表、消费操作），调用 WindowService。"
+                 onclick="">
+              <span class="arch-icon">🪟</span>
+              <span>WindowHandler</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-2)">
+            <div class="arch-component"
+                 data-desc="CardService：饭卡核心业务逻辑 —— 发卡、充值、消费、挂失、注销的规则都在这里。是整个系统的「大脑」。"
+                 onclick="">
+              <span class="arch-icon">🧠</span>
+              <span>CardService</span>
+            </div>
+            <div class="arch-component"
+                 data-desc="StatisticsService：统计业务逻辑 —— 不做具体业务操作，只从已有数据中聚合信息，生成各类报表。像是一个只读的「会计」。"
+                 onclick="">
+              <span class="arch-icon">🧮</span>
+              <span>StatisticsService</span>
+            </div>
+            <div class="arch-component"
+                 data-desc="WindowService：窗口业务逻辑 —— 管理食堂窗口的创建和查询。"
+                 onclick="">
+              <span class="arch-icon">⚙️</span>
+              <span>WindowService</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-2)">
+            <div class="arch-component"
+                 data-desc="CardRepository：饭卡数据访问层。直接和数据库对话，执行 SQL 查询来读写卡、交易、充值等数据。"
+                 onclick="">
+              <span class="arch-icon">💾</span>
+              <span>CardRepository</span>
+            </div>
+            <div class="arch-component"
+                 data-desc="WindowRepository：窗口数据访问层。负责读写窗口相关的数据库记录。"
+                 onclick="">
+              <span class="arch-icon">💾</span>
+              <span>WindowRepository</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- LAYER 3: 数据层 -->
+        <div class="arch-zone">
+          <div class="arch-zone-label">数据层（Data）</div>
+          <div class="arch-component"
+               data-desc="SQLite 数据库：所有数据存储在一个文件里，包含 5 张表 —— cards（卡）、transactions（消费记录）、deposits（充值记录）、windows（窗口）、holders（持卡人）。"
+               onclick="">
+            <span class="arch-icon">🗄️</span>
+            <span><span class="term" data-definition="一种轻量级数据库，所有数据存在一个文件中，不需要单独安装数据库服务器。适合小型应用和开发测试。">SQLite</span> (5 张表)</span>
+          </div>
+          <div class="arch-component"
+               data-desc="MockStudentValidator：模拟学籍验证服务。在真实系统中，这里会连接学校的学籍系统来验证学生身份，但我们用一个模拟版本代替。"
+               onclick="">
+            <span class="arch-icon">🎓</span>
+            <span>MockStudentValidator</span>
+          </div>
+        </div>
+
+        <!-- 描述区域 -->
+        <div class="arch-description">👆 点击上方任意组件，这里会显示它的详细说明</div>
+      </div>
+
+      <div class="callout callout-info animate-in">
+        <span class="callout-icon">💡</span>
+        <div>
+          <span class="callout-title">分层架构的好处</span>
+          <p class="callout-content">每一层只和相邻的层打交道：Handler 不直接碰数据库，Service 不知道 HTTP 长什么样。这样改动某一层时，其他层不受影响。就像水务系统中，换了水龙头不需要改水厂。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         SCREEN 2 — 统计的秘密：聚合查询
+         ════════════════════════════════════════════════════════ -->
+    <div class="screen" id="m5-screen2">
+      <h3 class="screen-heading animate-in">Screen 2 · 统计的秘密 — 聚合查询</h3>
+
+      <p class="animate-in">
+        统计服务不创建新数据，它只是从已有的消费记录和充值记录中<strong>聚合</strong>出数字。下面是「日餐报表」功能的核心代码。
+      </p>
+
+      <!-- Translation block: GetDailyReport -->
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">Go</span>
+<code><span class="code-line"><span class="code-keyword">func</span> (s *StatisticsService) <span class="code-function">GetDailyReport</span>(date <span class="code-keyword">string</span>) (*DailyReportResult, <span class="code-keyword">error</span>) {</span>
+<span class="code-line">    day, err := time.<span class="code-function">Parse</span>(<span class="code-string">"2006-01-02"</span>, date)</span>
+<span class="code-line">    <span class="code-keyword">if</span> err != <span class="code-keyword">nil</span> {</span>
+<span class="code-line">        <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, <span class="code-function">newBizError</span>(<span class="code-string">"日期格式无效"</span>)</span>
+<span class="code-line">    }</span>
+<span class="code-line">    start := time.<span class="code-function">Date</span>(day.Year(), day.Month(), day.Day(), <span class="code-number">0</span>,<span class="code-number">0</span>,<span class="code-number">0</span>,<span class="code-number">0</span>, time.Local)</span>
+<span class="code-line">    end := start.<span class="code-function">Add</span>(<span class="code-number">24</span> * time.Hour)</span>
+<span class="code-line">    totalRevenue, count, windows, err := s.cardRepo.<span class="code-function">GetDailyReport</span>(start, end)</span>
+<span class="code-line">}</span></code>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">逐行解读</span>
+          <div class="translation-lines">
+            <div class="tl"><strong>第 1 行</strong>：定义函数 —— 接收一个日期字符串，返回报表结果</div>
+            <div class="tl"><strong>第 2-4 行</strong>：把日期文字转换成时间对象；如果格式不对就报错</div>
+            <div class="tl"><strong>第 5-6 行</strong>：计算这一天的起点（0:00）和终点（次日 0:00）</div>
+            <div class="tl"><strong>第 7 行</strong>：把时间范围交给 Repository，让它去数据库查出总收入、笔数和各窗口数据</div>
+          </div>
+        </div>
+      </div>
+
+      <p class="animate-in">系统提供了 <strong>7 种统计能力</strong>，每一种都从同样的数据中提取不同维度的信息：</p>
+
+      <!-- 7 种统计能力 pattern cards -->
+      <div class="pattern-cards stagger-children">
+        <div class="pattern-card animate-in">
+          <div class="pattern-icon" style="background:var(--color-accent-light);color:var(--color-accent)">💰</div>
+          <div class="pattern-title">本餐售饭总收入</div>
+          <p class="pattern-desc">按时间范围统计消费总额</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-icon" style="background:var(--color-info-light);color:var(--color-info)">🪟</div>
+          <div class="pattern-title">各窗口收入</div>
+          <p class="pattern-desc">按窗口分组统计各自收入</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-icon" style="background:var(--color-success-light);color:var(--color-success)">📋</div>
+          <div class="pattern-title">持卡人存款明细</div>
+          <p class="pattern-desc">按人列出每笔充值记录</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-icon" style="background:#FDF2E9;color:#D4A843">📅</div>
+          <div class="pattern-title">本日/本月存款</div>
+          <p class="pattern-desc">固定时间段的存款汇总</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-icon" style="background:#EDE8F5;color:var(--color-actor-3)">💳</div>
+          <div class="pattern-title">流动资金总额</div>
+          <p class="pattern-desc">所有活跃卡的余额之和</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-icon" style="background:var(--color-accent-light);color:var(--color-accent)">📄</div>
+          <div class="pattern-title">日餐报表</div>
+          <p class="pattern-desc">某一天的完整消费详情</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-icon" style="background:var(--color-info-light);color:var(--color-info)">📆</div>
+          <div class="pattern-title">年餐报表</div>
+          <p class="pattern-desc">按月汇总全年消费数据</p>
+        </div>
+      </div>
+
+      <!-- Callout: 聚合查询 -->
+      <div class="callout callout-accent animate-in">
+        <span class="callout-icon">🔍</span>
+        <div>
+          <span class="callout-title">什么是<span class="term" data-definition="聚合查询是指使用 SUM、COUNT、AVG 等数据库函数，对多条记录进行汇总计算，一次性得出统计结果的查询方式。">聚合查询</span>？</span>
+          <p class="callout-content">
+            统计不是把每条数据一条条读出来手动加总，而是让数据库用
+            <span class="term" data-definition="SQL 求和函数，把指定列的所有数值加在一起。例如 SUM(amount) 会把所有金额加起来返回总和。">SUM</span>、
+            <span class="term" data-definition="SQL 计数函数，统计满足条件的记录有多少条。例如 COUNT(*) 返回总行数。">COUNT</span>、
+            <span class="term" data-definition="SQL 分组子句，把数据按某个字段分组后分别计算。例如 GROUP BY window_id 会把每个窗口的数据分开统计。">GROUP BY</span>
+            一次性算好。就像问全班同学的平均分 —— 你不需要挨个问成绩再手动计算，直接让数据库帮你算。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         SCREEN 3 — 前端怎么发 API 请求
+         ════════════════════════════════════════════════════════ -->
+    <div class="screen" id="m5-screen3">
+      <h3 class="screen-heading animate-in">Screen 3 · 代码翻译 — 前端怎么发 API 请求</h3>
+
+      <p class="animate-in">
+        前端通过 <code>api.js</code> 中的函数向后端发起请求。每个统计功能对应一个函数。
+      </p>
+
+      <!-- Translation block: api.js 统计函数 -->
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">JavaScript</span>
+<code><span class="code-line"><span class="code-keyword">export function</span> <span class="code-function">getMealRevenue</span>({ startTime, endTime }) {</span>
+<span class="code-line">  <span class="code-keyword">return</span> <span class="code-function">request</span>(</span>
+<span class="code-line">    <span class="code-string">`/api/statistics/meal-revenue</span></span>
+<span class="code-line">    <span class="code-string">?startTime=<span class="code-property">${encodeURIComponent(startTime)}</span></span></span>
+<span class="code-line">    <span class="code-string">&endTime=<span class="code-property">${encodeURIComponent(endTime)}</span>`</span></span>
+<span class="code-line">  )</span>
+<span class="code-line">}</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">export function</span> <span class="code-function">getActiveBalance</span>() {</span>
+<span class="code-line">  <span class="code-keyword">return</span> <span class="code-function">request</span>(<span class="code-string">'/api/statistics/active-balance'</span>)</span>
+<span class="code-line">}</span></code>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">逐行解读</span>
+          <div class="translation-lines">
+            <div class="tl"><strong>getMealRevenue</strong>：获取指定时间段的售饭总收入。通过<span class="term" data-definition="URL 中 ? 后面的 key=value 部分，用来向服务器传递额外的筛选条件。多个参数用 & 连接。">查询参数</span>告诉后端时间范围</div>
+            <div class="tl"><strong>?startTime=...&endTime=...</strong>：就像信封上的附加说明 —— 「我只要这个时间范围内的数据」</div>
+            <div class="tl"><strong><span class="term" data-definition="将特殊字符（如空格、冒号）转换为 %XX 格式，确保 URL 中的参数值不会被浏览器误解。例如空格变成 %20。">encodeURIComponent</span></strong>：把时间中的特殊字符（如冒号 :）转成安全格式，避免 URL 被破坏</div>
+            <div class="tl"><strong>getActiveBalance</strong>：获取流动资金总额。不需要参数 —— 直接查所有活跃卡的余额之和</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 请求流程 flow steps -->
+      <div class="flow-steps animate-in">
+        <div class="flow-step">
+          <div class="flow-step-num">1</div>
+          <p>前端调用 api.js 函数</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <div class="flow-step-num">2</div>
+          <p>发出 HTTP GET 请求</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <div class="flow-step-num">3</div>
+          <p><span class="term" data-definition="路由器，负责根据请求的 URL 路径和方法（GET/POST 等），将请求转发到对应的处理函数。">Router</span> 分发到 Handler</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <div class="flow-step-num">4</div>
+          <p>Service 调用 Repository</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <div class="flow-step-num">5</div>
+          <p>数据库执行聚合查询</p>
+        </div>
+      </div>
+
+      <div class="callout callout-info animate-in">
+        <span class="callout-icon">📬</span>
+        <div>
+          <span class="callout-title">为什么统计接口都用 GET？</span>
+          <p class="callout-content">
+            HTTP 中 GET 代表「获取数据」，POST 代表「创建/修改数据」。统计功能只是读取已有数据做汇总，不修改任何东西，所以全部使用 GET 请求。就像去图书馆查资料（GET）和往图书馆捐书（POST）是不同的动作。
+          </p>
+        </div>
+      </div>
+
+      <!-- 完整 API 列表 -->
+      <p class="animate-in">系统统计模块的全部 API 一览：</p>
+      <div class="badge-list animate-in">
+        <div class="badge-item">
+          <span class="badge-code">GET /meal-revenue</span>
+          <span class="badge-desc">指定时段售饭总收入</span>
+        </div>
+        <div class="badge-item">
+          <span class="badge-code">GET /window-revenue</span>
+          <span class="badge-desc">各窗口收入分布</span>
+        </div>
+        <div class="badge-item">
+          <span class="badge-code">GET /holder-deposits</span>
+          <span class="badge-desc">持卡人存款明细（分页）</span>
+        </div>
+        <div class="badge-item">
+          <span class="badge-code">GET /active-balance</span>
+          <span class="badge-desc">流动资金总额</span>
+        </div>
+        <div class="badge-item">
+          <span class="badge-code">GET /daily-report</span>
+          <span class="badge-desc">日餐报表</span>
+        </div>
+        <div class="badge-item">
+          <span class="badge-code">GET /yearly-report</span>
+          <span class="badge-desc">年餐报表（按月汇总）</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         SCREEN 4 — 期末测验（综合题）
+         ════════════════════════════════════════════════════════ -->
+    <div class="screen" id="m5-screen4">
+      <h3 class="screen-heading animate-in">Screen 4 · 期末测验 — 综合题</h3>
+
+      <p class="animate-in">
+        恭喜你走到了最后！这 4 道综合题覆盖整个课程的知识点，检验你对系统的整体理解。
+      </p>
+
+      <div class="quiz-container animate-in" id="quiz-module5">
+
+        <!-- Q1 -->
+        <div class="quiz-question-block" data-correct="a"
+             data-explanation-right="余额 = 100 - 35 = 65 元。卡处于挂失状态时，系统会拒绝充值和消费操作，但余额仍然保留在卡中。"
+             data-explanation-wrong="办卡时预存 100 元，消费两顿共 35 元，所以余额是 65 元。挂失只是冻结了卡的使用，不允许充值或消费，但余额不会消失。">
+          <div class="quiz-question">1. 一个学生办卡时预存了 100 元，吃了两顿花了 35 元，然后挂失了。此时他的卡余额是多少？能不能充值？</div>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="a" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              余额 65 元，不能充值 —— 卡已挂失，所有操作被冻结
+            </button>
+            <button class="quiz-option" data-value="b" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              余额 65 元，可以充值 —— 挂失只阻止消费
+            </button>
+            <button class="quiz-option" data-value="c" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              余额 0 元 —— 挂失会自动退款
+            </button>
+            <button class="quiz-option" data-value="d" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              余额 100 元 —— 挂失会撤销消费
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="quiz-question-block" data-correct="b"
+             data-explanation-right="GET /api/statistics/window-revenue 正是「各窗口收入」接口。它的数据来源是 transactions（消费记录）表，按 window_id 字段分组，用 SUM 求和计算每个窗口的收入。"
+             data-explanation-wrong="食堂经理要看「各窗口各卖了多少钱」，这对应的是 window-revenue 接口。数据来自 transactions 表，因为每笔消费都记录了 window_id，通过 GROUP BY 分组统计。">
+          <div class="quiz-question">2. 食堂经理想知道今天每个窗口各卖了多少钱。这对应哪个 API？数据来自哪里？</div>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="a" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              GET /api/statistics/meal-revenue，数据在 deposits 表
+            </button>
+            <button class="quiz-option" data-value="b" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              GET /api/statistics/window-revenue，数据来自 transactions 表按 window_id 分组求和
+            </button>
+            <button class="quiz-option" data-value="c" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              GET /api/statistics/daily-report，数据在 windows 表
+            </button>
+            <button class="quiz-option" data-value="d" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              GET /api/statistics/active-balance，数据在 cards 表
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="quiz-question-block" data-correct="c"
+             data-explanation-right="分层架构意味着添加新功能需要从下到上依次添加：Repository（数据库查询）→ Service（业务逻辑）→ Handler + 路由（HTTP 接口）→ 前端 API 函数 + 页面组件。每一层各司其职。"
+             data-explanation-wrong="要加「历史消费记录」功能，需要改动每一层：Repository 层写 SQL 查 transactions 表，Service 层封装查询逻辑，Handler 层暴露 HTTP 接口并注册路由，前端加 API 函数和展示页面。">
+          <div class="quiz-question">3. 要给系统加一个「查看历史消费记录」功能，需要改哪些地方？</div>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="a" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              只改前端 —— 数据库里已经有消费记录了，前端直接读
+            </button>
+            <button class="quiz-option" data-value="b" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              只改后端 —— 加个 API 就行，前端会自动显示
+            </button>
+            <button class="quiz-option" data-value="c" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              后端：Repository 查询 + Service 方法 + Handler 和路由；前端：API 函数 + 页面组件
+            </button>
+            <button class="quiz-option" data-value="d" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              只改数据库 —— 加个新表就能自动显示
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <!-- Q4 -->
+        <div class="quiz-question-block" data-correct="a"
+             data-explanation-right="分层架构的好处在此体现！Service 和 Handler 不直接操作数据库，它们通过 Repository 的接口间接访问数据。换数据库只需要改 Repository 层的 SQL 和初始化代码，上层完全不用动。"
+             data-explanation-wrong="因为只有 Repository 层直接和数据库打交道（写 SQL、建连接），换成 MySQL 只需要改这一层。Service 调用 Repository 的方法不变，Handler 调用 Service 的方法也不变。">
+          <div class="quiz-question">4. 这个系统用了 <span class="term" data-definition="一种轻量级数据库，所有数据存在一个文件中，不需要单独安装数据库服务器。">SQLite</span> 数据库。如果换成 <span class="term" data-definition="一种流行的关系型数据库，需要安装独立的数据库服务器。适合高并发、大数据量的生产环境。">MySQL</span>，需要改哪一层代码？</div>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="a" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              主要改 Repository 层和数据库初始化 —— Service 和 Handler 不直接操作数据库
+            </button>
+            <button class="quiz-option" data-value="b" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              所有层都要改 —— 数据库换了，全部代码都受影响
+            </button>
+            <button class="quiz-option" data-value="c" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              只改前端 —— 后端会自动适配不同数据库
+            </button>
+            <button class="quiz-option" data-value="d" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              不需要改代码 —— 只要改配置文件
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <!-- Quiz buttons -->
+        <div style="display:flex;gap:var(--space-3);margin-top:var(--space-6)">
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module5')">检查答案</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module5')">重新作答</button>
+        </div>
+      </div>
+
+      <!-- 课程完成 callout -->
+      <div class="callout callout-accent animate-in" style="margin-top:var(--space-8)">
+        <span class="callout-icon">🎉</span>
+        <div>
+          <span class="callout-title">恭喜完成全部课程！</span>
+          <p class="callout-content">
+            你已经从一张饭卡出发，走过了刷卡就餐的流程、认识了系统中的各个角色、理解了数据如何在数据库中存储和对话、学习了卡的状态如何流转，最终站在全局视角俯瞰了整个系统的架构。现在你已经具备了阅读和理解这个代码库的心智模型。
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- .module-content -->
+</section>
+  </main>
+
+</body>
+</html>

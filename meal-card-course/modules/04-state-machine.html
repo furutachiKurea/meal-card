@@ -1,0 +1,367 @@
+<section class="module" id="module-4" style="background: var(--color-bg-warm);">
+  <div class="module-content">
+
+    <!-- ── MODULE HEADER ──────────────────────────────────────── -->
+    <div class="module-header animate-in">
+      <span class="module-number">04</span>
+      <h2 class="module-title">卡的一生 — 状态机与业务规则</h2>
+      <p class="module-subtitle">饭卡就像交通信号灯：绿灯通行，黄灯暂停，红灯永停。系统里有一个「交警」确保每张卡只能按规则变灯。</p>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SCREEN 1 — 卡的三种状态
+         ══════════════════════════════════════════════════════════ -->
+    <div class="screen">
+      <h3 class="screen-heading animate-in">卡的三种状态</h3>
+
+      <p class="animate-in">每张饭卡在任意时刻只能处于以下三种状态之一，就像交通灯不可能同时亮两种颜色。</p>
+
+      <div class="icon-rows stagger-children">
+        <div class="icon-row animate-in">
+          <div class="icon-circle" style="background: var(--color-success-light); color: var(--color-success);">
+            <span style="font-size:1.5rem;">&#x1F7E2;</span>
+          </div>
+          <div>
+            <strong>active — 绿灯</strong>
+            <p>正常使用中。可以刷卡消费、充值，一切功能正常。</p>
+          </div>
+        </div>
+        <div class="icon-row animate-in">
+          <div class="icon-circle" style="background: #FFF3CD; color: #856404;">
+            <span style="font-size:1.5rem;">&#x1F7E1;</span>
+          </div>
+          <div>
+            <strong>lost — 黄灯</strong>
+            <p>已挂失。不能消费也不能充值，但可以取消挂失恢复使用，或办新卡。</p>
+          </div>
+        </div>
+        <div class="icon-row animate-in">
+          <div class="icon-circle" style="background: var(--color-error-light); color: var(--color-error);">
+            <span style="font-size:1.5rem;">&#x1F534;</span>
+          </div>
+          <div>
+            <strong>cancelled — 红灯</strong>
+            <p>已注销，永久停用。押金和余额已退还，这张卡的生命到此结束。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 状态流转图 -->
+      <div class="flow-animation animate-in" style="text-align:center; padding: var(--space-6);">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:var(--space-4);">
+
+          <!-- 主流程线 -->
+          <div style="display:flex; align-items:center; gap:var(--space-3); flex-wrap:wrap; justify-content:center;">
+            <div style="background:var(--color-info-light); border:2px solid var(--color-info); border-radius:var(--radius-sm); padding:var(--space-2) var(--space-4); font-weight:600; font-size:var(--text-sm);">
+              发卡
+            </div>
+            <span class="flow-arrow">&rarr;</span>
+            <div style="background:var(--color-success-light); border:2px solid var(--color-success); border-radius:var(--radius-sm); padding:var(--space-2) var(--space-4); font-weight:700; font-size:var(--text-sm); color:var(--color-success);">
+              active
+            </div>
+            <span class="flow-arrow">&rarr;</span>
+            <div style="background:#FFF3CD; border:2px solid #856404; border-radius:var(--radius-sm); padding:var(--space-2) var(--space-4); font-weight:700; font-size:var(--text-sm); color:#856404;">
+              lost
+            </div>
+            <span class="flow-arrow">&rarr;</span>
+            <div style="background:var(--color-error-light); border:2px solid var(--color-error); border-radius:var(--radius-sm); padding:var(--space-2) var(--space-4); font-weight:700; font-size:var(--text-sm); color:var(--color-error);">
+              cancelled
+            </div>
+          </div>
+
+          <!-- 回环箭头说明 -->
+          <div style="display:flex; gap:var(--space-6); flex-wrap:wrap; justify-content:center; margin-top:var(--space-2);">
+            <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:var(--space-3) var(--space-4); font-size:var(--text-sm); color:var(--color-text-secondary);">
+              <span style="color:var(--color-success); font-weight:700;">lost &rarr; active</span><br>取消挂失
+            </div>
+            <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:var(--space-3) var(--space-4); font-size:var(--text-sm); color:var(--color-text-secondary);">
+              <span style="color:var(--color-error); font-weight:700;">active &rarr; cancelled</span><br>直接注销
+            </div>
+            <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:var(--space-3) var(--space-4); font-size:var(--text-sm); color:var(--color-text-secondary);">
+              <span style="color:var(--color-error); font-weight:700;">lost &rarr; cancelled</span><br>挂失后注销
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-info animate-in">
+        <div class="callout-icon">&#x1F4A1;</div>
+        <div class="callout-content">
+          <span class="callout-title">单向规则</span>
+          <p>注意 <strong>cancelled</strong> 是终态 —— 一旦注销就无法恢复。就像红灯被焊死了，再也变不回绿灯。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SCREEN 2 — 代码翻译：挂失与取消挂失
+         ══════════════════════════════════════════════════════════ -->
+    <div class="screen">
+      <h3 class="screen-heading animate-in">代码翻译 — 挂失与取消挂失</h3>
+
+      <p class="animate-in">下面是 <code>ReportLoss</code> 方法的真实代码。左侧是 Go 代码，右侧是逐行翻译成人话。</p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">Go</span>
+<code><span class="code-line"><span class="code-keyword">func</span> (s *CardService) <span class="code-function">ReportLoss</span>(cardNo <span class="code-keyword">string</span>) (*model.Card, <span class="code-keyword">error</span>) {</span>
+<span class="code-line">    card, err := s.cardRepo.<span class="code-function">FindCardByCardNo</span>(cardNo)</span>
+<span class="code-line">    <span class="code-keyword">if</span> err != <span class="code-keyword">nil</span> {</span>
+<span class="code-line">        <span class="code-keyword">if</span> errors.<span class="code-function">Is</span>(err, gorm.ErrRecordNotFound) {</span>
+<span class="code-line">            <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, <span class="code-function">newBizError</span>(<span class="code-string">"CARD_NOT_FOUND"</span>, <span class="code-string">"卡号不存在"</span>)</span>
+<span class="code-line">        }</span>
+<span class="code-line">        <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, err</span>
+<span class="code-line">    }</span>
+<span class="code-line">    <span class="code-keyword">if</span> card.Status != model.CardStatusActive {</span>
+<span class="code-line">        <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, <span class="code-function">newBizError</span>(<span class="code-string">"CARD_NOT_ACTIVE"</span>, <span class="code-string">"只有正常使用中的卡可以挂失"</span>)</span>
+<span class="code-line">    }</span>
+<span class="code-line">    card.Status = model.CardStatusLost</span>
+<span class="code-line">    <span class="code-keyword">if</span> err := s.cardRepo.<span class="code-function">UpdateCard</span>(card); err != <span class="code-keyword">nil</span> {</span>
+<span class="code-line">        <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, err</span>
+<span class="code-line">    }</span>
+<span class="code-line">    <span class="code-keyword">return</span> card, <span class="code-keyword">nil</span></span>
+<span class="code-line">}</span></code>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">逐行翻译</span>
+          <div class="translation-lines">
+            <div class="tl"><strong>定义挂失方法</strong>：接收一个卡号，返回修改后的卡片或错误信息。</div>
+            <div class="tl"><strong>第一步：找卡。</strong>用卡号去数据库里查这张卡。</div>
+            <div class="tl">如果查询出错了……</div>
+            <div class="tl">特别地，如果根本找不到这个卡号——</div>
+            <div class="tl">返回一个<span class="term" data-definition="业务错误（BizError）是系统预先定义的、表示「这件事在业务规则上不允许」的错误，与程序崩溃不同。每个业务错误都有唯一的错误码和人类可读的消息。">业务错误</span>：「卡号不存在」。</div>
+            <div class="tl">（其他数据库错误，直接返回。）</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl"><strong>第二步：检查状态。</strong>如果卡不是 active（绿灯）——</div>
+            <div class="tl">拒绝操作，返回：「只有绿灯状态的卡才能挂失」。</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl"><strong>第三步：变灯。</strong>把状态从 active（绿灯）改成 lost（黄灯）。</div>
+            <div class="tl">保存到数据库。如果保存失败，返回错误。</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl"><strong>成功！</strong>返回更新后的卡片信息。</div>
+            <div class="tl">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-accent animate-in">
+        <div class="callout-icon">&#x1F6A6;</div>
+        <div class="callout-content">
+          <span class="callout-title">模式：先检查再操作</span>
+          <p>每个状态变更方法都遵循相同的三步：<strong>找到卡 &rarr; 检查当前状态是否允许 &rarr; 执行变更</strong>。这就是「交警」执法的标准流程。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SCREEN 3 — 发卡的特殊规则：一人一卡
+         ══════════════════════════════════════════════════════════ -->
+    <div class="screen">
+      <h3 class="screen-heading animate-in">发卡的特殊规则 — 一人一卡</h3>
+
+      <p class="animate-in">发卡看似简单，其实藏着一条复杂的业务规则链。系统必须处理各种「已有旧卡」的情况。</p>
+
+      <div class="step-cards stagger-children">
+        <div class="step-card animate-in">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <strong>验证证件号</strong>
+            <p>调用学籍验证服务，确认这个证件号对应的是本单位的学生或员工。</p>
+          </div>
+        </div>
+        <div class="step-card animate-in">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <strong>检查 active 卡 &rarr; 拒绝</strong>
+            <p>如果该证件号已有一张绿灯（active）卡，直接拒绝：「该证件号已有正在使用的卡」。<strong>一人一卡</strong>，不能同时持有两张有效卡。</p>
+          </div>
+        </div>
+        <div class="step-card animate-in">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <strong>检查 lost 卡 &rarr; 自动注销旧卡</strong>
+            <p>如果有一张黄灯（lost）卡，系统会自动注销它，退还旧卡的押金和余额，然后继续发新卡。</p>
+          </div>
+        </div>
+        <div class="step-card animate-in">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <strong>生成 16 位随机卡号</strong>
+            <p>用随机数生成器创建一个 16 位的唯一卡号，类似银行卡号。</p>
+          </div>
+        </div>
+        <div class="step-card animate-in">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <strong>创建新卡</strong>
+            <p>押金固定 2000 分（即 20 元），预存款记入卡中余额，状态设为 active（绿灯亮起）。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-info animate-in">
+        <div class="callout-icon">&#x1F9E0;</div>
+        <div class="callout-content">
+          <span class="callout-title">概念：<span class="term" data-definition="状态机（State Machine）是一种数学模型——一个对象在任何时刻只能处于有限状态中的一种，每次状态变化都必须遵循预定义的转换规则。非法的状态跳转会被代码拒绝。">状态机</span></span>
+          <p>饭卡的 active / lost / cancelled 就构成了一个状态机。代码里用 <span class="term" data-definition="枚举（Enum）是一种只允许取预定义值的数据类型。比如 CardStatus 只能是 active、lost 或 cancelled 三个值之一，不能随便填写。">枚举</span> 定义了三种合法状态，每个方法在操作前都会检查当前状态是否允许此操作。这是软件中管理复杂业务规则的核心模式 —— 让代码成为规则的执行者，而不是靠人来记住规则。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SCREEN 4 — 注销的退款逻辑
+         ══════════════════════════════════════════════════════════ -->
+    <div class="screen">
+      <h3 class="screen-heading animate-in">注销的退款逻辑</h3>
+
+      <p class="animate-in">注销是饭卡的「最终告别」。关键在于：先拍照留存退款金额，再清零余额、改状态。</p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">Go</span>
+<code><span class="code-line"><span class="code-keyword">func</span> (s *CardService) <span class="code-function">CancelCard</span>(cardNo <span class="code-keyword">string</span>) (*CancellationResult, <span class="code-keyword">error</span>) {</span>
+<span class="code-line">    card, err := s.cardRepo.<span class="code-function">FindCardByCardNo</span>(cardNo)</span>
+<span class="code-line">    <span class="code-keyword">if</span> err != <span class="code-keyword">nil</span> {</span>
+<span class="code-line">        <span class="code-keyword">if</span> errors.<span class="code-function">Is</span>(err, gorm.ErrRecordNotFound) {</span>
+<span class="code-line">            <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, <span class="code-function">newBizError</span>(<span class="code-string">"CARD_NOT_FOUND"</span>, <span class="code-string">"卡号不存在"</span>)</span>
+<span class="code-line">        }</span>
+<span class="code-line">        <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, err</span>
+<span class="code-line">    }</span>
+<span class="code-line">    <span class="code-keyword">if</span> card.Status == model.CardStatusCancelled {</span>
+<span class="code-line">        <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, <span class="code-function">newBizError</span>(<span class="code-string">"CARD_ALREADY_CANCELLED"</span>, <span class="code-string">"该卡已注销"</span>)</span>
+<span class="code-line">    }</span>
+<span class="code-line">    <span class="code-property">deposit</span> := card.Deposit</span>
+<span class="code-line">    <span class="code-property">balance</span> := card.Balance</span>
+<span class="code-line">    card.Status = model.CardStatusCancelled</span>
+<span class="code-line">    card.Balance = <span class="code-number">0</span></span>
+<span class="code-line">    <span class="code-keyword">if</span> err := s.cardRepo.<span class="code-function">UpdateCard</span>(card); err != <span class="code-keyword">nil</span> {</span>
+<span class="code-line">        <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, err</span>
+<span class="code-line">    }</span>
+<span class="code-line">    <span class="code-keyword">return</span> &CancellationResult{</span>
+<span class="code-line">        Card: card, Deposit: <span class="code-property">deposit</span>, Balance: <span class="code-property">balance</span>,</span>
+<span class="code-line">        Total: <span class="code-property">deposit</span> + <span class="code-property">balance</span>,</span>
+<span class="code-line">    }, <span class="code-keyword">nil</span></span>
+<span class="code-line">}</span></code>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">逐行翻译</span>
+          <div class="translation-lines">
+            <div class="tl"><strong>定义注销方法</strong>：接收卡号，返回退款详情或错误。</div>
+            <div class="tl"><strong>第一步：找卡。</strong>老套路，先查出这张卡。</div>
+            <div class="tl">如果查询出错……</div>
+            <div class="tl">找不到这个卡号？</div>
+            <div class="tl">返回<span class="term" data-definition="错误码（Error Code）是一个简短的英文标识符，用于唯一标记某类错误。前端和后端通过错误码对齐，而不依赖错误消息的文字内容。">错误码</span> CARD_NOT_FOUND。</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl"><strong>第二步：检查状态。</strong>如果已经是红灯（cancelled）——</div>
+            <div class="tl">拒绝：「已经注销过了，不能重复注销」。</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl"><strong>第三步：拍照！</strong>先把押金存到 <code>deposit</code> 变量里。</div>
+            <div class="tl">再把余额存到 <code>balance</code> 变量里。这就是<span class="term" data-definition="快照（Snapshot）是在数据被修改之前，先把当前值复制保存下来。这样即使原始数据被清零或改变，仍然可以知道「改之前是多少」。">快照</span>。</div>
+            <div class="tl"><strong>第四步：变灯。</strong>把状态改为 cancelled（红灯永亮）。</div>
+            <div class="tl">余额清零 —— 钱已经准备退还了。</div>
+            <div class="tl">保存到数据库。</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl"><strong>第五步：返回退款清单。</strong></div>
+            <div class="tl">卡片信息 + 押金快照 + 余额快照。</div>
+            <div class="tl">总退款 = 押金 + 余额。打包返回。</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-accent animate-in">
+        <div class="callout-icon">&#x1F4F8;</div>
+        <div class="callout-content">
+          <span class="callout-title">为什么要「先拍照再清零」？</span>
+          <p>如果先清零再去读金额，读到的就是 0 了 —— 系统就不知道该退多少钱。这种「先保存旧值，再修改」的技巧在编程中非常常见，就像搬家前先拍照留证。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SCREEN 5 — 测验
+         ══════════════════════════════════════════════════════════ -->
+    <div class="screen">
+      <h3 class="screen-heading animate-in">检验你的理解</h3>
+
+      <div class="quiz-container animate-in" id="quiz-module4">
+
+        <!-- Q1 -->
+        <div class="quiz-question-block" data-correct="a"
+             data-explanation-right="正确！只要卡还处于 lost（黄灯）状态，系统就允许调用取消挂失方法，把状态恢复为 active（绿灯）。"
+             data-explanation-wrong="再想想 —— 取消挂失的前提条件是什么？回顾一下代码里 CancelLossReport 方法检查的状态。">
+          <p class="quiz-question">Q1: 一个学生丢了卡，来管理处挂失。第二天又找到了卡，能取消挂失吗？需要满足什么条件？</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="a" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>可以，只要卡状态还是 lost 就能取消挂失恢复为 active</span>
+            </button>
+            <button class="quiz-option" data-value="b" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>不行，挂失后只能注销重新办卡</span>
+            </button>
+            <button class="quiz-option" data-value="c" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>可以，但需要额外缴纳手续费</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="quiz-question-block" data-correct="b"
+             data-explanation-right="正确！系统会检查该证件号是否已有 active 卡，如果有就直接拒绝——这就是「一人一卡」规则。"
+             data-explanation-wrong="回想一下发卡的第 2 步规则链——系统发现已有 active 卡时会怎么做？">
+          <p class="quiz-question">Q2: 如果一个学生已有 active 卡又来办卡，系统会怎样？</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="a" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>自动注销旧卡，办一张新卡</span>
+            </button>
+            <button class="quiz-option" data-value="b" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>系统拒绝，提示「该证件号已有正在使用的卡」</span>
+            </button>
+            <button class="quiz-option" data-value="c" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>允许办卡，一个人可以持有多张卡</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="quiz-question-block" data-correct="c"
+             data-explanation-right="正确！退款总额 = 押金 20 元 + 卡内余额 5.50 元 = 25.50 元。代码里的 Total = deposit + balance 正是这样计算的。"
+             data-explanation-wrong="回看注销代码中 CancellationResult 的 Total 字段是怎么算的 —— deposit + balance。">
+          <p class="quiz-question">Q3: 学生毕业离校注销饭卡，系统退还了 25.50 元。这个钱包含什么？</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="a" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>全部是卡内余额 25.50 元</span>
+            </button>
+            <button class="quiz-option" data-value="b" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>押金 25.50 元，余额不退</span>
+            </button>
+            <button class="quiz-option" data-value="c" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>押金 20 元 + 卡内余额 5.50 元</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-module4')">检查答案</button>
+        <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module4')">重新作答</button>
+      </div>
+    </div>
+
+  </div>
+</section>

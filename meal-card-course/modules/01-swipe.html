@@ -1,0 +1,287 @@
+<!-- ============================================================
+     MODULE 1 — 刷卡就餐：从你熟悉的操作开始
+     ============================================================ -->
+<section class="module" id="module-1" style="background: var(--color-bg);">
+  <div class="module-content">
+
+    <!-- ── MODULE HEADER ─────────────────────────────────────── -->
+    <header class="module-header animate-in">
+      <span class="module-number">01</span>
+      <h1 class="module-title">刷卡就餐 — 从你熟悉的操作开始</h1>
+      <p class="module-subtitle">把这个系统想象成一台<strong>自动售货机</strong> —— 你插卡，机器验证，扣钱，出货。每一步背后都有代码在默默工作。</p>
+    </header>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SCREEN 1 — 这个系统是什么？
+         ══════════════════════════════════════════════════════════ -->
+    <div class="screen" id="screen-1-1">
+      <h2 class="screen-heading animate-in">这个系统是什么？</h2>
+
+      <p class="animate-in">
+        食堂饭卡管理系统是学校食堂的<strong>电子钱包</strong>。学生和员工拿着一张饭卡，就能完成充值、消费、挂失等所有操作。
+        整个系统由 <span class="term" data-definition="前端是用户直接看到和操作的界面部分，运行在浏览器中。它负责把信息展示给用户，并把用户的操作发送给后端。">前端</span>（操作界面）和 <span class="term" data-definition="后端是运行在服务器上的程序，用户看不到它。它负责处理业务逻辑、校验数据、读写数据库。">后端</span>（核心逻辑）配合完成。
+      </p>
+
+      <p class="animate-in">它一共有 <strong>6 大功能模块</strong>：</p>
+
+      <div class="pattern-cards stagger-children">
+        <div class="pattern-card animate-in">
+          <div class="pattern-icon" style="background: var(--color-accent-light); color: var(--color-accent);">&#x1F4B3;</div>
+          <div class="pattern-title">发卡</div>
+          <p class="pattern-desc">持有效证件办理饭卡，缴押金，预存款项，系统自动生成唯一卡号。</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-icon" style="background: var(--color-info-light); color: var(--color-info);">&#x1F4B0;</div>
+          <div class="pattern-title">存款</div>
+          <p class="pattern-desc">余额不足时到管理处充值，可打印收据。</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-icon" style="background: var(--color-success-light); color: var(--color-success);">&#x1F35C;</div>
+          <div class="pattern-title">就餐消费</div>
+          <p class="pattern-desc">刷卡→验证→显示余额→输入金额→扣款，整个流程几秒完成。</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-icon" style="background: #FEF3C7; color: #D97706;">&#x1F4CA;</div>
+          <div class="pattern-title">汇总统计</div>
+          <p class="pattern-desc">统计每日、每月的售饭收入，各窗口流水，持卡人存款明细等报表。</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-icon" style="background: var(--color-error-light); color: var(--color-error);">&#x1F6A8;</div>
+          <div class="pattern-title">挂失</div>
+          <p class="pattern-desc">饭卡丢失后立即挂失，所有窗口机会拒绝已挂失的卡，保护资金安全。</p>
+        </div>
+        <div class="pattern-card animate-in">
+          <div class="pattern-icon" style="background: #EDE9FE; color: #7C3AED;">&#x274C;</div>
+          <div class="pattern-title">注销</div>
+          <p class="pattern-desc">离校或不再就餐时注销饭卡，退还押金，卡号可回收再用。</p>
+        </div>
+      </div>
+
+      <div class="callout callout-info animate-in">
+        <div class="callout-icon">&#x1F4A1;</div>
+        <div class="callout-content">
+          <span class="callout-title">本课程的起点</span>
+          <p>我们从最常见的场景 —— <strong>刷卡吃饭</strong> —— 出发，追踪一次完整的消费流程在代码中是如何发生的。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SCREEN 2 — 一次刷卡消费的旅程
+         ══════════════════════════════════════════════════════════ -->
+    <div class="screen" id="screen-1-2">
+      <h2 class="screen-heading animate-in">一次刷卡消费的旅程</h2>
+
+      <p class="animate-in">
+        一次刷卡消费，数据要经历从界面到服务器再回来的完整旅程。点击下方的 "下一步" 按钮，逐步观看数据是如何流动的。
+      </p>
+
+      <div class="flow-animation animate-in" id="flow-meal"
+           data-steps="[
+             {&quot;highlight&quot;:&quot;flow-frontend&quot;, &quot;label&quot;:&quot;步骤 1：窗口工作人员在前端页面（MealPage）输入卡号&quot;},
+             {&quot;highlight&quot;:&quot;flow-api&quot;, &quot;packet&quot;:true, &quot;from&quot;:&quot;frontend&quot;, &quot;to&quot;:&quot;api&quot;, &quot;label&quot;:&quot;步骤 2：前端通过 api.js 发送 GET /api/cards/:cardNo 请求查询卡信息&quot;},
+             {&quot;highlight&quot;:&quot;flow-backend&quot;, &quot;packet&quot;:true, &quot;from&quot;:&quot;api&quot;, &quot;to&quot;:&quot;backend&quot;, &quot;label&quot;:&quot;步骤 3：后端三重校验 —— 卡是否存在？是否有效？是否已挂失？&quot;},
+             {&quot;highlight&quot;:&quot;flow-frontend&quot;, &quot;packet&quot;:true, &quot;from&quot;:&quot;backend&quot;, &quot;to&quot;:&quot;frontend&quot;, &quot;label&quot;:&quot;步骤 4：校验通过！前端显示余额，工作人员输入消费金额&quot;},
+             {&quot;highlight&quot;:&quot;flow-api&quot;, &quot;packet&quot;:true, &quot;from&quot;:&quot;frontend&quot;, &quot;to&quot;:&quot;api&quot;, &quot;label&quot;:&quot;步骤 5：前端发送 POST /api/cards/:cardNo/transactions 请求进行扣款&quot;},
+             {&quot;highlight&quot;:&quot;flow-db&quot;, &quot;packet&quot;:true, &quot;from&quot;:&quot;backend&quot;, &quot;to&quot;:&quot;db&quot;, &quot;label&quot;:&quot;步骤 6：后端扣款成功，将交易记录写入数据库，返回新余额&quot;}
+           ]">
+
+        <div class="flow-actors">
+          <div class="flow-actor" id="flow-frontend">
+            <div class="flow-actor-icon" style="color: var(--color-actor-1);">&#x1F5A5;</div>
+            <span><span class="term" data-definition="前端是用户直接看到和操作的界面部分，运行在浏览器中。">前端</span><br>MealPage</span>
+          </div>
+          <div class="flow-actor" id="flow-api">
+            <div class="flow-actor-icon" style="color: var(--color-actor-2);">&#x1F310;</div>
+            <span><span class="term" data-definition="API（应用程序编程接口）是前端和后端之间沟通的桥梁。前端通过 API 发送请求，后端通过 API 返回数据。">API</span><br>api.js</span>
+          </div>
+          <div class="flow-actor" id="flow-backend">
+            <div class="flow-actor-icon" style="color: var(--color-actor-3);">&#x2699;</div>
+            <span><span class="term" data-definition="后端是运行在服务器上的程序，负责处理业务逻辑、校验数据、读写数据库。">后端</span><br>card_service.go</span>
+          </div>
+          <div class="flow-actor" id="flow-db">
+            <div class="flow-actor-icon" style="color: var(--color-actor-4);">&#x1F4BE;</div>
+            <span><span class="term" data-definition="数据库是专门存储数据的软件，所有的卡信息、交易记录都保存在这里，断电也不会丢失。">数据库</span><br>SQLite</span>
+          </div>
+        </div>
+
+        <div class="flow-packet"></div>
+
+        <div class="flow-step-label">点击 "下一步" 开始观看数据流动</div>
+
+        <div class="flow-controls">
+          <button class="btn btn-primary flow-next-btn">下一步</button>
+          <button class="btn flow-reset-btn">重置</button>
+          <span class="flow-progress"></span>
+        </div>
+      </div>
+
+      <div class="callout callout-accent animate-in">
+        <div class="callout-icon">&#x1F50D;</div>
+        <div class="callout-content">
+          <span class="callout-title">两种 <span class="term" data-definition="HTTP（超文本传输协议）是浏览器和服务器之间通信的规则。就像写信的格式，双方都要遵守。">HTTP</span> 请求</span>
+          <p>
+            <span class="term" data-definition="GET 是 HTTP 请求的一种类型，意思是「给我看看」，只读取数据，不做任何修改。就像去图书馆借书时先查目录。">GET</span> 请求 = 「查一下这张卡」（只读取，不修改）。
+            <span class="term" data-definition="POST 是 HTTP 请求的一种类型，意思是「帮我做一件事」，会创建或修改数据。就像填写一张表格并提交。">POST</span> 请求 = 「执行这笔消费」（创建新的交易记录）。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SCREEN 3 — 代码翻译：三重校验
+         ══════════════════════════════════════════════════════════ -->
+    <div class="screen" id="screen-1-3">
+      <h2 class="screen-heading animate-in">代码翻译 — 三重校验</h2>
+
+      <p class="animate-in">
+        当一张卡尝试消费时，后端并不会直接扣钱。它会先做三道检查，就像保安查验你的身份一样。下面左侧是真实代码，右侧是逐行翻译。
+      </p>
+
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">Go — card_service.go</span>
+<code><span class="code-line"><span class="code-keyword">if</span> card.Status == model.<span class="code-property">CardStatusCancelled</span> {</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, <span class="code-function">newBizError</span>(<span class="code-property">ErrCodeCardCancelled</span>, <span class="code-string">"此卡已注销"</span>)</span>
+<span class="code-line">}</span>
+<span class="code-line"><span class="code-keyword">if</span> card.Status == model.<span class="code-property">CardStatusLost</span> {</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, <span class="code-function">newBizError</span>(<span class="code-property">ErrCodeCardLost</span>, <span class="code-string">"此卡已挂失"</span>)</span>
+<span class="code-line">}</span>
+<span class="code-line"><span class="code-keyword">if</span> card.Balance &lt; amount {</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-keyword">nil</span>, <span class="code-function">newBizError</span>(<span class="code-property">ErrCodeInsufficientBalance</span>, <span class="code-string">"余额不足"</span>)</span>
+<span class="code-line">}</span></code>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">逐行翻译</span>
+          <div class="translation-lines">
+            <div class="tl"><strong>第 1 关：</strong>如果这张卡的状态是"已注销" ——</div>
+            <div class="tl">&nbsp;&nbsp;→ 拒绝！返回错误信息："此卡已注销"</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl"><strong>第 2 关：</strong>如果这张卡的状态是"已挂失" ——</div>
+            <div class="tl">&nbsp;&nbsp;→ 拒绝！返回错误信息："此卡已挂失"</div>
+            <div class="tl">&nbsp;</div>
+            <div class="tl"><strong>第 3 关：</strong>如果卡里的余额 &lt; 消费金额 ——</div>
+            <div class="tl">&nbsp;&nbsp;→ 拒绝！返回错误信息："余额不足"</div>
+            <div class="tl">&nbsp;</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-info animate-in">
+        <div class="callout-icon">&#x1F6E1;</div>
+        <div class="callout-content">
+          <span class="callout-title">什么是「防御性编程」？</span>
+          <p>
+            防御性编程是一种编程思维：<strong>先假设一切都可能出错</strong>，在真正执行操作之前，把所有可能的异常情况都检查一遍。
+            就像你出门前会检查钥匙、手机、钱包一样 —— 宁可多查几遍，也不要事后才发现问题。
+            上面的三重校验就是典型的防御性编程：先排除所有不合法的情况，最后才执行扣款。
+          </p>
+        </div>
+      </div>
+
+      <p class="animate-in">
+        注意：只有三关全部通过，代码才会继续往下执行真正的扣款操作。任何一关失败，都会立刻返回错误，<strong>绝不会多扣一分钱</strong>。
+      </p>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SCREEN 4 — 测验
+         ══════════════════════════════════════════════════════════ -->
+    <div class="screen" id="screen-1-4">
+      <h2 class="screen-heading animate-in">检验你的理解</h2>
+
+      <p class="animate-in">回忆一下刚才学到的内容，试试看能不能答对这三道场景题。</p>
+
+      <div class="quiz-container animate-in" id="quiz-module1">
+
+        <!-- Q1 -->
+        <div class="quiz-question-block" data-correct="a"
+             data-explanation-right="没错！后端发现卡状态为「已挂失」，第二关校验失败，立即拒绝消费并返回警告信息。"
+             data-explanation-wrong="回想一下三重校验的第二关 —— 系统会检查卡是否已挂失。挂失的卡会被直接拒绝，不会执行任何扣款操作。">
+          <div class="scenario-block">
+            <div class="scenario-context">
+              <span class="scenario-label">场景</span>
+              <p>小明的饭卡昨天丢了，他已经到管理处办理了挂失。今天有人捡到了这张卡，拿去窗口刷卡消费。</p>
+            </div>
+          </div>
+          <div class="quiz-question">这张已挂失的卡刷卡时，系统会怎样？</div>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="a" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>系统拒绝消费，提示"此卡已挂失"</span>
+            </button>
+            <button class="quiz-option" data-value="b" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>正常消费，因为卡还没有注销</span>
+            </button>
+            <button class="quiz-option" data-value="c" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>先扣款，再弹出警告</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="quiz-question-block" data-correct="b"
+             data-explanation-right="正确！第三关校验发现余额不足，直接拒绝结算，不会扣除任何金额。防御性编程确保了「要么全扣，要么不扣」。"
+             data-explanation-wrong="回想三重校验的第三关 —— 系统会比较余额和消费金额。余额不足时立刻拒绝，绝不会先扣一部分钱。">
+          <div class="scenario-block">
+            <div class="scenario-context">
+              <span class="scenario-label">场景</span>
+              <p>小红的饭卡里还剩 5 元，她点了一份 12 元的套餐，在窗口刷卡结算。</p>
+            </div>
+          </div>
+          <div class="quiz-question">余额不足时，系统会怎么处理？</div>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="a" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>先扣掉 5 元，欠的 7 元下次补</span>
+            </button>
+            <button class="quiz-option" data-value="b" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>拒绝结算，不会扣除任何金额</span>
+            </button>
+            <button class="quiz-option" data-value="c" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>自动从押金中扣款</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="quiz-question-block" data-correct="c"
+             data-explanation-right="正确！在三重校验之前，系统会先根据卡号在数据库中查找。如果找不到，就说明这张卡不是本单位发的，系统会返回「此卡非本单位所发」的错误。"
+             data-explanation-wrong="想想看 —— 系统要做三重校验，首先得能在数据库中找到这张卡。如果卡号根本不存在，系统会认为它不属于本单位。">
+          <div class="scenario-block">
+            <div class="scenario-context">
+              <span class="scenario-label">场景</span>
+              <p>一位来访者拿着外校的饭卡，想在本校食堂窗口刷卡消费。</p>
+            </div>
+          </div>
+          <div class="quiz-question">一个系统中不存在的卡号刷卡，系统认为这意味着什么？</div>
+          <div class="quiz-options">
+            <button class="quiz-option" data-value="a" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>卡已过期，需要续费</span>
+            </button>
+            <button class="quiz-option" data-value="b" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>卡已被注销</span>
+            </button>
+            <button class="quiz-option" data-value="c" onclick="selectOption(this)">
+              <span class="quiz-option-radio"></span>
+              <span>这不是本单位发的卡</span>
+            </button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <button class="quiz-check-btn" onclick="checkQuiz('quiz-module1')">检查答案</button>
+        <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module1')">重新作答</button>
+      </div>
+    </div>
+
+  </div>
+</section>
