@@ -2,7 +2,7 @@
 
 课设项目，前后端分离架构，实现发卡、存款、就餐消费、挂失、注销、汇总统计 6 项功能。
 
-交互式代码讲解：[meal-card-course/index.html](meal-card-course/index.html)
+[交互式代码讲解](https://furutachikurea.github.io/meal-card/)
 
 ## 环境准备
 
