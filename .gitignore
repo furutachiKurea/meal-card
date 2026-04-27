@@ -24,5 +24,10 @@ dist/
 *.pem
 *.key
 
-.claude/
-.agents/
+# ── Agent 配置 ──────────────────────────────
+# .agents/ 整体纳入版本管理（skills 等团队共享内容）
+
+# .claude/ 默认忽略，仅共享 settings.json 和 skills 符号链接
+.claude/*
+!.claude/settings.json
+!.claude/skills
