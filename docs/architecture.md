@@ -10,16 +10,16 @@
 meal-card/                    ← mono repo
 ├── frontend/                 ← React SPA（管理端 + 窗口机模拟）
 ├── backend/                  ← Go HTTP API（:8080）
-├── mock-services/
-│   └── student-service/      ← 学籍验证 Mock 服务（:9090）
-├── docs/                     ← 全局文档
-│   └── api/                  ← OpenAPI 契约（yaml）
-└── Makefile
+│   └── client/               ← 学籍验证实现（内嵌 Mock，无需外部服务）
+└── docs/                     ← 全局文档
+    └── api/                  ← OpenAPI 契约（yaml）
 ```
 
 前后端通过 RESTful API 通信，接口契约以 `docs/api/` 下的 OpenAPI yaml 为准，双方严格遵照。
 
-后端在发卡时调用学籍验证 Mock 服务（HTTP），验证证件号是否为本校学生/教职工。
+前端开发时通过 Vite 代理 `/api` 到后端 `:8080`，api.js 使用相对路径。
+
+学籍验证数据内嵌在后端 `client/student_client.go` 的 `MockStudentValidator` 中，无需启动外部服务。
 
 ## 技术选型
 
@@ -30,9 +30,11 @@ meal-card/                    ← mono repo
 | 数据库 | SQLite | 单文件，零部署成本，课设够用 |
 | 日志 | zerolog | 结构化日志 |
 | 后端架构 | 三层（handler → service → repository） | AGENTS.md 约定，不做过多设计 |
-| 前端框架 | React | 课设指定 |
+| Web 框架 | Echo v4 | 轻量高性能 |
+| 前端框架 | React 18 + Vite | 课设指定 |
+| UI 组件库 | Ant Design 6 | 开箱即用 |
 | 前端包管理 | pnpm | AGENTS.md 约定 |
-| 学籍验证服务 | Go HTTP（mock） | 独立进程，模拟微服务调用，硬编码学生/教职工名单 |
+| 学籍验证 | 内嵌 Mock | 硬编码学生/教职工名单，实现 StudentValidator 接口 |
 
 ## 数据模型
 
@@ -112,16 +114,14 @@ type StudentValidator interface {
 
 | 实现 | 位置 | 用途 |
 |---|---|---|
-| `HttpStudentValidator` | `backend/client/student_client.go` | 生产/联调，HTTP 调用 Mock 服务 |
+| `MockStudentValidator` | `backend/client/student_client.go` | 内嵌硬编码学籍数据，开发/演示/测试通用 |
 | `FakeStudentValidator` | `backend/service/card_service_test.go` | 单元测试，硬编码返回 |
 
-### Mock HTTP 服务（`mock-services/student-service/`）
+`MockStudentValidator` 内置 8 条记录（5 名学生 + 3 名教职工），无需启动外部服务。
 
-- **端口**：`:9090`
-- **接口**：`GET /validate?idNumber=xxx`
-- **数据**：硬编码在 `mock-services/student-service/main.go` 中，包含若干学生和教职工记录（需要增减直接改代码）
-- **返回**：`{ "valid": true, "idNumber": "...", "name": "...", "type": "student" }`
-- **后端配置**：环境变量 `STUDENT_SERVICE_URL`（默认 `http://localhost:9090`），`HttpStudentValidator` 读取此配置
+## 事务策略
+
+IssueCard、Deposit、CreateTransaction 使用 `gorm.DB.Transaction` 保证原子性。事务内通过 `CardRepository.WithTx(tx)` 获取临时仓库实例。外部调用（学籍验证）和只读查询（窗口校验）放在事务外。
 
 ## 关键数据流
 

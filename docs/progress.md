@@ -2,7 +2,7 @@
 
 ## 当前迭代目标
 
-重新对齐设计，完成后端重构与前后端联调。
+系统闭环完善：修复遗留 bug、集成测试验证全流程、完善文档。
 
 ## 已完成
 
@@ -10,21 +10,17 @@
 - PRD 文档（`docs/prd.md`），覆盖 6 项功能的完整行为和约束
 - 数据库表设计：5 张表的 GORM 模型（`backend/model/`）及文档（`backend/docs/database/`）
 - 架构文档（`docs/architecture.md`）
-- 修复 Card 模型：CardHolderID 改为必填，不再重用旧卡号
-- AGENTS.md 加入文档维护规范（PRD + architecture + progress 每次对话必读）
-- OpenAPI 契约（`docs/api/openapi.yaml`），覆盖 16 个接口（6 项核心业务 + 7 项统计 + 窗口管理）
-- 后端全量适配 cardNo + StudentValidator（Task #1 完成）
-- 前端全量适配 cardNo（Task #2 完成）
-- 修复发卡预存款不生成 DepositRecord（Task #10 完成）
-- deposit-details 接口后端分页支持（Task #13 完成）
-- 存款明细持卡人分页改为服务端分页（Task #14 完成）
-- 统计页所有表格加分页，分页条常驻显示（Task #9/#15 完成）
-- 统计页外层持卡人分页改为 Ant Design Pagination 组件（常驻）
-- 修复就餐页消费金额输入框黑色背景/文字颜色（Task #8 完成）
-- 后端 zerolog 日志策略：在错误最初产生的 service 层打印一次，handler 层不重复打
-- 新增 `GET /api/statistics/holder-deposits` 接口（服务端分页，单个持卡人存款明细）
-- 统计页内层存款记录改为服务端分页，外层持卡人分页改为 Ant Design Pagination
-- 统计页所有分页加 `showSizeChanger`，用户可在页面上自由切换每页条数
+- OpenAPI 契约（`docs/api/openapi.yaml`），覆盖全部接口
+- 后端全量适配 cardNo + StudentValidator
+- 前端全量适配 cardNo
+- 后端事务化重构（IssueCard/Deposit/CreateTransaction 使用数据库事务）
+- GetCurrentCardByIDNumber 下沉到 service 层
+- 前端 DepositPage loading 状态独立（queryLoading / depositLoading）
+- 窗口机支持 URL 参数绑定窗口（`/window?id=1`）
+- 404 页面
+- 前端 api.js 改为相对路径 + Vite 代理
+- 全流程集成测试通过（发卡→存款→消费→挂失→取消挂失→注销→统计）
+- 文档更新（README、architecture.md、course-docs/modules/card-service.md）
 
 ## 进行中
 
@@ -32,7 +28,7 @@
 
 ## 待办
 
-- 前后端联调，启动后端服务后通过前端页面进行功能验收
+（无）
 
 ## 阻塞
 
@@ -40,11 +36,38 @@
 
 ## 下一步
 
-前后端联调，启动后端服务后通过前端页面进行功能验收。
+系统已形成完整闭环。如有新需求再行迭代。
 
 ## 变更记录
 
-### 2026-04-16 第 17 轮：holder-deposits 接口 + 统计页分页 showSizeChanger
+### 2026-06-16 第 18 轮：系统闭环完善
+
+修改文件：
+- `backend/service/card_service.go` — IssueCard/Deposit/CreateTransaction 事务化重构
+- `backend/repository/card_repository.go` — 新增 WithTx 方法
+- `backend/handler/card_handler.go` — GetCardByIDNumber 改为调用 cardSvc.GetCurrentCardByIDNumber
+- `backend/main.go` — 使用 MockStudentValidator（内嵌，无需外部服务）
+- `frontend/src/pages/DepositPage.jsx` — 修复未定义 loading 变量 bug（拆分为 queryLoading/depositLoading）
+- `frontend/src/pages/MealPage.jsx` — 支持 URL 参数绑定窗口（`/window?id=1`）
+- `frontend/src/pages/NotFoundPage.jsx` — 新增 404 页面
+- `frontend/src/App.jsx` — 注册 404 路由
+- `frontend/vite.config.js` — 添加 Vite 代理（/api → localhost:8080）
+- `frontend/src/api.js` — BASE_URL 改为空字符串（使用相对路径）
+- `docs/architecture.md` — 更新学籍验证实现说明、新增事务策略
+- `docs/progress.md` — 更新进度
+- `README.md` — 重写，精简内容，补充项目结构和窗口机说明
+- `backend/docs/course-docs/modules/card-service.md` — 补充事务化策略和 GetCurrentCardByIDNumber 说明
+
+集成测试：
+- 启动后端服务，通过 curl 验证全部 API 接口（20 个请求覆盖全流程）
+- 发卡→存款→消费→余额不足→挂失→挂失后消费拒绝→取消挂失→注销→注销后消费拒绝→再次发卡
+- 统计接口全部返回正确（售饭收入、窗口收入、存款汇总、流动资金、日报、年报、持卡人存款明细）
+- 后端单元测试全部通过（29 个），前端构建通过
+
+关键决策：
+- 学籍验证改为内嵌 MockStudentValidator，不再依赖外部 mock-services 进程
+- 前端使用 Vite 代理替代硬编码 localhost:8080，开发和构建均可正常工作
+- 窗口机通过 URL query param 绑定窗口，真实部署时每台机器配不同 URL
 
 修改文件：
 - `backend/repository/card_repository.go` — 新增 `GetHolderDeposits`，支持 holderID、可选时间范围、LIMIT/OFFSET 分页
