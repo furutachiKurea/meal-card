@@ -3,12 +3,14 @@ import { Form, InputNumber, Button, Alert, Card, Typography, Select, Steps } fro
 import { Input } from 'antd'
 import { getCard, createTransaction, listWindows } from '../api.js'
 import { HomeOutlined, CheckCircleOutlined, WarningFilled } from '@ant-design/icons'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 const { Title, Text } = Typography
 
 export default function MealPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const lockedWindowId = searchParams.get('id') ? Number(searchParams.get('id')) : null
   const [cardNo, setCardNo] = useState('')
   const [cardInfo, setCardInfo] = useState(null)
   const [alarm, setAlarm] = useState('')
@@ -16,7 +18,7 @@ export default function MealPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [windows, setWindows] = useState([])
-  const [selectedWindowId, setSelectedWindowId] = useState(null)
+  const [selectedWindowId, setSelectedWindowId] = useState(lockedWindowId)
   const [settleForm] = Form.useForm()
 
   const currentStep = txResult ? 2 : cardInfo ? 1 : 0
@@ -25,7 +27,7 @@ export default function MealPage() {
     listWindows().then(res => {
       const wins = res.windows || []
       setWindows(wins)
-      if (wins.length > 0) {
+      if (!lockedWindowId && wins.length > 0) {
         setSelectedWindowId(wins[0].id)
       }
     }).catch(() => {})
@@ -112,7 +114,7 @@ export default function MealPage() {
         <Title level={4} style={{ color: '#4fc3f7', margin: 0 }}>
           就餐窗口机
         </Title>
-        {windows.length > 0 && (
+        {windows.length > 0 && !lockedWindowId && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Text style={{ color: '#8bafd4', fontSize: 13 }}>当前窗口：</Text>
             <Select
@@ -123,6 +125,11 @@ export default function MealPage() {
               size="small"
             />
           </div>
+        )}
+        {lockedWindowId && (
+          <Text style={{ color: '#8bafd4', fontSize: 13 }}>
+            窗口：{windows.find(w => w.id === lockedWindowId)?.name || `#${lockedWindowId}`}
+          </Text>
         )}
         <Button
           icon={<HomeOutlined />}

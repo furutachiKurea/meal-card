@@ -9,6 +9,7 @@ import LossPage from './pages/LossPage.jsx'
 import CancelPage from './pages/CancelPage.jsx'
 import StatisticsPage from './pages/StatisticsPage.jsx'
 import WindowsPage from './pages/WindowsPage.jsx'
+import NotFoundPage from './pages/NotFoundPage.jsx'
 
 const { Title, Text } = Typography
 
@@ -102,6 +103,8 @@ export default function App() {
         </Route>
 
         <Route path="/window" element={<MealPage />} />
+
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   )
