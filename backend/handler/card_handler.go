@@ -6,6 +6,7 @@ import (
 	"backend/service"
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -46,6 +47,8 @@ func bizErrStatus(code string) int {
 		return http.StatusConflict
 	case service.ErrCodeInvalidAmount, service.ErrCodeValidationError:
 		return http.StatusBadRequest
+	case service.ErrCodeExceedSingleLimit, service.ErrCodeExceedDailyLimit:
+		return http.StatusForbidden
 	case service.ErrCodeStudentServiceError:
 		return http.StatusBadGateway
 	default:
@@ -251,6 +254,85 @@ func (h *CardHandler) CancelLossReport(c echo.Context) error {
 	resp := cardToJSON(card)
 	resp["cardHolder"] = holderToJSON(&card.CardHolder)
 	return c.JSON(http.StatusOK, resp)
+}
+
+// GetCardTransactions GET /api/cards/:cardNo/transactions 查询消费历史
+func (h *CardHandler) GetCardTransactions(c echo.Context) error {
+	cardNo := c.Param("cardNo")
+
+	page := 1
+	pageSize := 10
+	if p := c.QueryParam("page"); p != "" {
+		if v, err := strconv.Atoi(p); err == nil && v > 0 {
+			page = v
+		}
+	}
+	if ps := c.QueryParam("pageSize"); ps != "" {
+		if v, err := strconv.Atoi(ps); err == nil && v > 0 {
+			pageSize = v
+		}
+	}
+
+	result, err := h.cardSvc.GetCardTransactions(cardNo, page, pageSize)
+	if err != nil {
+		return handleError(c, err)
+	}
+
+	records := make([]map[string]any, 0, len(result.Records))
+	for _, r := range result.Records {
+		records = append(records, map[string]any{
+			"id":         r.ID,
+			"windowId":   r.WindowID,
+			"windowName": r.WindowName,
+			"amount":     r.Amount,
+			"createdAt":  r.CreatedAt.Format(time.RFC3339),
+		})
+	}
+	return c.JSON(http.StatusOK, map[string]any{
+		"records":  records,
+		"total":    result.Total,
+		"page":     result.Page,
+		"pageSize": result.PageSize,
+	})
+}
+
+// GetCardDeposits GET /api/cards/:cardNo/deposits 查询存款历史
+func (h *CardHandler) GetCardDeposits(c echo.Context) error {
+	cardNo := c.Param("cardNo")
+
+	page := 1
+	pageSize := 10
+	if p := c.QueryParam("page"); p != "" {
+		if v, err := strconv.Atoi(p); err == nil && v > 0 {
+			page = v
+		}
+	}
+	if ps := c.QueryParam("pageSize"); ps != "" {
+		if v, err := strconv.Atoi(ps); err == nil && v > 0 {
+			pageSize = v
+		}
+	}
+
+	result, err := h.cardSvc.GetCardDeposits(cardNo, page, pageSize)
+	if err != nil {
+		return handleError(c, err)
+	}
+
+	records := make([]map[string]any, 0, len(result.Records))
+	for _, r := range result.Records {
+		records = append(records, map[string]any{
+			"id":        r.ID,
+			"cardNo":    r.CardNo,
+			"amount":    r.Amount,
+			"createdAt": r.CreatedAt.Format(time.RFC3339),
+		})
+	}
+	return c.JSON(http.StatusOK, map[string]any{
+		"records":  records,
+		"total":    result.Total,
+		"page":     result.Page,
+		"pageSize": result.PageSize,
+	})
 }
 
 // CancelCard POST /api/cards/:cardNo/cancellation 注销

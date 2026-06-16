@@ -370,7 +370,7 @@ func TestCreateTransaction_TripleValidation(t *testing.T) {
 		{
 			name:        "余额不足",
 			setupStatus: model.CardStatusActive,
-			amount:      100000, // 远超余额
+			amount:      600, // 余额只有 500
 			wantErr:     true,
 			errCode:     service.ErrCodeInsufficientBalance,
 		},
@@ -442,6 +442,56 @@ func TestCreateTransaction_CardNotFound(t *testing.T) {
 	bizErr := asBizError(t, err)
 	if bizErr.Code != service.ErrCodeCardNotFound {
 		t.Errorf("错误码期望 %s，得到 %s", service.ErrCodeCardNotFound, bizErr.Code)
+	}
+}
+
+func TestCreateTransaction_ExceedSingleLimit(t *testing.T) {
+	v := newFakeValidator("ID001")
+	svc, windowID := setupCardServiceWithWindow(t, v)
+
+	// 发卡，余额充足
+	result, err := svc.IssueCard("ID001", 100000)
+	if err != nil {
+		t.Fatalf("发卡失败: %v", err)
+	}
+
+	// 超过单笔限额（200元 = 20000分）
+	_, err = svc.CreateTransaction(result.Card.CardNo, windowID, 20001)
+	if err == nil {
+		t.Fatal("期望超单笔限额错误")
+	}
+	bizErr := asBizError(t, err)
+	if bizErr.Code != service.ErrCodeExceedSingleLimit {
+		t.Errorf("错误码期望 %s，得到 %s", service.ErrCodeExceedSingleLimit, bizErr.Code)
+	}
+}
+
+func TestCreateTransaction_ExceedDailyLimit(t *testing.T) {
+	v := newFakeValidator("ID001")
+	svc, windowID := setupCardServiceWithWindow(t, v)
+
+	// 发卡，余额充足
+	result, err := svc.IssueCard("ID001", 100000)
+	if err != nil {
+		t.Fatalf("发卡失败: %v", err)
+	}
+	cardNo := result.Card.CardNo
+
+	// 消费 3 笔各 150 元 = 450 元，未超日限额 500 元
+	for i := 0; i < 3; i++ {
+		if _, err := svc.CreateTransaction(cardNo, windowID, 15000); err != nil {
+			t.Fatalf("第 %d 笔消费失败: %v", i+1, err)
+		}
+	}
+
+	// 再消费 60 元，累计 510 元，超过日限额 500 元
+	_, err = svc.CreateTransaction(cardNo, windowID, 6000)
+	if err == nil {
+		t.Fatal("期望超日限额错误")
+	}
+	bizErr := asBizError(t, err)
+	if bizErr.Code != service.ErrCodeExceedDailyLimit {
+		t.Errorf("错误码期望 %s，得到 %s", service.ErrCodeExceedDailyLimit, bizErr.Code)
 	}
 }
 

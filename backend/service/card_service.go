@@ -28,6 +28,14 @@ const (
 	ErrCodeValidationError      = "VALIDATION_ERROR"
 	ErrCodeStudentNotFound      = "STUDENT_NOT_FOUND"
 	ErrCodeStudentServiceError  = "STUDENT_SERVICE_ERROR"
+	ErrCodeExceedSingleLimit    = "EXCEED_SINGLE_LIMIT"
+	ErrCodeExceedDailyLimit     = "EXCEED_DAILY_LIMIT"
+)
+
+// 消费限额（单位：分）
+const (
+	MaxSingleTransaction = 20000 // 单笔消费上限 200 元
+	MaxDailyTransaction  = 50000 // 单日累计消费上限 500 元
 )
 
 // BizError 业务错误，携带错误码和人类可读消息
@@ -316,10 +324,15 @@ func (s *CardService) Deposit(cardNo string, amount int64) (*DepositResult, erro
 
 // CreateTransaction 就餐消费结算
 // 三重校验：卡存在 → 非 cancelled → 非 lost → 余额充足
+// 限额校验：单笔不超 200 元、当日累计不超 500 元
 func (s *CardService) CreateTransaction(cardNo string, windowID uint, amount int64) (*TransactionResult, error) {
 	if amount <= 0 {
 		log.Error().Str("code", ErrCodeInvalidAmount).Str("cardNo", cardNo).Msg("业务错误")
 		return nil, newBizError(ErrCodeInvalidAmount, "消费金额必须大于 0")
+	}
+	if amount > MaxSingleTransaction {
+		log.Error().Str("code", ErrCodeExceedSingleLimit).Str("cardNo", cardNo).Int64("amount", amount).Msg("业务错误")
+		return nil, newBizError(ErrCodeExceedSingleLimit, fmt.Sprintf("单笔消费不能超过 %.0f 元", float64(MaxSingleTransaction)/100))
 	}
 
 	// 先在事务外验证窗口存在（只读查询，无需事务保护）
@@ -354,6 +367,20 @@ func (s *CardService) CreateTransaction(cardNo string, windowID uint, amount int
 		if card.Status == model.CardStatusLost {
 			log.Error().Str("code", ErrCodeCardLost).Str("cardNo", cardNo).Msg("业务错误")
 			return newBizError(ErrCodeCardLost, "此卡已挂失")
+		}
+
+		// 日消费限额校验
+		now := time.Now()
+		dayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+		dayEnd := dayStart.Add(24 * time.Hour)
+		todaySpent, err := txRepo.SumCardTransactionsByTimeRange(card.ID, dayStart, dayEnd)
+		if err != nil {
+			log.Error().Err(err).Str("cardNo", cardNo).Msg("查询日消费额失败")
+			return err
+		}
+		if todaySpent+amount > MaxDailyTransaction {
+			log.Error().Str("code", ErrCodeExceedDailyLimit).Str("cardNo", cardNo).Int64("todaySpent", todaySpent).Int64("amount", amount).Msg("业务错误")
+			return newBizError(ErrCodeExceedDailyLimit, fmt.Sprintf("今日累计消费将超过 %.0f 元限额", float64(MaxDailyTransaction)/100))
 		}
 
 		if card.Balance < amount {
@@ -393,7 +420,82 @@ func (s *CardService) CreateTransaction(cardNo string, windowID uint, amount int
 	return result, nil
 }
 
-// ReportLoss 挂失：active → lost
+// CardTransactionsResult 消费历史查询结果
+type CardTransactionsResult struct {
+	Records  []repository.TransactionRecord
+	Total    int64
+	Page     int
+	PageSize int
+}
+
+// GetCardTransactions 查询指定卡的消费历史
+func (s *CardService) GetCardTransactions(cardNo string, page, pageSize int) (*CardTransactionsResult, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+
+	card, err := s.cardRepo.FindCardByCardNo(cardNo)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, newBizError(ErrCodeCardNotFound, "卡号不存在")
+		}
+		return nil, err
+	}
+
+	records, total, err := s.cardRepo.GetCardTransactions(card.ID, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	return &CardTransactionsResult{
+		Records:  records,
+		Total:    total,
+		Page:     page,
+		PageSize: pageSize,
+	}, nil
+}
+
+// CardDepositsResult 存款历史查询结果
+type CardDepositsResult struct {
+	Records  []repository.DepositDetailItem
+	Total    int64
+	Page     int
+	PageSize int
+}
+
+// GetCardDeposits 查询指定卡的存款历史
+func (s *CardService) GetCardDeposits(cardNo string, page, pageSize int) (*CardDepositsResult, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+
+	card, err := s.cardRepo.FindCardByCardNo(cardNo)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, newBizError(ErrCodeCardNotFound, "卡号不存在")
+		}
+		return nil, err
+	}
+
+	// 复用已有的 GetHolderDeposits，但按 card 的 holder 来查
+	deposits, total, err := s.cardRepo.GetHolderDeposits(card.CardHolderID, nil, nil, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	return &CardDepositsResult{
+		Records:  deposits,
+		Total:    total,
+		Page:     page,
+		PageSize: pageSize,
+	}, nil
+}
 func (s *CardService) ReportLoss(cardNo string) (*model.Card, error) {
 	card, err := s.cardRepo.FindCardByCardNo(cardNo)
 	if err != nil {

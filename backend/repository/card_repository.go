@@ -128,6 +128,52 @@ func (r *CardRepository) CreateTransaction(tx *model.Transaction) error {
 	return r.db.Create(tx).Error
 }
 
+// TransactionRecord 消费记录查询结果
+type TransactionRecord struct {
+	ID         uint
+	CardNo     string
+	WindowID   uint
+	WindowName string
+	Amount     int64
+	CreatedAt  time.Time
+}
+
+// GetCardTransactions 查询指定卡的消费记录（分页，按时间倒序）
+func (r *CardRepository) GetCardTransactions(cardID uint, page, pageSize int) (records []TransactionRecord, total int64, err error) {
+	baseQuery := r.db.Model(&model.Transaction{}).Where("card_id = ?", cardID)
+
+	err = baseQuery.Count(&total).Error
+	if err != nil {
+		return
+	}
+
+	offset := (page - 1) * pageSize
+	var rows []TransactionRecord
+	err = r.db.Model(&model.Transaction{}).
+		Select("transactions.id, cards.card_no, transactions.window_id, windows.name as window_name, transactions.amount, transactions.created_at").
+		Joins("LEFT JOIN cards ON cards.id = transactions.card_id").
+		Joins("LEFT JOIN windows ON windows.id = transactions.window_id").
+		Where("transactions.card_id = ?", cardID).
+		Order("transactions.created_at DESC").
+		Limit(pageSize).Offset(offset).
+		Scan(&rows).Error
+	if err != nil {
+		return
+	}
+	records = rows
+	return
+}
+
+// SumCardTransactionsByTimeRange 统计指定卡在指定时间范围内的消费总额
+func (r *CardRepository) SumCardTransactionsByTimeRange(cardID uint, start, end time.Time) (int64, error) {
+	var total int64
+	err := r.db.Model(&model.Transaction{}).
+		Where("card_id = ? AND created_at >= ? AND created_at < ?", cardID, start, end).
+		Select("COALESCE(SUM(amount), 0)").
+		Scan(&total).Error
+	return total, err
+}
+
 // SumTransactionsByTimeRange 统计指定时间范围内的消费总额
 func (r *CardRepository) SumTransactionsByTimeRange(start, end time.Time) (int64, error) {
 	var total int64
