@@ -7,7 +7,7 @@ info:
     **金额单位**：统一为分（int64）。
     **卡号（cardNo）**：16 位数字字符串，独立于数据库自增 ID，所有接口路径参数均使用 cardNo。
     **押金**：固定 2000 分（20 元），系统常量，不由前端传入。
-  version: 2.0.0
+  version: 3.0.0
 
 servers:
   - url: http://localhost:8080
@@ -241,6 +241,40 @@ paths:
               example:
                 code: CARD_NOT_ACTIVE
                 message: 该卡已挂失，无法充值
+    get:
+      tags: [deposits]
+      summary: 查询存款历史
+      operationId: getCardDeposits
+      parameters:
+        - $ref: "#/components/parameters/CardNo"
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 10 }
+      responses:
+        "200":
+          description: 存款历史分页列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  records:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        cardNo: { type: string }
+                        amount: { type: integer }
+                        createdAt: { type: string, format: date-time }
+                  total: { type: integer }
+                  page: { type: integer }
+                  pageSize: { type: integer }
+        "404":
+          description: 卡号不存在
 
   # ==================== 就餐消费 ====================
   /api/cards/{cardNo}/transactions:
@@ -254,7 +288,9 @@ paths:
         1. 卡号存在
         2. 卡状态不是 cancelled
         3. 卡状态不是 lost
-        4. 余额充足
+        4. 单笔不超过 200 元
+        5. 今日累计不超过 500 元
+        6. 余额充足
 
         前端流程：先调用 GET /api/cards/{cardNo} 展示卡信息和余额，再调用此接口结算。
       operationId: createTransaction
@@ -279,6 +315,23 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "403":
+          description: 消费限额超限
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                singleLimit:
+                  summary: 单笔超限
+                  value:
+                    code: EXCEED_SINGLE_LIMIT
+                    message: 单笔消费不能超过 200 元
+                dailyLimit:
+                  summary: 日累计超限
+                  value:
+                    code: EXCEED_DAILY_LIMIT
+                    message: 今日累计消费将超过 500 元限额
         "404":
           description: 卡号不存在
           content:
@@ -310,6 +363,41 @@ paths:
                   value:
                     code: INSUFFICIENT_BALANCE
                     message: 余额不足
+    get:
+      tags: [transactions]
+      summary: 查询消费历史
+      operationId: getCardTransactions
+      parameters:
+        - $ref: "#/components/parameters/CardNo"
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 10 }
+      responses:
+        "200":
+          description: 消费历史分页列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  records:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        windowId: { type: integer }
+                        windowName: { type: string }
+                        amount: { type: integer }
+                        createdAt: { type: string, format: date-time }
+                  total: { type: integer }
+                  page: { type: integer }
+                  pageSize: { type: integer }
+        "404":
+          description: 卡号不存在
 
   # ==================== 挂失 ====================
   /api/cards/{cardNo}/loss-report:
