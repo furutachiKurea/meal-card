@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { Form, InputNumber, Button, Alert, Card, Typography, Select, Steps, Table } from 'antd'
-import { Input } from 'antd'
-import { getCard, createTransaction, listWindows, getCardTransactions } from '../api.js'
-import { HomeOutlined, CheckCircleOutlined, WarningFilled } from '@ant-design/icons'
+import { Form, InputNumber, Button, Alert, Card, Typography, Select, Steps } from 'antd'
+import { getCard, createTransaction, listWindows } from '../api.js'
+import { HomeOutlined, CheckCircleOutlined, WarningFilled, CreditCardOutlined } from '@ant-design/icons'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 const { Title, Text } = Typography
@@ -194,28 +193,16 @@ export default function MealPage() {
             </Card>
           )}
 
-          {/* 步骤 0：刷卡输入 */}
+          {/* 步骤 0：等待顾客屏刷卡 */}
           {currentStep === 0 && !alarm && (
-            <Card style={{ background: '#0d1f3c', border: '1px solid #1a3a6b', borderRadius: 12 }}>
-              <Text style={{ color: '#8bafd4', display: 'block', marginBottom: 16, fontSize: 15 }}>
-                请刷卡或输入卡号（16位）
+            <Card style={{ background: '#0d1f3c', border: '1px solid #1a3a6b', borderRadius: 12, textAlign: 'center', padding: '48px 24px' }}>
+              <CreditCardOutlined style={{ fontSize: 56, color: '#1a3a6b', marginBottom: 16 }} />
+              <Text style={{ color: '#4a6785', fontSize: 20, display: 'block' }}>
+                等待学生刷卡...
               </Text>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <Input
-                  size="large"
-                  placeholder="卡号"
-                  value={cardNo}
-                  onChange={e => { setCardNo(e.target.value); setAlarm(''); setError('') }}
-                  onPressEnter={handleQueryCard}
-                  style={{ flex: 1, fontSize: 22, height: 56, background: '#061020', borderColor: '#1a3a6b', color: '#e8f4fd' }}
-                  styles={{ input: { background: '#061020', color: '#e8f4fd' } }}
-                  autoFocus
-                />
-                <Button type="primary" size="large" loading={loading} onClick={handleQueryCard} style={{ height: 56, fontSize: 18, padding: '0 28px' }}>
-                  刷卡
-                </Button>
-              </div>
-              {error && <Alert type="error" message={error} style={{ marginTop: 16 }} showIcon />}
+              <Text style={{ color: '#2a4a65', fontSize: 13, display: 'block', marginTop: 8 }}>
+                学生在顾客屏输入卡号后，此处自动显示信息
+              </Text>
             </Card>
           )}
 
