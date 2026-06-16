@@ -2,7 +2,7 @@
 
 ## 当前迭代目标
 
-系统闭环完善：修复遗留 bug、集成测试验证全流程、完善文档。
+功能拓展：窗口机双屏分离、种子数据、系统闭环完善。
 
 ## 已完成
 
@@ -20,7 +20,9 @@
 - 404 页面
 - 前端 api.js 改为相对路径 + Vite 代理
 - 全流程集成测试通过（发卡→存款→消费→挂失→取消挂失→注销→统计）
-- 文档更新（README、architecture.md、course-docs/modules/card-service.md）
+- 窗口机拆分为操作端（/window）和顾客屏（/window/customer），BroadcastChannel 实时同步
+- 后端启动时自动初始化 5 个默认窗口（种子数据）
+- 首页三入口卡片（管理端/窗口操作端/顾客屏）
 
 ## 进行中
 
@@ -39,6 +41,26 @@
 系统已形成完整闭环。如有新需求再行迭代。
 
 ## 变更记录
+
+### 2026-06-16 第 19 轮：窗口机双屏拆分 + 种子数据
+
+修改文件：
+- `frontend/src/pages/MealPage.jsx` — 重构为"窗口操作端"，新增 BroadcastChannel 广播能力
+- `frontend/src/App.jsx` — 首页三入口卡片，新增 `/window/customer` 路由
+- `backend/main.go` — 启动时调用 db.Seed 初始化种子数据
+
+新增文件：
+- `frontend/src/pages/CustomerScreen.jsx` — 顾客屏（学生面对的只读大字界面）
+- `backend/db/seed.go` — 种子数据逻辑（5 个默认窗口）
+- `frontend/docs/course-docs/pages/CustomerScreen.md` — 顾客屏页面文档
+- `docs/course-docs/usecases/window-dual-screen.md` — 双屏协同 use case 文档
+
+测试结果：后端 go test 全通过；前端 pnpm build 通过；集成测试全流程 API 验证通过
+
+关键决策：
+- 操作端与顾客屏通过 BroadcastChannel 通信，频道名与窗口 ID 绑定
+- 种子数据仅在 windows 表为空时插入，不影响已有数据
+- 首页从两入口扩展为三入口（管理端/操作端/顾客屏）
 
 ### 2026-06-16 第 18 轮：系统闭环完善
 
