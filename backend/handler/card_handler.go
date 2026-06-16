@@ -3,29 +3,25 @@ package handler
 
 import (
 	"backend/model"
-	"backend/repository"
 	"backend/service"
 	"errors"
 	"net/http"
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"gorm.io/gorm"
 )
 
 // CardHandler 饭卡相关 HTTP 处理
 type CardHandler struct {
 	cardSvc   *service.CardService
 	validator service.StudentValidator
-	cardRepo  *repository.CardRepository
 }
 
 // NewCardHandler 创建 CardHandler 实例
-func NewCardHandler(cardSvc *service.CardService, validator service.StudentValidator, cardRepo *repository.CardRepository) *CardHandler {
+func NewCardHandler(cardSvc *service.CardService, validator service.StudentValidator) *CardHandler {
 	return &CardHandler{
 		cardSvc:   cardSvc,
 		validator: validator,
-		cardRepo:  cardRepo,
 	}
 }
 
@@ -122,12 +118,9 @@ func (h *CardHandler) GetCardByIDNumber(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, errorResponse{Code: "VALIDATION_ERROR", Message: "idNumber 不能为空"})
 	}
 
-	card, err := h.cardRepo.FindCurrentCardByIDNumber(idNumber)
+	card, err := h.cardSvc.GetCurrentCardByIDNumber(idNumber)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return c.JSON(http.StatusNotFound, errorResponse{Code: "CARD_NOT_FOUND", Message: "该证件号无有效卡"})
-		}
-		return c.JSON(http.StatusInternalServerError, errorResponse{Code: "INTERNAL_ERROR", Message: "服务端内部错误"})
+		return handleError(c, err)
 	}
 
 	resp := cardToJSON(card)

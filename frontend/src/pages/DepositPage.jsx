@@ -9,7 +9,8 @@ export default function DepositPage() {
   const [cardInfo, setCardInfo] = useState(null)
   const [receipt, setReceipt] = useState(null)
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [queryLoading, setQueryLoading] = useState(false)
+  const [depositLoading, setDepositLoading] = useState(false)
   const [depositForm] = Form.useForm()
 
   async function handleQueryCard() {
@@ -17,7 +18,7 @@ export default function DepositPage() {
     setError('')
     setCardInfo(null)
     setReceipt(null)
-    setLoading(true)
+    setQueryLoading(true)
     try {
       const res = await getCard(cardNo.trim())
       if (res.status !== 'active') {
@@ -29,13 +30,13 @@ export default function DepositPage() {
     } catch (err) {
       setError(err.message || '查询失败')
     } finally {
-      setLoading(false)
+      setQueryLoading(false)
     }
   }
 
   async function handleDeposit(values) {
     setError('')
-    setLoading(true)
+    setDepositLoading(true)
     try {
       const amountFen = Math.round(values.amount * 100)
       const res = await deposit(cardNo.trim(), amountFen)
@@ -45,7 +46,7 @@ export default function DepositPage() {
     } catch (err) {
       setError(err.message || '存款失败')
     } finally {
-      setLoading(false)
+      setDepositLoading(false)
     }
   }
 
@@ -60,7 +61,7 @@ export default function DepositPage() {
           onChange={e => { setCardNo(e.target.value); setCardInfo(null); setReceipt(null); setError('') }}
           onPressEnter={handleQueryCard}
         />
-        <Button type="primary" loading={loading} onClick={handleQueryCard}>
+        <Button type="primary" loading={queryLoading} onClick={handleQueryCard}>
           查询
         </Button>
       </Space.Compact>
@@ -90,7 +91,7 @@ export default function DepositPage() {
             />
           </Form.Item>
           <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading}>
+            <Button type="primary" htmlType="submit" loading={depositLoading}>
               确认存款
             </Button>
           </Form.Item>

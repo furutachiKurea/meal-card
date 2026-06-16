@@ -19,6 +19,16 @@ func NewCardRepository(db *gorm.DB) *CardRepository {
 	return &CardRepository{db: db}
 }
 
+// DB 返回底层 gorm.DB，供 service 层开启事务
+func (r *CardRepository) DB() *gorm.DB {
+	return r.db
+}
+
+// WithTx 使用指定事务创建一个临时 CardRepository
+func (r *CardRepository) WithTx(tx *gorm.DB) *CardRepository {
+	return &CardRepository{db: tx}
+}
+
 // FindCardHolderByIDNumber 根据证件号查找持卡人，不存在时返回 gorm.ErrRecordNotFound
 func (r *CardRepository) FindCardHolderByIDNumber(idNumber string) (*model.CardHolder, error) {
 	var holder model.CardHolder

@@ -124,95 +124,105 @@ func (s *CardService) IssueCard(idNumber string, preDeposit int64) (*IssueCardRe
 		return nil, newBizError(ErrCodeInvalidAmount, "预存款不能为负数")
 	}
 
-	// 验证证件号
+	// 验证证件号（外部服务调用，不在事务内）
 	studentInfo, err := s.validator.Validate(idNumber)
 	if err != nil {
 		return nil, err
 	}
 
-	// 查找或创建持卡人
-	holder, err := s.cardRepo.FindCardHolderByIDNumber(idNumber)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		log.Error().Err(err).Msg("查询持卡人失败")
+	var result *IssueCardResult
+	err = s.cardRepo.DB().Transaction(func(tx *gorm.DB) error {
+		txRepo := s.cardRepo.WithTx(tx)
+
+		// 查找或创建持卡人
+		holder, err := txRepo.FindCardHolderByIDNumber(idNumber)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Error().Err(err).Msg("查询持卡人失败")
+			return err
+		}
+
+		if holder == nil {
+			holder = &model.CardHolder{
+				Name:     studentInfo.Name,
+				IDNumber: idNumber,
+			}
+			if err := txRepo.CreateCardHolder(holder); err != nil {
+				log.Error().Err(err).Msg("创建持卡人失败")
+				return err
+			}
+		}
+
+		// 检查是否已有 active 卡
+		activeCard, err := txRepo.FindActiveCardByHolderID(holder.ID)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Error().Err(err).Msg("查询 active 卡失败")
+			return err
+		}
+		if activeCard != nil {
+			log.Error().Str("code", ErrCodeCardAlreadyActive).Str("idNumber", idNumber).Msg("业务错误")
+			return newBizError(ErrCodeCardAlreadyActive, "该证件号已有正在使用的卡")
+		}
+
+		// 检查是否有 lost 卡，若有则自动注销
+		var refund *OldCardRefund
+		lostCard, err := txRepo.FindLostCardByHolderID(holder.ID)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Error().Err(err).Msg("查询 lost 卡失败")
+			return err
+		}
+		if lostCard != nil {
+			oldDeposit := lostCard.Deposit
+			oldBalance := lostCard.Balance
+			oldCardNo := lostCard.CardNo
+			lostCard.Status = model.CardStatusCancelled
+			lostCard.Balance = 0
+			if err := txRepo.UpdateCard(lostCard); err != nil {
+				log.Error().Err(err).Str("oldCardNo", oldCardNo).Msg("自动注销旧卡失败")
+				return err
+			}
+			refund = &OldCardRefund{
+				OldCardNo: oldCardNo,
+				Deposit:   oldDeposit,
+				Balance:   oldBalance,
+				Total:     oldDeposit + oldBalance,
+			}
+		}
+
+		// 生成新卡号，押金固定 2000 分
+		newCard := &model.Card{
+			CardNo:       generateCardNo(),
+			CardHolderID: holder.ID,
+			Deposit:      2000,
+			Balance:      preDeposit,
+			Status:       model.CardStatusActive,
+		}
+		if err := txRepo.CreateCard(newCard); err != nil {
+			log.Error().Err(err).Msg("创建卡失败")
+			return err
+		}
+
+		if preDeposit > 0 {
+			record := &model.DepositRecord{
+				CardID: newCard.ID,
+				Amount: preDeposit,
+			}
+			if err := txRepo.CreateDepositRecord(record); err != nil {
+				log.Error().Err(err).Str("cardNo", newCard.CardNo).Msg("创建预存款记录失败")
+				return err
+			}
+		}
+
+		result = &IssueCardResult{
+			Card:       newCard,
+			CardHolder: holder,
+			Refund:     refund,
+		}
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
-
-	if holder == nil {
-		holder = &model.CardHolder{
-			Name:     studentInfo.Name,
-			IDNumber: idNumber,
-		}
-		if err := s.cardRepo.CreateCardHolder(holder); err != nil {
-			log.Error().Err(err).Msg("创建持卡人失败")
-			return nil, err
-		}
-	}
-
-	// 检查是否已有 active 卡
-	activeCard, err := s.cardRepo.FindActiveCardByHolderID(holder.ID)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		log.Error().Err(err).Msg("查询 active 卡失败")
-		return nil, err
-	}
-	if activeCard != nil {
-		log.Error().Str("code", ErrCodeCardAlreadyActive).Str("idNumber", idNumber).Msg("业务错误")
-		return nil, newBizError(ErrCodeCardAlreadyActive, "该证件号已有正在使用的卡")
-	}
-
-	// 检查是否有 lost 卡，若有则自动注销
-	var refund *OldCardRefund
-	lostCard, err := s.cardRepo.FindLostCardByHolderID(holder.ID)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		log.Error().Err(err).Msg("查询 lost 卡失败")
-		return nil, err
-	}
-	if lostCard != nil {
-		oldDeposit := lostCard.Deposit
-		oldBalance := lostCard.Balance
-		oldCardNo := lostCard.CardNo
-		lostCard.Status = model.CardStatusCancelled
-		lostCard.Balance = 0
-		if err := s.cardRepo.UpdateCard(lostCard); err != nil {
-			log.Error().Err(err).Str("oldCardNo", oldCardNo).Msg("自动注销旧卡失败")
-			return nil, err
-		}
-		refund = &OldCardRefund{
-			OldCardNo: oldCardNo,
-			Deposit:   oldDeposit,
-			Balance:   oldBalance,
-			Total:     oldDeposit + oldBalance,
-		}
-	}
-
-	// 生成新卡号，押金固定 2000 分
-	newCard := &model.Card{
-		CardNo:       generateCardNo(),
-		CardHolderID: holder.ID,
-		Deposit:      2000,
-		Balance:      preDeposit,
-		Status:       model.CardStatusActive,
-	}
-	if err := s.cardRepo.CreateCard(newCard); err != nil {
-		log.Error().Err(err).Msg("创建卡失败")
-		return nil, err
-	}
-
-	if preDeposit > 0 {
-		record := &model.DepositRecord{
-			CardID: newCard.ID,
-			Amount: preDeposit,
-		}
-		if err := s.cardRepo.CreateDepositRecord(record); err != nil {
-			log.Error().Err(err).Str("cardNo", newCard.CardNo).Msg("创建预存款记录失败")
-			return nil, err
-		}
-	}
-
-	return &IssueCardResult{
-		Card:       newCard,
-		CardHolder: holder,
-		Refund:     refund,
-	}, nil
+	return result, nil
 }
 
 // GetCard 根据 16 位卡号查询卡片详情
@@ -229,6 +239,20 @@ func (s *CardService) GetCard(cardNo string) (*model.Card, error) {
 	return card, nil
 }
 
+// GetCurrentCardByIDNumber 根据证件号查询当前有效卡（active 或 lost）
+func (s *CardService) GetCurrentCardByIDNumber(idNumber string) (*model.Card, error) {
+	card, err := s.cardRepo.FindCurrentCardByIDNumber(idNumber)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Error().Str("code", ErrCodeCardNotFound).Str("idNumber", idNumber).Msg("业务错误")
+			return nil, newBizError(ErrCodeCardNotFound, "该证件号无有效卡")
+		}
+		log.Error().Err(err).Str("idNumber", idNumber).Msg("查询卡失败")
+		return nil, err
+	}
+	return card, nil
+}
+
 // Deposit 存款（充值）
 func (s *CardService) Deposit(cardNo string, amount int64) (*DepositResult, error) {
 	if amount <= 0 {
@@ -236,48 +260,58 @@ func (s *CardService) Deposit(cardNo string, amount int64) (*DepositResult, erro
 		return nil, newBizError(ErrCodeInvalidAmount, "充值金额必须大于 0")
 	}
 
-	card, err := s.cardRepo.FindCardByCardNo(cardNo)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Error().Str("code", ErrCodeCardNotFound).Str("cardNo", cardNo).Msg("业务错误")
-			return nil, newBizError(ErrCodeCardNotFound, "卡号不存在")
-		}
-		log.Error().Err(err).Str("cardNo", cardNo).Msg("查询卡失败")
-		return nil, err
-	}
+	var result *DepositResult
+	err := s.cardRepo.DB().Transaction(func(tx *gorm.DB) error {
+		txRepo := s.cardRepo.WithTx(tx)
 
-	if card.Status != model.CardStatusActive {
-		if card.Status == model.CardStatusLost {
+		card, err := txRepo.FindCardByCardNo(cardNo)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				log.Error().Str("code", ErrCodeCardNotFound).Str("cardNo", cardNo).Msg("业务错误")
+				return newBizError(ErrCodeCardNotFound, "卡号不存在")
+			}
+			log.Error().Err(err).Str("cardNo", cardNo).Msg("查询卡失败")
+			return err
+		}
+
+		if card.Status != model.CardStatusActive {
+			if card.Status == model.CardStatusLost {
+				log.Error().Str("code", ErrCodeCardNotActive).Str("cardNo", cardNo).Msg("业务错误")
+				return newBizError(ErrCodeCardNotActive, "该卡已挂失，无法充值")
+			}
 			log.Error().Str("code", ErrCodeCardNotActive).Str("cardNo", cardNo).Msg("业务错误")
-			return nil, newBizError(ErrCodeCardNotActive, "该卡已挂失，无法充值")
+			return newBizError(ErrCodeCardNotActive, "该卡已注销，无法充值")
 		}
-		log.Error().Str("code", ErrCodeCardNotActive).Str("cardNo", cardNo).Msg("业务错误")
-		return nil, newBizError(ErrCodeCardNotActive, "该卡已注销，无法充值")
-	}
 
-	card.Balance += amount
-	if err := s.cardRepo.UpdateCard(card); err != nil {
-		log.Error().Err(err).Str("cardNo", cardNo).Msg("更新卡余额失败")
+		card.Balance += amount
+		if err := txRepo.UpdateCard(card); err != nil {
+			log.Error().Err(err).Str("cardNo", cardNo).Msg("更新卡余额失败")
+			return err
+		}
+
+		record := &model.DepositRecord{
+			CardID: card.ID,
+			Amount: amount,
+		}
+		if err := txRepo.CreateDepositRecord(record); err != nil {
+			log.Error().Err(err).Str("cardNo", cardNo).Msg("创建存款记录失败")
+			return err
+		}
+
+		result = &DepositResult{
+			ID:         record.ID,
+			CardNo:     card.CardNo,
+			HolderName: card.CardHolder.Name,
+			Amount:     amount,
+			NewBalance: card.Balance,
+			CreatedAt:  record.CreatedAt,
+		}
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
-
-	record := &model.DepositRecord{
-		CardID: card.ID,
-		Amount: amount,
-	}
-	if err := s.cardRepo.CreateDepositRecord(record); err != nil {
-		log.Error().Err(err).Str("cardNo", cardNo).Msg("创建存款记录失败")
-		return nil, err
-	}
-
-	return &DepositResult{
-		ID:         record.ID,
-		CardNo:     card.CardNo,
-		HolderName: card.CardHolder.Name,
-		Amount:     amount,
-		NewBalance: card.Balance,
-		CreatedAt:  record.CreatedAt,
-	}, nil
+	return result, nil
 }
 
 // CreateTransaction 就餐消费结算
@@ -288,32 +322,8 @@ func (s *CardService) CreateTransaction(cardNo string, windowID uint, amount int
 		return nil, newBizError(ErrCodeInvalidAmount, "消费金额必须大于 0")
 	}
 
-	card, err := s.cardRepo.FindCardByCardNo(cardNo)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Error().Str("code", ErrCodeCardNotFound).Str("cardNo", cardNo).Msg("业务错误")
-			return nil, newBizError(ErrCodeCardNotFound, "此卡非本单位所发")
-		}
-		log.Error().Err(err).Str("cardNo", cardNo).Msg("查询卡失败")
-		return nil, err
-	}
-
-	if card.Status == model.CardStatusCancelled {
-		log.Error().Str("code", ErrCodeCardCancelled).Str("cardNo", cardNo).Msg("业务错误")
-		return nil, newBizError(ErrCodeCardCancelled, "此卡已注销")
-	}
-	if card.Status == model.CardStatusLost {
-		log.Error().Str("code", ErrCodeCardLost).Str("cardNo", cardNo).Msg("业务错误")
-		return nil, newBizError(ErrCodeCardLost, "此卡已挂失")
-	}
-
-	if card.Balance < amount {
-		log.Error().Str("code", ErrCodeInsufficientBalance).Str("cardNo", cardNo).Int64("balance", card.Balance).Int64("amount", amount).Msg("业务错误")
-		return nil, newBizError(ErrCodeInsufficientBalance, "余额不足")
-	}
-
-	// 验证窗口存在
-	_, err = s.windowRepo.FindWindowByID(windowID)
+	// 先在事务外验证窗口存在（只读查询，无需事务保护）
+	_, err := s.windowRepo.FindWindowByID(windowID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Error().Str("code", ErrCodeWindowNotFound).Uint("windowID", windowID).Msg("业务错误")
@@ -323,30 +333,64 @@ func (s *CardService) CreateTransaction(cardNo string, windowID uint, amount int
 		return nil, err
 	}
 
-	card.Balance -= amount
-	if err := s.cardRepo.UpdateCard(card); err != nil {
-		log.Error().Err(err).Str("cardNo", cardNo).Msg("更新卡余额失败")
+	var result *TransactionResult
+	err = s.cardRepo.DB().Transaction(func(tx *gorm.DB) error {
+		txRepo := s.cardRepo.WithTx(tx)
+
+		card, err := txRepo.FindCardByCardNo(cardNo)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				log.Error().Str("code", ErrCodeCardNotFound).Str("cardNo", cardNo).Msg("业务错误")
+				return newBizError(ErrCodeCardNotFound, "此卡非本单位所发")
+			}
+			log.Error().Err(err).Str("cardNo", cardNo).Msg("查询卡失败")
+			return err
+		}
+
+		if card.Status == model.CardStatusCancelled {
+			log.Error().Str("code", ErrCodeCardCancelled).Str("cardNo", cardNo).Msg("业务错误")
+			return newBizError(ErrCodeCardCancelled, "此卡已注销")
+		}
+		if card.Status == model.CardStatusLost {
+			log.Error().Str("code", ErrCodeCardLost).Str("cardNo", cardNo).Msg("业务错误")
+			return newBizError(ErrCodeCardLost, "此卡已挂失")
+		}
+
+		if card.Balance < amount {
+			log.Error().Str("code", ErrCodeInsufficientBalance).Str("cardNo", cardNo).Int64("balance", card.Balance).Int64("amount", amount).Msg("业务错误")
+			return newBizError(ErrCodeInsufficientBalance, "余额不足")
+		}
+
+		card.Balance -= amount
+		if err := txRepo.UpdateCard(card); err != nil {
+			log.Error().Err(err).Str("cardNo", cardNo).Msg("更新卡余额失败")
+			return err
+		}
+
+		txn := &model.Transaction{
+			CardID:   card.ID,
+			WindowID: windowID,
+			Amount:   amount,
+		}
+		if err := txRepo.CreateTransaction(txn); err != nil {
+			log.Error().Err(err).Str("cardNo", cardNo).Msg("创建消费记录失败")
+			return err
+		}
+
+		result = &TransactionResult{
+			ID:         txn.ID,
+			CardNo:     card.CardNo,
+			WindowID:   windowID,
+			Amount:     amount,
+			NewBalance: card.Balance,
+			CreatedAt:  txn.CreatedAt,
+		}
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
-
-	tx := &model.Transaction{
-		CardID:   card.ID,
-		WindowID: windowID,
-		Amount:   amount,
-	}
-	if err := s.cardRepo.CreateTransaction(tx); err != nil {
-		log.Error().Err(err).Str("cardNo", cardNo).Msg("创建消费记录失败")
-		return nil, err
-	}
-
-	return &TransactionResult{
-		ID:         tx.ID,
-		CardNo:     card.CardNo,
-		WindowID:   windowID,
-		Amount:     amount,
-		NewBalance: card.Balance,
-		CreatedAt:  tx.CreatedAt,
-	}, nil
+	return result, nil
 }
 
 // ReportLoss 挂失：active → lost

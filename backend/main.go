@@ -50,7 +50,7 @@ func main() {
 	windowSvc := service.NewWindowService(windowRepo)
 
 	// 初始化 handler
-	cardH := handler.NewCardHandler(cardSvc, studentValidator, cardRepo)
+	cardH := handler.NewCardHandler(cardSvc, studentValidator)
 	statsH := handler.NewStatisticsHandler(statsSvc)
 	windowH := handler.NewWindowHandler(windowSvc)
 
