@@ -1,0 +1,109 @@
+<section class="module" id="module-1" style="background: var(--color-bg)">
+  <div class="module-header">
+    <div class="module-number">01</div>
+    <h2 class="module-title">系统全貌</h2>
+    <p class="module-subtitle">这个系统是什么、解决什么问题、有哪些角色和入口</p>
+  </div>
+
+  <!-- Screen 1: 开场 -->
+  <section class="screen animate-in">
+    <h3>你有没有遇到过这些烦恼？</h3>
+    <p>早上八点，你拿着饭卡冲进食堂，窗口阿姨刷了一下——</p>
+    <blockquote style="border-left: 4px solid var(--color-accent); padding: 0.75rem 1.25rem; margin: 1.5rem 0; font-style: italic;">
+      "余额不足，请充值。"
+    </blockquote>
+    <p>你懵了。昨天明明还有钱的？卡丢了怎么办？充进去的钱还能退吗？</p>
+    <p style="margin-top: 1.5rem;">
+      <strong>食堂饭卡管理系统</strong>就是为了解决这一系列问题而生的。它把食堂的
+      <span class="glossary-term" data-definition="发卡、存款、就餐消费、挂失、注销、统计——系统需要支持的六项核心操作">六项核心业务</span>
+      全部数字化，让管理员、窗口、学生都能顺畅协作。
+    </p>
+    <div class="translation-block">
+      <div class="translation-row">
+        <span class="translation-plain">学生刷卡 → 余额扣减 → 流水记录</span>
+        <span class="translation-tech">一次 HTTP 请求 → 数据库事务 → 持久化日志</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Screen 2: 三种角色 -->
+  <section class="screen animate-in">
+    <h3>谁在使用这个系统？</h3>
+    <div class="pattern-cards">
+      <div class="pattern-card">
+        <div class="pattern-icon">🏢</div>
+        <h4>管理员</h4>
+        <p>负责发卡、为学生存款、处理挂失与注销、查看统计报表。是系统的核心操作者。</p>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-icon">🍜</div>
+        <h4>窗口阿姨</h4>
+        <p>通过窗口机验卡、录入餐费、完成结算。每次就餐的最终执行者。</p>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-icon">🎓</div>
+        <h4>学生</h4>
+        <p>持卡就餐，刷卡时可看到当前余额。无需登录系统，卡即身份。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Screen 3: 架构对话 -->
+  <section class="screen animate-in">
+    <h3>一次刷卡消费，幕后发生了什么？</h3>
+    <p>三个模块之间的一次真实对话：</p>
+    <div class="group-chat" id="chat-architecture">
+      <div class="chat-header">🍜 一次刷卡消费的幕后</div>
+      <div class="chat-messages">
+        <div class="chat-msg" data-actor="1" data-delay="0">
+          <span class="chat-name">前端（窗口机页面）</span>
+          <span class="chat-bubble">阿姨输入了 8.5 元，我来发一个请求：POST /api/meal/consume，卡号 + 金额。</span>
+        </div>
+        <div class="chat-msg" data-actor="2" data-delay="1200">
+          <span class="chat-name">后端（Go + Echo）</span>
+          <span class="chat-bubble">收到！先查这张卡：状态正常？是本单位的卡？有没有挂失？</span>
+        </div>
+        <div class="chat-msg" data-actor="3" data-delay="2400">
+          <span class="chat-name">数据库（SQLite）</span>
+          <span class="chat-bubble">查到了，卡状态 active，余额 42.00 元，未挂失。</span>
+        </div>
+        <div class="chat-msg" data-actor="2" data-delay="3600">
+          <span class="chat-name">后端（Go + Echo）</span>
+          <span class="chat-bubble">余额充足，开启
+            <span class="glossary-term" data-definition="数据库事务：一组操作要么全部成功、要么全部回滚，保证数据一致性">事务</span>
+            ：余额 42.00 − 8.50 = 33.50，写入消费流水。提交事务。</span>
+        </div>
+        <div class="chat-msg" data-actor="1" data-delay="4800">
+          <span class="chat-name">前端（窗口机页面）</span>
+          <span class="chat-bubble">收到响应，显示"消费成功，余额 33.50 元"。就餐完成！</span>
+        </div>
+      </div>
+      <button class="chat-replay-btn" data-chat="chat-architecture">重新播放 ↺</button>
+    </div>
+  </section>
+
+  <!-- Screen 4: 技术栈 -->
+  <section class="screen animate-in">
+    <h3>技术栈一览</h3>
+    <p>前后端完全分离，通过
+      <span class="glossary-term" data-definition="RESTful API：一种基于 HTTP 的接口规范，用 URL 表示资源、用 GET/POST/PUT/DELETE 表示操作">REST API</span>
+      通信。
+    </p>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem;">
+      <div>
+        <h4 style="margin-bottom: 0.75rem;">后端</h4>
+        <div class="icon-label"><span>🐹</span><span><strong>Go</strong> — 编译型语言，性能好、部署简单</span></div>
+        <div class="icon-label"><span>⚡</span><span><strong>Echo</strong> — 轻量级 HTTP 框架，路由清晰</span></div>
+        <div class="icon-label"><span>🗄️</span><span><strong>GORM</strong> — ORM 库，操作数据库不写 SQL</span></div>
+        <div class="icon-label"><span>📦</span><span><strong>SQLite</strong> — 零配置文件数据库，适合课设</span></div>
+      </div>
+      <div>
+        <h4 style="margin-bottom: 0.75rem;">前端</h4>
+        <div class="icon-label"><span>⚛️</span><span><strong>React</strong> — 组件化 UI 库</span></div>
+        <div class="icon-label"><span>🐜</span><span><strong>Ant Design</strong> — 开箱即用的 UI 组件库</span></div>
+        <div class="icon-label"><span>🚀</span><span><strong>Vite</strong> — 极速构建工具，热更新快</span></div>
+        <div class="icon-label"><span>🔀</span><span><strong>React Router</strong> — 前端路由管理</span></div>
+      </div>
+    </div>
+  </section>
+</section>

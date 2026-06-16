@@ -1,0 +1,127 @@
+<section class="module" id="module-3" style="background: var(--color-bg)">
+  <div class="module-header">
+    <span class="module-number">03</span>
+    <h2 class="module-title">核心业务流</h2>
+    <p class="module-subtitle">一笔消费从头到尾经历了什么</p>
+  </div>
+
+  <!-- Screen 1: 比喻 -->
+  <div class="screen">
+    <h3 class="screen-title">消费就像过安检</h3>
+    <p>你在机场过安检时，要经过多道检查站。消费也一样——每一步都在问：<em>你有资格通过吗？</em></p>
+    <div class="pattern-cards">
+      <div class="pattern-card">
+        <div class="pattern-icon">🚪</div>
+        <h4>第一关：身份验证</h4>
+        <p>这张卡是我们系统发的吗？</p>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-icon">🚫</div>
+        <h4>第二关：状态核查</h4>
+        <p>卡有没有被注销或挂失？</p>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-icon">💰</div>
+        <h4>第三关：额度校验</h4>
+        <p>单笔不超过 <span class="glossary-term" data-definition="系统规定：每次消费最多 200 元（20000分），每天累计不超过 500 元（50000分）">200元</span>，今日累计不超过 500元</p>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-icon">✅</div>
+        <h4>全部通过：扣款</h4>
+        <p>余额减少，交易记录写入数据库</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen 2: Flow Animation -->
+  <div class="screen">
+    <h3 class="screen-title">消费的完整流程</h3>
+    <p>点击「下一步」，逐步走完一笔消费的全部环节。</p>
+    <div class="flow-animation" data-steps='[
+      {"from": "学生", "to": "后端", "label": "刷卡请求", "detail": "学生将饭卡靠近窗口机，窗口机向后端发送卡号与消费金额"},
+      {"from": "后端", "to": "数据库", "label": "查询卡片", "detail": "SELECT * FROM cards WHERE card_no = ?"},
+      {"from": "数据库", "to": "后端", "label": "返回卡片信息", "detail": "返回卡的状态（active / lost / cancelled）与当前余额"},
+      {"from": "后端", "to": "后端", "label": "三重状态校验", "detail": "① 卡存在？② 未注销？③ 未挂失？任意一项不通过立即拒绝"},
+      {"from": "后端", "to": "数据库", "label": "查询今日消费额", "detail": "SELECT SUM(amount) FROM transactions WHERE card_no = ? AND date = today"},
+      {"from": "后端", "to": "后端", "label": "限额校验", "detail": "单笔 ≤ 200元 且 今日累计 + 本次 ≤ 500元，否则拒绝"},
+      {"from": "后端", "to": "数据库", "label": "事务写入", "detail": "在同一个数据库事务中：扣减余额 + 插入 Transaction 记录"},
+      {"from": "后端", "to": "学生", "label": "返回结果", "detail": "窗口机显示扣款成功与最新余额，消费完成"}
+    ]'>
+      <div class="flow-actors">
+        <div class="flow-actor" data-actor-id="学生"><span class="flow-actor-icon">🧑‍🎓</span><span class="flow-actor-name">学生</span></div>
+        <div class="flow-actor" data-actor-id="后端"><span class="flow-actor-icon">⚙️</span><span class="flow-actor-name">后端</span></div>
+        <div class="flow-actor" data-actor-id="数据库"><span class="flow-actor-icon">🗄️</span><span class="flow-actor-name">数据库</span></div>
+      </div>
+      <div class="flow-track"></div>
+      <div class="flow-detail"></div>
+      <div class="flow-controls">
+        <button class="flow-btn flow-prev">← 上一步</button>
+        <span class="flow-step-indicator"></span>
+        <button class="flow-btn flow-next">下一步 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen 3: Code Translation -->
+  <div class="screen">
+    <h3 class="screen-title">代码翻译：消费核心逻辑</h3>
+    <p><code>CreateTransaction</code> 中最关键的一段代码。左边是 Go 代码，右边是白话解释。</p>
+    <div class="translation-block animate-in">
+      <div class="translation-code">
+        <span class="translation-label">CODE</span>
+        <pre><code>err = s.cardRepo.DB().Transaction(func(tx *gorm.DB) error {
+    txRepo := s.cardRepo.WithTx(tx)
+    card, err := txRepo.FindCardByCardNo(cardNo)
+    if err != nil {
+        return newBizError(ErrCodeCardNotFound, "此卡非本单位所发")
+    }
+    if card.Status == model.CardStatusCancelled {
+        return newBizError(ErrCodeCardCancelled, "此卡已注销")
+    }
+    if card.Status == model.CardStatusLost {
+        return newBizError(ErrCodeCardLost, "此卡已挂失")
+    }
+    card.Balance -= amount
+    txRepo.UpdateCard(card)
+    txRepo.CreateTransaction(txn)
+    return nil
+})</code></pre>
+      </div>
+      <div class="translation-english">
+        <span class="translation-label">中文解释</span>
+        <div class="translation-lines">
+          <p class="tl"><strong>Transaction(func...)</strong> — 开启数据库<span class="glossary-term" data-definition="事务：一组操作打包执行，要么全部成功，要么全部回滚。保证数据不会处于"扣了钱但没记录"的中间状态">事务</span>，里面的所有操作要么全部成功，要么全部撤销</p>
+          <p class="tl"><strong>WithTx(tx)</strong> — 创建一个绑定了本次事务的仓库实例，确保后续查询都在同一个事务里</p>
+          <p class="tl"><strong>FindCardByCardNo</strong> — 根据卡号查数据库，找不到说明不是我们发的卡</p>
+          <p class="tl"><strong>Status == Cancelled</strong> — 第二重校验：卡已注销，拒绝</p>
+          <p class="tl"><strong>Status == Lost</strong> — 第三重校验：卡已挂失，拒绝并报警</p>
+          <p class="tl"><strong>Balance -= amount</strong> — 扣减余额（单位：分）</p>
+          <p class="tl"><strong>UpdateCard + CreateTransaction</strong> — 同时更新余额和写入消费记录，事务保证两步不可分割</p>
+          <p class="tl"><strong>return nil</strong> — 返回 nil 表示成功，事务自动提交</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen 4: Callout -->
+  <div class="screen">
+    <h3 class="screen-title">两个关键设计思想</h3>
+    <div class="callout callout-insight animate-in">
+      <div class="callout-icon">💡</div>
+      <div class="callout-content">
+        <strong>事务：要么全部成功，要么全部回滚</strong>
+        <p>假设扣款成功了，但写流水记录时突然断电。没有事务保护的话，余额减少了却没有记录——账就对不上了。有了事务，这两步是捆绑的：写流水失败 → 扣款自动撤销 → 余额恢复原样。</p>
+      </div>
+    </div>
+    <div class="callout callout-insight animate-in" style="margin-top: 1.5rem;">
+      <div class="callout-icon">🏗️</div>
+      <div class="callout-content">
+        <strong>三层架构：每一层只做自己的事</strong>
+        <p><strong>Handler 层</strong>（HTTP 入口）只负责解析请求、返回响应，不碰业务逻辑。<br>
+        <strong>Service 层</strong>（业务逻辑）只负责校验规则、编排流程，不直接写 SQL。<br>
+        <strong>Repository 层</strong>（数据访问）只负责与数据库打交道，不关心业务含义。<br>
+        这样分层的好处是：改数据库只动 Repository，改业务规则只动 Service，互不影响。</p>
+      </div>
+    </div>
+  </div>
+</section>

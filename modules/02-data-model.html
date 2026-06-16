@@ -1,0 +1,169 @@
+<section class="module" id="module-2" style="background: var(--color-bg-warm)">
+  <div class="module-header">
+    <span class="module-number">02</span>
+    <div class="module-title-block">
+      <h2 class="module-title">数据模型</h2>
+      <p class="module-subtitle">这个系统的数据是怎么组织的</p>
+    </div>
+  </div>
+
+  <!-- Screen 1: 比喻开场 -->
+  <div class="screen">
+    <div class="screen-content">
+      <h3 class="screen-title">数据库，就像图书馆的档案室</h3>
+      <p class="screen-desc">想象食堂管理处有一个大型档案室，里面摆着几排档案柜。每个抽屉专门存放一类信息，抽屉之间通过编号相互引用。</p>
+      <div class="analogy-grid">
+        <div class="analogy-card">
+          <div class="analogy-icon">🗄️</div>
+          <div class="analogy-text">
+            <strong>档案室</strong>
+            <span>= 整个数据库</span>
+          </div>
+        </div>
+        <div class="analogy-card">
+          <div class="analogy-icon">🗂️</div>
+          <div class="analogy-text">
+            <strong>每个抽屉</strong>
+            <span>= 一张数据表</span>
+          </div>
+        </div>
+        <div class="analogy-card">
+          <div class="analogy-icon">📄</div>
+          <div class="analogy-text">
+            <strong>每份文件</strong>
+            <span>= 一条记录（一行）</span>
+          </div>
+        </div>
+        <div class="analogy-card">
+          <div class="analogy-icon">🔖</div>
+          <div class="analogy-text">
+            <strong>文件上的标签</strong>
+            <span>= 字段（列）</span>
+          </div>
+        </div>
+      </div>
+      <p class="screen-note">这个系统一共有 <strong>5 个抽屉</strong>，每个抽屉负责一类数据，抽屉之间通过 <span class="glossary-term" data-definition="外键是一个字段，它的值必须出现在另一张表的主键中，用来把两张表的记录关联起来。">外键</span> 彼此关联。</p>
+    </div>
+  </div>
+
+  <!-- Screen 2: 五张表的关系 -->
+  <div class="screen">
+    <div class="screen-content">
+      <h3 class="screen-title">五张表，各司其职</h3>
+      <p class="screen-desc">五张表之间的关系如下：持卡人拥有一张就餐卡，卡上记录所有的存款和消费流水。</p>
+      <div class="pattern-cards">
+        <div class="pattern-card">
+          <div class="pattern-icon">👤</div>
+          <h4>CardHolder</h4>
+          <p>持卡人：id · 姓名 · 证件号 · 创建时间</p>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-icon">💳</div>
+          <h4>Card</h4>
+          <p>就餐卡：16位卡号 · 押金 · 余额 · 状态</p>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-icon">💰</div>
+          <h4>DepositRecord</h4>
+          <p>存款记录：金额 · 时间</p>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-icon">🍜</div>
+          <h4>Transaction</h4>
+          <p>消费记录：金额 · 窗口 · 时间</p>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-icon">🏪</div>
+          <h4>Window</h4>
+          <p>售饭窗口：id · 名称</p>
+        </div>
+      </div>
+      <div class="callout callout-insight animate-in">
+        <div class="callout-icon">💡</div>
+        <div class="callout-content">
+          <strong>关键设计约束</strong>
+          <p>一人一卡（证件号唯一）· 金额用整数存<span class="glossary-term" data-definition="用整数表示最小货币单位（分），避免小数运算带来的精度误差。例如 1 元存为 100，2000 分 = 20 元押金。">分</span>（避免浮点精度问题）· 卡号16位随机数（不暴露自增ID）</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen 3: Code Translation -->
+  <div class="screen">
+    <div class="screen-content">
+      <h3 class="screen-title">读懂一张表的代码</h3>
+      <p class="screen-desc">下面是 <code>Card</code>（就餐卡）表在 Go 代码中的定义。左边是代码，右边是逐行的中文解释。</p>
+      <div class="translation-block animate-in">
+        <div class="translation-code">
+          <span class="translation-label">CODE</span>
+          <pre><code>type Card struct {
+    ID           uint       `gorm:"primaryKey" json:"-"`
+    CardNo       string     `gorm:"uniqueIndex;not null;size:16" json:"cardNo"`
+    CardHolderID uint       `gorm:"not null" json:"cardHolderId"`
+    Deposit      int64      `gorm:"not null;default:0" json:"deposit"`
+    Balance      int64      `gorm:"not null;default:0" json:"balance"`
+    Status       CardStatus `gorm:"not null;default:'active'" json:"status"`
+    CreatedAt    time.Time  `json:"createdAt"`
+    UpdatedAt    time.Time  `json:"updatedAt"`
+}</code></pre>
+        </div>
+        <div class="translation-english">
+          <span class="translation-label">中文解释</span>
+          <div class="translation-lines">
+            <p class="tl"><strong>type Card struct</strong> — 定义"就餐卡"这张表的数据结构，每个字段对应表里的一列</p>
+            <p class="tl"><strong>ID uint · primaryKey</strong> — 数据库内部的<span class="glossary-term" data-definition="主键是表中唯一标识每行记录的字段，数据库用它来快速查找和关联记录。">主键</span>，自动递增，对外接口隐藏（json:"-"）</p>
+            <p class="tl"><strong>CardNo string · size:16</strong> — 对外暴露的 16 位随机卡号，设置唯一索引，保证不重复</p>
+            <p class="tl"><strong>CardHolderID uint</strong> — 指向持卡人表的外键，把这张卡和它的主人关联起来</p>
+            <p class="tl"><strong>Deposit int64</strong> — 押金，单位是"分"，固定为 2000（即 20 元）</p>
+            <p class="tl"><strong>Balance int64</strong> — 卡内余额，单位是"分"，每次存款加、消费减</p>
+            <p class="tl"><strong>Status CardStatus</strong> — 卡的状态：active（正常）/ lost（挂失）/ cancelled（注销），默认 active</p>
+            <p class="tl"><strong>CreatedAt / UpdatedAt</strong> — 创建时间和最后更新时间，由<span class="glossary-term" data-definition="GORM 是 Go 语言的 ORM 框架，负责把 struct 映射到数据库表，自动处理 CRUD 操作。">GORM</span> 自动维护</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen 4: Quiz -->
+  <div class="screen">
+    <div class="screen-content">
+      <h3 class="screen-title">检验一下</h3>
+      <div class="quiz" data-quiz-id="data-model">
+        <h3 class="quiz-title">🧪 检验理解</h3>
+
+        <div class="quiz-question" data-correct="B">
+          <p class="quiz-prompt">1. 系统为什么用整数（int64）来存储金额，而不是小数（float）？</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-option="A">A. 因为 int64 比 float 占用更少内存</button>
+            <button class="quiz-option" data-option="B">B. 浮点数存在精度误差，例如 0.1 + 0.2 ≠ 0.3，用整数存"分"可以精确计算</button>
+            <button class="quiz-option" data-option="C">C. 数据库不支持 float 类型</button>
+          </div>
+          <div class="quiz-feedback correct">✅ 正确！浮点数的二进制表示会引入微小误差，在金融场景中累积后会造成账目不准。用"分"作为最小单位，全程整数运算，完全避免这个问题。</div>
+          <div class="quiz-feedback incorrect">❌ 再想想。浮点数的问题是精度，不是大小。试试 B 选项——想想为什么 0.1 + 0.2 在计算机里不等于 0.3。</div>
+        </div>
+
+        <div class="quiz-question" data-correct="C">
+          <p class="quiz-prompt">2. 就餐卡的 CardNo（卡号）为什么用 16 位随机数字，而不直接用数据库自增 ID？</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-option="A">A. 随机数字更好看，方便持卡人记忆</button>
+            <button class="quiz-option" data-option="B">B. 自增 ID 数字太小，不够用</button>
+            <button class="quiz-option" data-option="C">C. 自增 ID 会暴露系统信息（如总卡量、发卡顺序），随机卡号可以防止信息泄露</button>
+          </div>
+          <div class="quiz-feedback correct">✅ 正确！如果卡号是 0001、0002……攻击者可以轻易猜出其他人的卡号，也能推算出系统规模。随机卡号从根本上消除了这种风险。</div>
+          <div class="quiz-feedback incorrect">❌ 不对。安全才是核心原因。如果卡号 = 自增 ID，别人只要知道自己的卡号，就能猜出所有其他人的卡号。</div>
+        </div>
+
+        <div class="quiz-question" data-correct="A">
+          <p class="quiz-prompt">3. 一个持卡人（CardHolder）最多可以拥有几张状态为 active 的就餐卡？</p>
+          <div class="quiz-options">
+            <button class="quiz-option" data-option="A">A. 1 张——系统强制一人一卡</button>
+            <button class="quiz-option" data-option="B">B. 不限——只要缴够押金就能多办</button>
+            <button class="quiz-option" data-option="C">C. 最多 2 张——一张正式卡，一张备用卡</button>
+          </div>
+          <div class="quiz-feedback correct">✅ 正确！系统在数据层面通过唯一约束保证一人一卡，这也是需求中"持有效证件办理就餐卡"的核心规则。</div>
+          <div class="quiz-feedback incorrect">❌ 不对。看看需求描述："学生员工持有效证件到管理处……办理就餐卡"——一人只能对应一张卡，系统通过证件号唯一约束来保证这一点。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
