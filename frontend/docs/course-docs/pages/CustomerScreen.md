@@ -1,9 +1,8 @@
 # CustomerScreen 顾客屏
 
 ## 作用
-- 学生面对的只读大字显示屏，放置在窗口机的学生侧
-- 通过 BroadcastChannel 接收同窗口操作端（MealPage）推送的状态，无需任何用户交互
-- 展示当前刷卡状态：余额、消费结果、报警信息
+- 学生面对的刷卡入口 + 结果展示屏
+- 学生在此输入卡号完成刷卡验证，然后等待阿姨结算，最后看到消费结果
 
 ## 路由
 - `/window/customer` — 默认频道
@@ -11,23 +10,38 @@
 
 ## 结构
 - 全屏深色背景，居中显示单一状态卡片
-- 四种状态视图：idle（等待刷卡）、card_read（显示余额）、settled（结算完成）、alarm（报警）
+- 四种状态视图：idle（刷卡输入）、waiting（等待结算）、settled（结算完成）、alarm（报警）
+
+## 用户操作
+- 学生输入 16 位卡号，点确认或回车
+- 系统验证卡片状态，通过后显示余额并通知操作端
+- 阿姨结算后自动切换到结算结果
+- 阿姨点"下一位"后自动回到刷卡输入
 
 ## 状态变化
-- `idle` → 显示"请刷卡"提示图标
-- `card_read` → 显示持卡人姓名 + 大字余额
-- `settled` → 绿色成功卡片，显示本次消费和剩余余额
-- `alarm` → 红色警报卡片，显示报警原因
+```
+idle → 学生输入卡号点确认
+  验证通过 → waiting（显示余额，等待结算）
+  验证失败 → alarm（显示报警）
+waiting → 收到操作端 settled 消息 → settled
+settled → 收到操作端 reset 消息 → idle
+alarm → 收到操作端 reset 消息 → idle
+```
 
-## 通信机制
-- 使用浏览器 BroadcastChannel API
-- 频道名：`window-{id}` 或 `window-default`（无 id 参数时）
-- 接收消息类型：`card_read`、`settled`、`alarm`、`reset`
-- 顾客屏只接收不发送，完全只读
+## 通信机制（BroadcastChannel 双向）
+- 频道名：`window-{id}` 或 `window-default`
+- **发送**：
+  - 刷卡成功 → `{ type: 'card_read', cardNo, holderName, balance }` 通知操作端
+  - 刷卡异常 → `{ type: 'alarm', message, cardNo }` 通知操作端
+- **接收**：
+  - `settled` → 切换到结算完成视图
+  - `reset` → 回到刷卡输入
 
 ## 接口依赖
-- 无（所有数据通过 BroadcastChannel 从操作端推送）
+- `GET /api/cards/{cardNo}`（getCard）— 顾客屏直接调用后端验证卡片
 
-## 备注
-- 操作端和顾客屏必须在同一浏览器的同源标签页中才能通信
-- 实际部署时，窗口机的两块屏幕分别打开操作端和顾客屏 URL
+## 关键实现点
+- 顾客屏负责调用 getCard API 做卡片验证（不是操作端调）
+- 验证结果通过 BroadcastChannel 推送给操作端，操作端被动接收
+- 操作端结算完成后通过 BroadcastChannel 回传结果给顾客屏
+- 两端必须在同一浏览器同源下才能通信（BroadcastChannel 限制）
