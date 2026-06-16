@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { Form, InputNumber, Button, Alert, Card, Typography, Select, Steps } from 'antd'
+import { Form, InputNumber, Button, Alert, Card, Typography, Select, Steps, Table } from 'antd'
 import { Input } from 'antd'
-import { getCard, createTransaction, listWindows } from '../api.js'
+import { getCard, createTransaction, listWindows, getCardTransactions } from '../api.js'
 import { HomeOutlined, CheckCircleOutlined, WarningFilled } from '@ant-design/icons'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -215,6 +215,9 @@ export default function MealPage() {
                     <span style={{ fontSize: 22, color: '#8bafd4', marginLeft: 6 }}>元</span>
                   </div>
                 </div>
+                <Text style={{ color: '#4a6785', fontSize: 12 }}>
+                  单笔限额200元 / 日累计限额500元
+                </Text>
               </Card>
 
               <Card style={{ background: '#0d1f3c', border: '1px solid #1a3a6b', borderRadius: 12 }}>
