@@ -5,122 +5,85 @@
     <p class="module-subtitle">系统如何保护学生的钱包</p>
   </div>
 
-  <!-- Screen 1: 比喻 -->
-  <div class="screen">
-    <h3 class="screen-title">像银行一样的多重防线</h3>
-    <p>每一笔消费，都必须通过三道"门"才能放行。就像银行取款——先刷卡、再核身份、再看余额，缺一不可。</p>
+  <section class="screen animate-in">
+    <h3>像银行一样的多重防线</h3>
     <div class="pattern-cards">
-      <div class="pattern-card">
-        <div class="pattern-icon">🚪</div>
-        <h4>门禁检查</h4>
-        <p>卡必须存在且未被<span class="glossary-term" data-definition="管理员在系统中将该卡标记为「已注销」，通常发生在学生离校退卡时">注销</span></p>
-      </div>
-      <div class="pattern-card">
-        <div class="pattern-icon">🪪</div>
-        <h4>柜台确认</h4>
-        <p>卡未被<span class="glossary-term" data-definition="持卡人向管理处申报卡片丢失后，系统将该卡标记为「挂失」，任何窗口刷卡都会触发红色报警">挂失</span>，仍可正常使用</p>
-      </div>
-      <div class="pattern-card">
-        <div class="pattern-icon">💰</div>
-        <h4>限额检查</h4>
-        <p>单笔 ≤ 200元，当日累计 ≤ 500元，防止异常盗刷</p>
-      </div>
+      <div class="pattern-card"><div class="pattern-icon">🚪</div><h4>门禁</h4><p>卡存在且未<span class="glossary-term" data-definition="管理员将卡标记为「已注销」，通常在学生离校退卡时">注销</span></p></div>
+      <div class="pattern-card"><div class="pattern-icon">🪪</div><h4>确认</h4><p>卡未被<span class="glossary-term" data-definition="持卡人报告丢失后，任何窗口刷卡都会触发红色报警">挂失</span></p></div>
+      <div class="pattern-card"><div class="pattern-icon">💰</div><h4>限额</h4><p>单笔≤200元，日累计≤500元</p></div>
     </div>
-    <div class="callout callout-info animate-in">
+    <div class="callout callout-insight animate-in">
       <div class="callout-icon">💡</div>
-      <div class="callout-content">
-        <strong>为什么是三重而不是一重？</strong>
-        <p>单纯检查余额无法阻止被盗刷；单纯检查挂失无法识别已注销的卡。三重校验各司其职，互相补充。</p>
-      </div>
+      <div class="callout-content"><strong>为什么三重而不是一重？</strong><p>只查余额无法防盗刷，只查挂失无法识别注销卡。三重各司其职。</p></div>
     </div>
-  </div>
+  </section>
 
-  <!-- Screen 2: Flow Animation -->
-  <div class="screen">
-    <h3 class="screen-title">一笔消费的完整校验之旅</h3>
-    <p>点击「下一步」跟随一笔 15 元的午餐费走完全程。</p>
+  <section class="screen animate-in">
+    <h3>一笔消费的完整校验之旅</h3>
     <div class="flow-animation" data-steps='[
-      {"from": "窗口机", "to": "后端", "label": "刷卡请求", "detail": "窗口机读取卡号，向后端发起消费请求"},
-      {"from": "后端", "to": "后端", "label": "第一关：卡存在？", "detail": "数据库查询卡号是否存在，不存在则返回「卡不存在」"},
-      {"from": "后端", "to": "后端", "label": "第二关：未注销？", "detail": "检查 status ≠ cancelled，已注销则拒绝"},
-      {"from": "后端", "to": "后端", "label": "第三关：未挂失？", "detail": "检查 status ≠ lost，已挂失则触发红色报警"},
-      {"from": "后端", "to": "后端", "label": "第四关：单笔限额", "detail": "15元 < 200元上限，通过"},
-      {"from": "后端", "to": "后端", "label": "第五关：日累计限额", "detail": "今日累计 + 15元 ≤ 500元，通过"},
-      {"from": "后端", "to": "数据库", "label": "事务扣款", "detail": "余额减15元 + 写入消费记录，要么全部成功要么全部回滚"},
-      {"from": "后端", "to": "窗口机", "label": "返回结果", "detail": "显示新余额，消费完成"}
+      {"label":"刷卡请求：窗口机发送卡号到后端"},
+      {"label":"第一关：卡是否存在？不存在→拒绝"},
+      {"label":"第二关：是否已注销？注销→拒绝"},
+      {"label":"第三关：是否挂失？挂失→红色报警"},
+      {"label":"第四关：单笔≤200元？超限→拒绝"},
+      {"label":"第五关：日累计+本次≤500元？超限→拒绝"},
+      {"label":"全部通过：事务扣款+写记录"},
+      {"label":"返回结果：显示新余额，消费完成"}
     ]'>
-      <div class="flow-actors">
-        <div class="flow-actor" data-actor-id="窗口机"><span class="flow-actor-icon">💳</span><span class="flow-actor-name">窗口机</span></div>
-        <div class="flow-actor" data-actor-id="后端"><span class="flow-actor-icon">⚙️</span><span class="flow-actor-name">后端校验</span></div>
-        <div class="flow-actor" data-actor-id="数据库"><span class="flow-actor-icon">🗄️</span><span class="flow-actor-name">数据库</span></div>
-      </div>
-      <div class="flow-track"></div>
-      <div class="flow-detail"></div>
+      <div class="flow-step-label">点击「下一步」开始</div>
+      <div class="flow-progress"></div>
       <div class="flow-controls">
-        <button class="flow-btn flow-prev">← 上一步</button>
-        <span class="flow-step-indicator"></span>
-        <button class="flow-btn flow-next">下一步 →</button>
+        <button class="flow-next-btn">下一步 →</button>
+        <button class="flow-reset-btn">重置</button>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Screen 3: 限额 + 卡号安全 -->
-  <div class="screen">
-    <h3 class="screen-title">限额设计与卡号安全</h3>
+  <section class="screen animate-in">
+    <h3>限额设计与卡号安全</h3>
     <div class="callout callout-insight animate-in">
       <div class="callout-icon">💸</div>
-      <div class="callout-content">
-        <strong>为什么要有消费限额？</strong>
-        <p>卡丢失或被复制后，单笔 200 元上限能将损失控制在可接受范围；日累计 500 元确保即使多次小额盗刷，当日总损失也有上限。</p>
-      </div>
+      <div class="callout-content"><strong>消费限额</strong><p>单笔200元防大额盗刷 · 日累计500元防多次小额盗刷。金额以"分"存储避免浮点误差。</p></div>
     </div>
-    <div class="callout callout-insight animate-in" style="margin-top: 1rem;">
+    <div class="callout callout-insight animate-in" style="margin-top:1rem">
       <div class="callout-icon">🔢</div>
-      <div class="callout-content">
-        <strong>为什么卡号是 16 位随机数？</strong>
-        <p>如果卡号 = 自增 ID（1, 2, 3…），攻击者知道自己是 42 号就能猜测 41、43 号。16 位随机数的穷举概率为 1/10¹⁶——在计算上不可能猜中。</p>
-      </div>
+      <div class="callout-content"><strong>16位随机卡号</strong><p>自增 ID（1,2,3…）可预测——知道自己是42号就能猜41、43号。16位随机数穷举概率 1/10¹⁶。</p></div>
     </div>
-  </div>
+  </section>
 
-  <!-- Screen 4: Quiz -->
-  <div class="screen">
-    <h3 class="screen-title">检验你的理解</h3>
-    <div class="quiz" data-quiz-id="security">
-      <h3 class="quiz-title">🧪 安全检验</h3>
-
-      <div class="quiz-question" data-correct="B">
-        <p class="quiz-prompt">1. 小明的饭卡被挂失后，他拿着卡去食堂窗口消费，会发生什么？</p>
+  <section class="screen animate-in">
+    <h3>检验你的理解</h3>
+    <div id="quiz-security">
+      <h4 class="quiz-title">🧪 安全检验</h4>
+      <div class="quiz-question-block" data-correct="B" data-explanation-right="挂失校验在余额校验之前，直接报警拒绝。" data-explanation-wrong="挂失校验优先于余额检查，系统不会走到扣款步骤。">
+        <p class="quiz-prompt">1. 饭卡被挂失后去窗口消费，会发生什么？</p>
         <div class="quiz-options">
-          <button class="quiz-option" data-option="A">A. 正常扣款，因为卡里有余额</button>
-          <button class="quiz-option" data-option="B">B. 窗口机触发红色报警，拒绝消费</button>
-          <button class="quiz-option" data-option="C">C. 系统提示余额不足</button>
+          <button class="quiz-option" data-value="A" onclick="selectOption(this)">A. 正常扣款</button>
+          <button class="quiz-option" data-value="B" onclick="selectOption(this)">B. 触发红色报警，拒绝消费</button>
+          <button class="quiz-option" data-value="C" onclick="selectOption(this)">C. 提示余额不足</button>
         </div>
-        <div class="quiz-feedback correct">✅ 正确！挂失校验在余额校验之前，系统不会走到扣款步骤，直接报警。</div>
-        <div class="quiz-feedback incorrect">❌ 挂失校验发生在余额校验之前，系统根本不会检查余额，而是直接触发报警。</div>
+        <div class="quiz-feedback"></div>
       </div>
-
-      <div class="quiz-question" data-correct="C">
-        <p class="quiz-prompt">2. 小红今天已经消费了 450 元，现在想再消费 60 元，结果会是？</p>
+      <div class="quiz-question-block" data-correct="C" data-explanation-right="450+60=510>500，整笔拒绝。" data-explanation-wrong="系统不做部分扣款，整笔60元被拒绝。">
+        <p class="quiz-prompt">2. 今天已消费450元，再消费60元，结果？</p>
         <div class="quiz-options">
-          <button class="quiz-option" data-option="A">A. 消费成功，450 + 60 = 510 元</button>
-          <button class="quiz-option" data-option="B">B. 只扣 50 元，凑够今日上限</button>
-          <button class="quiz-option" data-option="C">C. 消费被拒绝，提示「日累计超限」</button>
+          <button class="quiz-option" data-value="A" onclick="selectOption(this)">A. 消费成功</button>
+          <button class="quiz-option" data-value="B" onclick="selectOption(this)">B. 只扣50元凑上限</button>
+          <button class="quiz-option" data-value="C" onclick="selectOption(this)">C. 拒绝，提示日累计超限</button>
         </div>
-        <div class="quiz-feedback correct">✅ 正确！450 + 60 = 510 超过日限额 500，系统拒绝整笔消费。</div>
-        <div class="quiz-feedback incorrect">❌ 系统不做「部分扣款」，整笔 60 元被完整拒绝。</div>
+        <div class="quiz-feedback"></div>
       </div>
-
-      <div class="quiz-question" data-correct="A">
-        <p class="quiz-prompt">3. 为什么用 16 位随机数字作卡号而不是数据库自增 ID？</p>
+      <div class="quiz-question-block" data-correct="A" data-explanation-right="自增 ID 可预测，随机卡号让穷举不可行。" data-explanation-wrong="核心是安全：可预测的卡号让攻击成为可能。">
+        <p class="quiz-prompt">3. 为什么用16位随机数作卡号？</p>
         <div class="quiz-options">
-          <button class="quiz-option" data-option="A">A. 防止攻击者根据规律猜测他人卡号</button>
-          <button class="quiz-option" data-option="B">B. 随机数字更容易记忆</button>
-          <button class="quiz-option" data-option="C">C. 自增 ID 数字不够用</button>
+          <button class="quiz-option" data-value="A" onclick="selectOption(this)">A. 防止猜测他人卡号</button>
+          <button class="quiz-option" data-value="B" onclick="selectOption(this)">B. 更容易记</button>
+          <button class="quiz-option" data-value="C" onclick="selectOption(this)">C. ID 不够用</button>
         </div>
-        <div class="quiz-feedback correct">✅ 正确！自增 ID 是可预测的，随机卡号让穷举攻击不可行。</div>
-        <div class="quiz-feedback incorrect">❌ 核心原因是安全性——自增 ID 暴露了数据库结构和用户顺序。</div>
+        <div class="quiz-feedback"></div>
       </div>
+      <button class="quiz-submit-btn" onclick="checkQuiz('quiz-security')">提交答案</button>
+      <button class="quiz-reset-btn" onclick="resetQuiz('quiz-security')">重做</button>
     </div>
-  </div>
+  </section>
 </section>

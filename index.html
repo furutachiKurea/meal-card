@@ -46,104 +46,73 @@
     <p class="module-subtitle">这个系统是什么、解决什么问题、有哪些角色和入口</p>
   </div>
 
-  <!-- Screen 1: 开场 -->
   <section class="screen animate-in">
     <h3>你有没有遇到过这些烦恼？</h3>
     <p>早上八点，你拿着饭卡冲进食堂，窗口阿姨刷了一下——</p>
-    <blockquote style="border-left: 4px solid var(--color-accent); padding: 0.75rem 1.25rem; margin: 1.5rem 0; font-style: italic;">
-      "余额不足，请充值。"
-    </blockquote>
-    <p>你懵了。昨天明明还有钱的？卡丢了怎么办？充进去的钱还能退吗？</p>
-    <p style="margin-top: 1.5rem;">
-      <strong>食堂饭卡管理系统</strong>就是为了解决这一系列问题而生的。它把食堂的
-      <span class="glossary-term" data-definition="发卡、存款、就餐消费、挂失、注销、统计——系统需要支持的六项核心操作">六项核心业务</span>
-      全部数字化，让管理员、窗口、学生都能顺畅协作。
-    </p>
-    <div class="translation-block">
-      <div class="translation-row">
-        <span class="translation-plain">学生刷卡 → 余额扣减 → 流水记录</span>
-        <span class="translation-tech">一次 HTTP 请求 → 数据库事务 → 持久化日志</span>
-      </div>
-    </div>
+    <blockquote style="border-left: 4px solid var(--color-accent); padding: 0.75rem 1.25rem; margin: 1.5rem 0; font-style: italic;">"余额不足，请充值。"</blockquote>
+    <p><strong>食堂饭卡管理系统</strong>把食堂的
+      <span class="glossary-term" data-definition="发卡、存款、就餐消费、挂失、注销、统计——系统支持的六项核心操作">六项核心业务</span>
+      全部数字化，让管理员、窗口、学生都能顺畅协作。</p>
   </section>
 
-  <!-- Screen 2: 三种角色 -->
   <section class="screen animate-in">
     <h3>谁在使用这个系统？</h3>
     <div class="pattern-cards">
-      <div class="pattern-card">
-        <div class="pattern-icon">🏢</div>
-        <h4>管理员</h4>
-        <p>负责发卡、为学生存款、处理挂失与注销、查看统计报表。是系统的核心操作者。</p>
-      </div>
-      <div class="pattern-card">
-        <div class="pattern-icon">🍜</div>
-        <h4>窗口阿姨</h4>
-        <p>通过窗口机验卡、录入餐费、完成结算。每次就餐的最终执行者。</p>
-      </div>
-      <div class="pattern-card">
-        <div class="pattern-icon">🎓</div>
-        <h4>学生</h4>
-        <p>持卡就餐，刷卡时可看到当前余额。无需登录系统，卡即身份。</p>
-      </div>
+      <div class="pattern-card"><div class="pattern-icon">🏢</div><h4>管理员</h4><p>发卡、存款、挂失、注销、查看统计报表</p></div>
+      <div class="pattern-card"><div class="pattern-icon">🍜</div><h4>窗口阿姨</h4><p>通过窗口机验卡、录入餐费、完成结算</p></div>
+      <div class="pattern-card"><div class="pattern-icon">🎓</div><h4>学生</h4><p>持卡就餐，刷卡时看到余额和消费结果</p></div>
     </div>
   </section>
 
-  <!-- Screen 3: 架构对话 -->
   <section class="screen animate-in">
     <h3>一次刷卡消费，幕后发生了什么？</h3>
-    <p>三个模块之间的一次真实对话：</p>
-    <div class="group-chat" id="chat-architecture">
+    <div class="chat-window" id="chat-architecture">
       <div class="chat-header">🍜 一次刷卡消费的幕后</div>
-      <div class="chat-messages">
-        <div class="chat-msg" data-actor="1" data-delay="0">
-          <span class="chat-name">前端（窗口机页面）</span>
-          <span class="chat-bubble">阿姨输入了 8.5 元，我来发一个请求：POST /api/meal/consume，卡号 + 金额。</span>
-        </div>
-        <div class="chat-msg" data-actor="2" data-delay="1200">
-          <span class="chat-name">后端（Go + Echo）</span>
-          <span class="chat-bubble">收到！先查这张卡：状态正常？是本单位的卡？有没有挂失？</span>
-        </div>
-        <div class="chat-msg" data-actor="3" data-delay="2400">
-          <span class="chat-name">数据库（SQLite）</span>
-          <span class="chat-bubble">查到了，卡状态 active，余额 42.00 元，未挂失。</span>
-        </div>
-        <div class="chat-msg" data-actor="2" data-delay="3600">
-          <span class="chat-name">后端（Go + Echo）</span>
-          <span class="chat-bubble">余额充足，开启
-            <span class="glossary-term" data-definition="数据库事务：一组操作要么全部成功、要么全部回滚，保证数据一致性">事务</span>
-            ：余额 42.00 − 8.50 = 33.50，写入消费流水。提交事务。</span>
-        </div>
-        <div class="chat-msg" data-actor="1" data-delay="4800">
-          <span class="chat-name">前端（窗口机页面）</span>
-          <span class="chat-bubble">收到响应，显示"消费成功，余额 33.50 元"。就餐完成！</span>
-        </div>
+      <div class="chat-message" data-sender="frontend" style="display:none">
+        <span class="chat-avatar" style="background:var(--color-actor-1)">前</span>
+        <div class="chat-bubble"><strong>前端</strong><br>阿姨输入了 8.5 元，我发请求：POST /api/cards/{cardNo}/transactions</div>
       </div>
-      <button class="chat-replay-btn" data-chat="chat-architecture">重新播放 ↺</button>
+      <div class="chat-message" data-sender="backend" style="display:none">
+        <span class="chat-avatar" style="background:var(--color-actor-2)">后</span>
+        <div class="chat-bubble"><strong>后端</strong><br>收到！先查卡：状态正常？本单位的？挂失了没？</div>
+      </div>
+      <div class="chat-message" data-sender="db" style="display:none">
+        <span class="chat-avatar" style="background:var(--color-actor-3)">库</span>
+        <div class="chat-bubble"><strong>数据库</strong><br>卡状态 active，余额 42.00 元，未挂失。</div>
+      </div>
+      <div class="chat-message" data-sender="backend" style="display:none">
+        <span class="chat-avatar" style="background:var(--color-actor-2)">后</span>
+        <div class="chat-bubble"><strong>后端</strong><br>开启<span class="glossary-term" data-definition="数据库事务：一组操作要么全部成功、要么全部回滚">事务</span>：42−8.5=33.50，写流水。提交！</div>
+      </div>
+      <div class="chat-message" data-sender="frontend" style="display:none">
+        <span class="chat-avatar" style="background:var(--color-actor-1)">前</span>
+        <div class="chat-bubble"><strong>前端</strong><br>显示"消费成功，余额 33.50 元"。完成！</div>
+      </div>
+      <div class="chat-typing" style="display:none"><span class="chat-avatar">·</span><span class="typing-dots">···</span></div>
+      <div class="chat-controls">
+        <button class="chat-next-btn">下一条 →</button>
+        <button class="chat-all-btn">全部播放</button>
+        <button class="chat-reset-btn">重置</button>
+        <span class="chat-progress"></span>
+      </div>
     </div>
   </section>
 
-  <!-- Screen 4: 技术栈 -->
   <section class="screen animate-in">
     <h3>技术栈一览</h3>
-    <p>前后端完全分离，通过
-      <span class="glossary-term" data-definition="RESTful API：一种基于 HTTP 的接口规范，用 URL 表示资源、用 GET/POST/PUT/DELETE 表示操作">REST API</span>
-      通信。
-    </p>
+    <p>前后端分离，通过 <span class="glossary-term" data-definition="RESTful API：基于 HTTP 的接口规范，用 URL 表示资源、用 GET/POST/PUT/DELETE 表示操作">REST API</span> 通信。</p>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem;">
-      <div>
-        <h4 style="margin-bottom: 0.75rem;">后端</h4>
-        <div class="icon-label"><span>🐹</span><span><strong>Go</strong> — 编译型语言，性能好、部署简单</span></div>
-        <div class="icon-label"><span>⚡</span><span><strong>Echo</strong> — 轻量级 HTTP 框架，路由清晰</span></div>
-        <div class="icon-label"><span>🗄️</span><span><strong>GORM</strong> — ORM 库，操作数据库不写 SQL</span></div>
-        <div class="icon-label"><span>📦</span><span><strong>SQLite</strong> — 零配置文件数据库，适合课设</span></div>
+      <div><h4>后端</h4>
+        <div class="icon-label"><span>🐹</span><span><strong>Go</strong> — 编译型，部署简单</span></div>
+        <div class="icon-label"><span>⚡</span><span><strong>Echo</strong> — 轻量 HTTP 框架</span></div>
+        <div class="icon-label"><span>🗄️</span><span><strong>GORM</strong> — ORM，不写 SQL</span></div>
+        <div class="icon-label"><span>📦</span><span><strong>SQLite</strong> — 零配置数据库</span></div>
       </div>
-      <div>
-        <h4 style="margin-bottom: 0.75rem;">前端</h4>
-        <div class="icon-label"><span>⚛️</span><span><strong>React</strong> — 组件化 UI 库</span></div>
-        <div class="icon-label"><span>🐜</span><span><strong>Ant Design</strong> — 开箱即用的 UI 组件库</span></div>
-        <div class="icon-label"><span>🚀</span><span><strong>Vite</strong> — 极速构建工具，热更新快</span></div>
-        <div class="icon-label"><span>🔀</span><span><strong>React Router</strong> — 前端路由管理</span></div>
+      <div><h4>前端</h4>
+        <div class="icon-label"><span>⚛️</span><span><strong>React</strong> — 组件化 UI</span></div>
+        <div class="icon-label"><span>🐜</span><span><strong>Ant Design</strong> — UI 组件库</span></div>
+        <div class="icon-label"><span>🚀</span><span><strong>Vite</strong> — 极速构建</span></div>
+        <div class="icon-label"><span>🔀</span><span><strong>React Router</strong> — 路由管理</span></div>
       </div>
     </div>
   </section>
@@ -151,102 +120,42 @@
 <section class="module" id="module-2" style="background: var(--color-bg-warm)">
   <div class="module-header">
     <span class="module-number">02</span>
-    <div class="module-title-block">
-      <h2 class="module-title">数据模型</h2>
-      <p class="module-subtitle">这个系统的数据是怎么组织的</p>
-    </div>
+    <h2 class="module-title">数据模型</h2>
+    <p class="module-subtitle">这个系统的数据是怎么组织的</p>
   </div>
 
-  <!-- Screen 1: 比喻开场 -->
-  <div class="screen">
-    <div class="screen-content">
-      <h3 class="screen-title">数据库，就像图书馆的档案室</h3>
-      <p class="screen-desc">想象食堂管理处有一个大型档案室，里面摆着几排档案柜。每个抽屉专门存放一类信息，抽屉之间通过编号相互引用。</p>
-      <div class="analogy-grid">
-        <div class="analogy-card">
-          <div class="analogy-icon">🗄️</div>
-          <div class="analogy-text">
-            <strong>档案室</strong>
-            <span>= 整个数据库</span>
-          </div>
-        </div>
-        <div class="analogy-card">
-          <div class="analogy-icon">🗂️</div>
-          <div class="analogy-text">
-            <strong>每个抽屉</strong>
-            <span>= 一张数据表</span>
-          </div>
-        </div>
-        <div class="analogy-card">
-          <div class="analogy-icon">📄</div>
-          <div class="analogy-text">
-            <strong>每份文件</strong>
-            <span>= 一条记录（一行）</span>
-          </div>
-        </div>
-        <div class="analogy-card">
-          <div class="analogy-icon">🔖</div>
-          <div class="analogy-text">
-            <strong>文件上的标签</strong>
-            <span>= 字段（列）</span>
-          </div>
-        </div>
-      </div>
-      <p class="screen-note">这个系统一共有 <strong>5 个抽屉</strong>，每个抽屉负责一类数据，抽屉之间通过 <span class="glossary-term" data-definition="外键是一个字段，它的值必须出现在另一张表的主键中，用来把两张表的记录关联起来。">外键</span> 彼此关联。</p>
+  <section class="screen animate-in">
+    <h3>数据库，就像图书馆的档案室</h3>
+    <div class="pattern-cards">
+      <div class="pattern-card"><div class="pattern-icon">🗄️</div><h4>档案室</h4><p>= 整个数据库</p></div>
+      <div class="pattern-card"><div class="pattern-icon">🗂️</div><h4>每个抽屉</h4><p>= 一张数据表</p></div>
+      <div class="pattern-card"><div class="pattern-icon">📄</div><h4>每份文件</h4><p>= 一条记录（一行）</p></div>
+      <div class="pattern-card"><div class="pattern-icon">🔖</div><h4>标签</h4><p>= 字段（列）</p></div>
     </div>
-  </div>
+    <p>这个系统有 <strong>5 个抽屉</strong>，通过 <span class="glossary-term" data-definition="外键是一个字段，它的值必须出现在另一张表的主键中，用来关联记录">外键</span> 彼此关联。</p>
+  </section>
 
-  <!-- Screen 2: 五张表的关系 -->
-  <div class="screen">
-    <div class="screen-content">
-      <h3 class="screen-title">五张表，各司其职</h3>
-      <p class="screen-desc">五张表之间的关系如下：持卡人拥有一张就餐卡，卡上记录所有的存款和消费流水。</p>
-      <div class="pattern-cards">
-        <div class="pattern-card">
-          <div class="pattern-icon">👤</div>
-          <h4>CardHolder</h4>
-          <p>持卡人：id · 姓名 · 证件号 · 创建时间</p>
-        </div>
-        <div class="pattern-card">
-          <div class="pattern-icon">💳</div>
-          <h4>Card</h4>
-          <p>就餐卡：16位卡号 · 押金 · 余额 · 状态</p>
-        </div>
-        <div class="pattern-card">
-          <div class="pattern-icon">💰</div>
-          <h4>DepositRecord</h4>
-          <p>存款记录：金额 · 时间</p>
-        </div>
-        <div class="pattern-card">
-          <div class="pattern-icon">🍜</div>
-          <h4>Transaction</h4>
-          <p>消费记录：金额 · 窗口 · 时间</p>
-        </div>
-        <div class="pattern-card">
-          <div class="pattern-icon">🏪</div>
-          <h4>Window</h4>
-          <p>售饭窗口：id · 名称</p>
-        </div>
-      </div>
-      <div class="callout callout-insight animate-in">
-        <div class="callout-icon">💡</div>
-        <div class="callout-content">
-          <strong>关键设计约束</strong>
-          <p>一人一卡（证件号唯一）· 金额用整数存<span class="glossary-term" data-definition="用整数表示最小货币单位（分），避免小数运算带来的精度误差。例如 1 元存为 100，2000 分 = 20 元押金。">分</span>（避免浮点精度问题）· 卡号16位随机数（不暴露自增ID）</p>
-        </div>
-      </div>
+  <section class="screen animate-in">
+    <h3>五张表，各司其职</h3>
+    <div class="pattern-cards">
+      <div class="pattern-card"><div class="pattern-icon">👤</div><h4>CardHolder</h4><p>持卡人：姓名 · 证件号</p></div>
+      <div class="pattern-card"><div class="pattern-icon">💳</div><h4>Card</h4><p>就餐卡：16位卡号 · 押金 · 余额 · 状态</p></div>
+      <div class="pattern-card"><div class="pattern-icon">💰</div><h4>DepositRecord</h4><p>存款记录：金额 · 时间</p></div>
+      <div class="pattern-card"><div class="pattern-icon">🍜</div><h4>Transaction</h4><p>消费记录：金额 · 窗口 · 时间</p></div>
+      <div class="pattern-card"><div class="pattern-icon">🏪</div><h4>Window</h4><p>售饭窗口：名称</p></div>
     </div>
-  </div>
+    <div class="callout callout-insight animate-in">
+      <div class="callout-icon">💡</div>
+      <div class="callout-content"><strong>关键约束</strong><p>一人一卡 · 金额用<span class="glossary-term" data-definition="用整数表示最小货币单位（分），避免浮点精度误差。1元=100分">整数存分</span> · 卡号16位随机数</p></div>
+    </div>
+  </section>
 
-  <!-- Screen 3: Code Translation -->
-  <div class="screen">
-    <div class="screen-content">
-      <h3 class="screen-title">读懂一张表的代码</h3>
-      <p class="screen-desc">下面是 <code>Card</code>（就餐卡）表在 Go 代码中的定义。左边是代码，右边是逐行的中文解释。</p>
-      <div class="translation-block animate-in">
-        <div class="translation-code">
-          <span class="translation-label">CODE</span>
-          <pre><code>type Card struct {
+  <section class="screen animate-in">
+    <h3>读懂一张表的代码</h3>
+    <div class="translation-block animate-in">
+      <div class="translation-code">
+        <span class="translation-label">CODE</span>
+        <pre><code>type Card struct {
     ID           uint       `gorm:"primaryKey" json:"-"`
     CardNo       string     `gorm:"uniqueIndex;not null;size:16" json:"cardNo"`
     CardHolderID uint       `gorm:"not null" json:"cardHolderId"`
@@ -256,66 +165,58 @@
     CreatedAt    time.Time  `json:"createdAt"`
     UpdatedAt    time.Time  `json:"updatedAt"`
 }</code></pre>
-        </div>
-        <div class="translation-english">
-          <span class="translation-label">中文解释</span>
-          <div class="translation-lines">
-            <p class="tl"><strong>type Card struct</strong> — 定义"就餐卡"这张表的数据结构，每个字段对应表里的一列</p>
-            <p class="tl"><strong>ID uint · primaryKey</strong> — 数据库内部的<span class="glossary-term" data-definition="主键是表中唯一标识每行记录的字段，数据库用它来快速查找和关联记录。">主键</span>，自动递增，对外接口隐藏（json:"-"）</p>
-            <p class="tl"><strong>CardNo string · size:16</strong> — 对外暴露的 16 位随机卡号，设置唯一索引，保证不重复</p>
-            <p class="tl"><strong>CardHolderID uint</strong> — 指向持卡人表的外键，把这张卡和它的主人关联起来</p>
-            <p class="tl"><strong>Deposit int64</strong> — 押金，单位是"分"，固定为 2000（即 20 元）</p>
-            <p class="tl"><strong>Balance int64</strong> — 卡内余额，单位是"分"，每次存款加、消费减</p>
-            <p class="tl"><strong>Status CardStatus</strong> — 卡的状态：active（正常）/ lost（挂失）/ cancelled（注销），默认 active</p>
-            <p class="tl"><strong>CreatedAt / UpdatedAt</strong> — 创建时间和最后更新时间，由<span class="glossary-term" data-definition="GORM 是 Go 语言的 ORM 框架，负责把 struct 映射到数据库表，自动处理 CRUD 操作。">GORM</span> 自动维护</p>
-          </div>
+      </div>
+      <div class="translation-english">
+        <span class="translation-label">中文解释</span>
+        <div class="translation-lines">
+          <p class="tl"><strong>type Card struct</strong> — 定义"就餐卡"表结构</p>
+          <p class="tl"><strong>ID · primaryKey · json:"-"</strong> — 内部<span class="glossary-term" data-definition="主键是表中唯一标识每行记录的字段">主键</span>，对外隐藏</p>
+          <p class="tl"><strong>CardNo · size:16</strong> — 16位随机卡号，唯一索引</p>
+          <p class="tl"><strong>CardHolderID</strong> — 指向持卡人表的外键</p>
+          <p class="tl"><strong>Deposit int64</strong> — 押金（分），固定 2000 = 20元</p>
+          <p class="tl"><strong>Balance int64</strong> — 余额（分），存款加、消费减</p>
+          <p class="tl"><strong>Status</strong> — active / lost / cancelled</p>
+          <p class="tl"><strong>CreatedAt / UpdatedAt</strong> — 由 <span class="glossary-term" data-definition="GORM 是 Go 的 ORM 框架，把 struct 映射到数据库表">GORM</span> 自动维护</p>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Screen 4: Quiz -->
-  <div class="screen">
-    <div class="screen-content">
-      <h3 class="screen-title">检验一下</h3>
-      <div class="quiz" data-quiz-id="data-model">
-        <h3 class="quiz-title">🧪 检验理解</h3>
-
-        <div class="quiz-question" data-correct="B">
-          <p class="quiz-prompt">1. 系统为什么用整数（int64）来存储金额，而不是小数（float）？</p>
-          <div class="quiz-options">
-            <button class="quiz-option" data-option="A">A. 因为 int64 比 float 占用更少内存</button>
-            <button class="quiz-option" data-option="B">B. 浮点数存在精度误差，例如 0.1 + 0.2 ≠ 0.3，用整数存"分"可以精确计算</button>
-            <button class="quiz-option" data-option="C">C. 数据库不支持 float 类型</button>
-          </div>
-          <div class="quiz-feedback correct">✅ 正确！浮点数的二进制表示会引入微小误差，在金融场景中累积后会造成账目不准。用"分"作为最小单位，全程整数运算，完全避免这个问题。</div>
-          <div class="quiz-feedback incorrect">❌ 再想想。浮点数的问题是精度，不是大小。试试 B 选项——想想为什么 0.1 + 0.2 在计算机里不等于 0.3。</div>
+  <section class="screen animate-in">
+    <h3>检验一下</h3>
+    <div id="quiz-data-model">
+      <h4 class="quiz-title">🧪 数据模型理解</h4>
+      <div class="quiz-question-block" data-correct="B" data-explanation-right="浮点数的二进制表示有精度误差，用整数存分完全避免。" data-explanation-wrong="核心原因是精度，不是大小或兼容性。">
+        <p class="quiz-prompt">1. 为什么金额用整数（int64）而不用小数（float）？</p>
+        <div class="quiz-options">
+          <button class="quiz-option" data-value="A" onclick="selectOption(this)">A. int64 占用更少内存</button>
+          <button class="quiz-option" data-value="B" onclick="selectOption(this)">B. 浮点数有精度误差（0.1+0.2≠0.3），整数存分可精确计算</button>
+          <button class="quiz-option" data-value="C" onclick="selectOption(this)">C. 数据库不支持 float</button>
         </div>
-
-        <div class="quiz-question" data-correct="C">
-          <p class="quiz-prompt">2. 就餐卡的 CardNo（卡号）为什么用 16 位随机数字，而不直接用数据库自增 ID？</p>
-          <div class="quiz-options">
-            <button class="quiz-option" data-option="A">A. 随机数字更好看，方便持卡人记忆</button>
-            <button class="quiz-option" data-option="B">B. 自增 ID 数字太小，不够用</button>
-            <button class="quiz-option" data-option="C">C. 自增 ID 会暴露系统信息（如总卡量、发卡顺序），随机卡号可以防止信息泄露</button>
-          </div>
-          <div class="quiz-feedback correct">✅ 正确！如果卡号是 0001、0002……攻击者可以轻易猜出其他人的卡号，也能推算出系统规模。随机卡号从根本上消除了这种风险。</div>
-          <div class="quiz-feedback incorrect">❌ 不对。安全才是核心原因。如果卡号 = 自增 ID，别人只要知道自己的卡号，就能猜出所有其他人的卡号。</div>
-        </div>
-
-        <div class="quiz-question" data-correct="A">
-          <p class="quiz-prompt">3. 一个持卡人（CardHolder）最多可以拥有几张状态为 active 的就餐卡？</p>
-          <div class="quiz-options">
-            <button class="quiz-option" data-option="A">A. 1 张——系统强制一人一卡</button>
-            <button class="quiz-option" data-option="B">B. 不限——只要缴够押金就能多办</button>
-            <button class="quiz-option" data-option="C">C. 最多 2 张——一张正式卡，一张备用卡</button>
-          </div>
-          <div class="quiz-feedback correct">✅ 正确！系统在数据层面通过唯一约束保证一人一卡，这也是需求中"持有效证件办理就餐卡"的核心规则。</div>
-          <div class="quiz-feedback incorrect">❌ 不对。看看需求描述："学生员工持有效证件到管理处……办理就餐卡"——一人只能对应一张卡，系统通过证件号唯一约束来保证这一点。</div>
-        </div>
+        <div class="quiz-feedback"></div>
       </div>
+      <div class="quiz-question-block" data-correct="C" data-explanation-right="自增 ID 可预测，攻击者能猜出其他人的卡号。" data-explanation-wrong="核心是安全性，不是美观或容量。">
+        <p class="quiz-prompt">2. 为什么卡号是 16 位随机数而不是自增 ID？</p>
+        <div class="quiz-options">
+          <button class="quiz-option" data-value="A" onclick="selectOption(this)">A. 随机数字更好记</button>
+          <button class="quiz-option" data-value="B" onclick="selectOption(this)">B. 自增 ID 不够用</button>
+          <button class="quiz-option" data-value="C" onclick="selectOption(this)">C. 自增 ID 可预测，会暴露系统信息</button>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question-block" data-correct="A" data-explanation-right="系统通过证件号唯一约束强制一人一卡。" data-explanation-wrong="需求明确规定一人只能持一张 active 卡。">
+        <p class="quiz-prompt">3. 一个持卡人最多有几张 active 卡？</p>
+        <div class="quiz-options">
+          <button class="quiz-option" data-value="A" onclick="selectOption(this)">A. 1 张——强制一人一卡</button>
+          <button class="quiz-option" data-value="B" onclick="selectOption(this)">B. 不限</button>
+          <button class="quiz-option" data-value="C" onclick="selectOption(this)">C. 最多 2 张</button>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit-btn" onclick="checkQuiz('quiz-data-model')">提交答案</button>
+      <button class="quiz-reset-btn" onclick="resetQuiz('quiz-data-model')">重做</button>
     </div>
-  </div>
+  </section>
 </section>
 <section class="module" id="module-3" style="background: var(--color-bg)">
   <div class="module-header">
@@ -324,67 +225,39 @@
     <p class="module-subtitle">一笔消费从头到尾经历了什么</p>
   </div>
 
-  <!-- Screen 1: 比喻 -->
-  <div class="screen">
-    <h3 class="screen-title">消费就像过安检</h3>
-    <p>你在机场过安检时，要经过多道检查站。消费也一样——每一步都在问：<em>你有资格通过吗？</em></p>
+  <section class="screen animate-in">
+    <h3>消费就像过安检</h3>
+    <p>每一步都在问：<em>你有资格通过吗？</em></p>
     <div class="pattern-cards">
-      <div class="pattern-card">
-        <div class="pattern-icon">🚪</div>
-        <h4>第一关：身份验证</h4>
-        <p>这张卡是我们系统发的吗？</p>
-      </div>
-      <div class="pattern-card">
-        <div class="pattern-icon">🚫</div>
-        <h4>第二关：状态核查</h4>
-        <p>卡有没有被注销或挂失？</p>
-      </div>
-      <div class="pattern-card">
-        <div class="pattern-icon">💰</div>
-        <h4>第三关：额度校验</h4>
-        <p>单笔不超过 <span class="glossary-term" data-definition="系统规定：每次消费最多 200 元（20000分），每天累计不超过 500 元（50000分）">200元</span>，今日累计不超过 500元</p>
-      </div>
-      <div class="pattern-card">
-        <div class="pattern-icon">✅</div>
-        <h4>全部通过：扣款</h4>
-        <p>余额减少，交易记录写入数据库</p>
-      </div>
+      <div class="pattern-card"><div class="pattern-icon">🚪</div><h4>第一关：身份</h4><p>这张卡是我们发的吗？</p></div>
+      <div class="pattern-card"><div class="pattern-icon">🚫</div><h4>第二关：状态</h4><p>卡有没有被注销或挂失？</p></div>
+      <div class="pattern-card"><div class="pattern-icon">💰</div><h4>第三关：额度</h4><p>单笔≤200元，日累计≤500元</p></div>
+      <div class="pattern-card"><div class="pattern-icon">✅</div><h4>全部通过</h4><p>扣款 + 写入记录</p></div>
     </div>
-  </div>
+  </section>
 
-  <!-- Screen 2: Flow Animation -->
-  <div class="screen">
-    <h3 class="screen-title">消费的完整流程</h3>
-    <p>点击「下一步」，逐步走完一笔消费的全部环节。</p>
+  <section class="screen animate-in">
+    <h3>消费的完整流程</h3>
     <div class="flow-animation" data-steps='[
-      {"from": "学生", "to": "后端", "label": "刷卡请求", "detail": "学生将饭卡靠近窗口机，窗口机向后端发送卡号与消费金额"},
-      {"from": "后端", "to": "数据库", "label": "查询卡片", "detail": "SELECT * FROM cards WHERE card_no = ?"},
-      {"from": "数据库", "to": "后端", "label": "返回卡片信息", "detail": "返回卡的状态（active / lost / cancelled）与当前余额"},
-      {"from": "后端", "to": "后端", "label": "三重状态校验", "detail": "① 卡存在？② 未注销？③ 未挂失？任意一项不通过立即拒绝"},
-      {"from": "后端", "to": "数据库", "label": "查询今日消费额", "detail": "SELECT SUM(amount) FROM transactions WHERE card_no = ? AND date = today"},
-      {"from": "后端", "to": "后端", "label": "限额校验", "detail": "单笔 ≤ 200元 且 今日累计 + 本次 ≤ 500元，否则拒绝"},
-      {"from": "后端", "to": "数据库", "label": "事务写入", "detail": "在同一个数据库事务中：扣减余额 + 插入 Transaction 记录"},
-      {"from": "后端", "to": "学生", "label": "返回结果", "detail": "窗口机显示扣款成功与最新余额，消费完成"}
+      {"label":"刷卡请求：窗口机向后端发送卡号与金额"},
+      {"label":"查询卡片：SELECT * FROM cards WHERE card_no = ?"},
+      {"label":"三重校验：卡存在？未注销？未挂失？"},
+      {"label":"限额校验：单笔≤200元 且 今日累计+本次≤500元"},
+      {"label":"余额校验：余额≥消费金额"},
+      {"label":"事务扣款：余额减少 + 写入 Transaction 记录（原子操作）"},
+      {"label":"返回结果：窗口机显示新余额"}
     ]'>
-      <div class="flow-actors">
-        <div class="flow-actor" data-actor-id="学生"><span class="flow-actor-icon">🧑‍🎓</span><span class="flow-actor-name">学生</span></div>
-        <div class="flow-actor" data-actor-id="后端"><span class="flow-actor-icon">⚙️</span><span class="flow-actor-name">后端</span></div>
-        <div class="flow-actor" data-actor-id="数据库"><span class="flow-actor-icon">🗄️</span><span class="flow-actor-name">数据库</span></div>
-      </div>
-      <div class="flow-track"></div>
-      <div class="flow-detail"></div>
+      <div class="flow-step-label">点击「下一步」开始</div>
+      <div class="flow-progress"></div>
       <div class="flow-controls">
-        <button class="flow-btn flow-prev">← 上一步</button>
-        <span class="flow-step-indicator"></span>
-        <button class="flow-btn flow-next">下一步 →</button>
+        <button class="flow-next-btn">下一步 →</button>
+        <button class="flow-reset-btn">重置</button>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Screen 3: Code Translation -->
-  <div class="screen">
-    <h3 class="screen-title">代码翻译：消费核心逻辑</h3>
-    <p><code>CreateTransaction</code> 中最关键的一段代码。左边是 Go 代码，右边是白话解释。</p>
+  <section class="screen animate-in">
+    <h3>代码翻译：消费核心逻辑</h3>
     <div class="translation-block animate-in">
       <div class="translation-code">
         <span class="translation-label">CODE</span>
@@ -409,40 +282,30 @@
       <div class="translation-english">
         <span class="translation-label">中文解释</span>
         <div class="translation-lines">
-          <p class="tl"><strong>Transaction(func...)</strong> — 开启数据库<span class="glossary-term" data-definition="事务：一组操作打包执行，要么全部成功，要么全部回滚。保证数据不会处于"扣了钱但没记录"的中间状态">事务</span>，里面的所有操作要么全部成功，要么全部撤销</p>
-          <p class="tl"><strong>WithTx(tx)</strong> — 创建一个绑定了本次事务的仓库实例，确保后续查询都在同一个事务里</p>
-          <p class="tl"><strong>FindCardByCardNo</strong> — 根据卡号查数据库，找不到说明不是我们发的卡</p>
-          <p class="tl"><strong>Status == Cancelled</strong> — 第二重校验：卡已注销，拒绝</p>
-          <p class="tl"><strong>Status == Lost</strong> — 第三重校验：卡已挂失，拒绝并报警</p>
+          <p class="tl"><strong>Transaction(func...)</strong> — 开启<span class="glossary-term" data-definition="事务：一组操作打包，要么全部成功要么全部撤销">事务</span></p>
+          <p class="tl"><strong>WithTx(tx)</strong> — 创建绑定本次事务的仓库实例</p>
+          <p class="tl"><strong>FindCardByCardNo</strong> — 查卡，找不到 = 不是我们发的</p>
+          <p class="tl"><strong>Status == Cancelled</strong> — 已注销，拒绝</p>
+          <p class="tl"><strong>Status == Lost</strong> — 已挂失，拒绝并报警</p>
           <p class="tl"><strong>Balance -= amount</strong> — 扣减余额（单位：分）</p>
-          <p class="tl"><strong>UpdateCard + CreateTransaction</strong> — 同时更新余额和写入消费记录，事务保证两步不可分割</p>
-          <p class="tl"><strong>return nil</strong> — 返回 nil 表示成功，事务自动提交</p>
+          <p class="tl"><strong>UpdateCard + CreateTransaction</strong> — 更新余额 + 写流水，事务保证不可分割</p>
+          <p class="tl"><strong>return nil</strong> — 成功，事务提交</p>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Screen 4: Callout -->
-  <div class="screen">
-    <h3 class="screen-title">两个关键设计思想</h3>
+  <section class="screen animate-in">
+    <h3>两个关键设计思想</h3>
     <div class="callout callout-insight animate-in">
       <div class="callout-icon">💡</div>
-      <div class="callout-content">
-        <strong>事务：要么全部成功，要么全部回滚</strong>
-        <p>假设扣款成功了，但写流水记录时突然断电。没有事务保护的话，余额减少了却没有记录——账就对不上了。有了事务，这两步是捆绑的：写流水失败 → 扣款自动撤销 → 余额恢复原样。</p>
-      </div>
+      <div class="callout-content"><strong>事务：要么全成功，要么全回滚</strong><p>扣款成功但写流水断电？有事务保护 → 扣款自动撤销 → 余额恢复。</p></div>
     </div>
-    <div class="callout callout-insight animate-in" style="margin-top: 1.5rem;">
+    <div class="callout callout-insight animate-in" style="margin-top:1rem">
       <div class="callout-icon">🏗️</div>
-      <div class="callout-content">
-        <strong>三层架构：每一层只做自己的事</strong>
-        <p><strong>Handler 层</strong>（HTTP 入口）只负责解析请求、返回响应，不碰业务逻辑。<br>
-        <strong>Service 层</strong>（业务逻辑）只负责校验规则、编排流程，不直接写 SQL。<br>
-        <strong>Repository 层</strong>（数据访问）只负责与数据库打交道，不关心业务含义。<br>
-        这样分层的好处是：改数据库只动 Repository，改业务规则只动 Service，互不影响。</p>
-      </div>
+      <div class="callout-content"><strong>三层架构：各管各的</strong><p>Handler 只管 HTTP · Service 只管业务规则 · Repository 只管数据库。改一层不影响其他层。</p></div>
     </div>
-  </div>
+  </section>
 </section>
 <section class="module" id="module-4" style="background: var(--color-bg-warm)">
   <div class="module-header">
@@ -451,74 +314,59 @@
     <p class="module-subtitle">如何用一个浏览器 API 实现两块屏幕的实时联动</p>
   </div>
 
-  <!-- Screen 1: 对讲机比喻 -->
-  <div class="screen">
-    <h3 class="screen-title">两块屏幕，一条频道</h3>
-    <p>想象一对<strong>对讲机</strong>——只要两台设备调到同一频率，按下说话键就能互通。不需要电话基站，不需要服务器中转，信号直接在两端之间传递。</p>
+  <section class="screen animate-in">
+    <h3>两块屏幕，一条频道</h3>
+    <p>像<strong>对讲机</strong>——调到同一频率就能互通，不需要基站。</p>
     <div class="pattern-cards">
-      <div class="pattern-card">
-        <div class="pattern-icon">🖥️</div>
-        <h4>顾客屏</h4>
-        <p>学生刷卡、查看余额、等待结算结果<br><code>/window/customer?id=1</code></p>
-      </div>
-      <div class="pattern-card">
-        <div class="pattern-icon">👩‍🍳</div>
-        <h4>操作端（阿姨屏）</h4>
-        <p>等待刷卡、查看学生信息、输入金额结算<br><code>/window?id=1</code></p>
-      </div>
+      <div class="pattern-card"><div class="pattern-icon">🖥️</div><h4>顾客屏</h4><p>学生刷卡、看余额、等结果<br><code>/window/customer?id=1</code></p></div>
+      <div class="pattern-card"><div class="pattern-icon">👩‍🍳</div><h4>操作端</h4><p>阿姨等刷卡、输金额、结算<br><code>/window?id=1</code></p></div>
     </div>
-    <div class="callout callout-info animate-in">
+    <div class="callout callout-insight animate-in">
       <div class="callout-icon">💡</div>
-      <div class="callout-content">
-        两块屏幕都在同一台电脑的浏览器里，通过
-        <span class="glossary-term" data-definition="BroadcastChannel 是浏览器内置 API，允许同源的多个标签页/窗口通过命名频道互相发消息，无需服务器">BroadcastChannel</span>
-        频道 <code>window-{id}</code> 互相通信，<strong>完全不经过后端</strong>。
-      </div>
+      <div class="callout-content">通过 <span class="glossary-term" data-definition="BroadcastChannel 是浏览器内置 API，同源的标签页可通过命名频道互发消息">BroadcastChannel</span> 频道 <code>window-{id}</code> 通信，<strong>完全不经过后端</strong>。</div>
     </div>
-  </div>
+  </section>
 
-  <!-- Screen 2: Group chat -->
-  <div class="screen">
-    <h3 class="screen-title">一次完整消费的对话</h3>
-    <div class="group-chat" id="chat-dual-screen">
+  <section class="screen animate-in">
+    <h3>一次完整消费的对话</h3>
+    <div class="chat-window" id="chat-dual-screen">
       <div class="chat-header">📱 双屏对话</div>
-      <div class="chat-messages">
-        <div class="chat-msg" data-actor="1" data-delay="0">
-          <span class="chat-name">顾客屏</span>
-          <span class="chat-bubble">我刷卡了（card_read）<br><small>卡号 10001 · 张三</small></span>
-        </div>
-        <div class="chat-msg" data-actor="2" data-delay="800">
-          <span class="chat-name">操作端</span>
-          <span class="chat-bubble">收到！余额 ¥500.00，请阿姨输入金额</span>
-        </div>
-        <div class="chat-msg" data-actor="2" data-delay="2000">
-          <span class="chat-name">操作端</span>
-          <span class="chat-bubble">已结算，扣 ¥15.00（settled）</span>
-        </div>
-        <div class="chat-msg" data-actor="1" data-delay="2800">
-          <span class="chat-name">顾客屏</span>
-          <span class="chat-bubble">收到！剩余 ¥485.00，请取走餐盘 ✅</span>
-        </div>
-        <div class="chat-msg" data-actor="2" data-delay="4000">
-          <span class="chat-name">操作端</span>
-          <span class="chat-bubble">下一位请刷卡（reset）</span>
-        </div>
-        <div class="chat-msg" data-actor="1" data-delay="4600">
-          <span class="chat-name">顾客屏</span>
-          <span class="chat-bubble">已重置，等待下一位同学…</span>
-        </div>
+      <div class="chat-message" data-sender="customer" style="display:none">
+        <span class="chat-avatar" style="background:var(--color-actor-4)">客</span>
+        <div class="chat-bubble"><strong>顾客屏</strong><br>学生刷卡了（card_read）：卡号 10001 · 张三 · 余额 ¥500</div>
       </div>
-      <button class="chat-replay-btn" data-chat="chat-dual-screen">重新播放 ↺</button>
+      <div class="chat-message" data-sender="operator" style="display:none">
+        <span class="chat-avatar" style="background:var(--color-actor-2)">操</span>
+        <div class="chat-bubble"><strong>操作端</strong><br>收到！显示学生信息，请阿姨输入金额</div>
+      </div>
+      <div class="chat-message" data-sender="operator" style="display:none">
+        <span class="chat-avatar" style="background:var(--color-actor-2)">操</span>
+        <div class="chat-bubble"><strong>操作端</strong><br>已结算，扣 ¥15.00（settled）→ 广播给顾客屏</div>
+      </div>
+      <div class="chat-message" data-sender="customer" style="display:none">
+        <span class="chat-avatar" style="background:var(--color-actor-4)">客</span>
+        <div class="chat-bubble"><strong>顾客屏</strong><br>收到！显示"剩余 ¥485.00" ✅</div>
+      </div>
+      <div class="chat-message" data-sender="operator" style="display:none">
+        <span class="chat-avatar" style="background:var(--color-actor-2)">操</span>
+        <div class="chat-bubble"><strong>操作端</strong><br>下一位（reset）→ 顾客屏回到刷卡界面</div>
+      </div>
+      <div class="chat-typing" style="display:none"><span class="chat-avatar">·</span><span class="typing-dots">···</span></div>
+      <div class="chat-controls">
+        <button class="chat-next-btn">下一条 →</button>
+        <button class="chat-all-btn">全部播放</button>
+        <button class="chat-reset-btn">重置</button>
+        <span class="chat-progress"></span>
+      </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Screen 3: Code translation -->
-  <div class="screen">
-    <h3 class="screen-title">BroadcastChannel 核心代码</h3>
+  <section class="screen animate-in">
+    <h3>BroadcastChannel 核心代码</h3>
     <div class="translation-block animate-in">
       <div class="translation-code">
         <span class="translation-label">CODE</span>
-        <pre><code>// 顾客屏：刷卡后广播给操作端
+        <pre><code>// 顾客屏：刷卡后广播
 const ch = new BroadcastChannel('window-1')
 const res = await getCard(cardNo)
 ch.postMessage({
@@ -528,7 +376,7 @@ ch.postMessage({
   balance: res.balance
 })
 
-// 操作端：监听顾客屏消息
+// 操作端：监听
 ch.onmessage = (e) => {
   if (e.data.type === 'card_read') {
     setCardInfo(e.data)
@@ -538,45 +386,26 @@ ch.onmessage = (e) => {
       <div class="translation-english">
         <span class="translation-label">中文解释</span>
         <div class="translation-lines">
-          <p class="tl"><strong>new BroadcastChannel('window-1')</strong> — 打开对讲机，拨到频道 window-1。两块屏幕用同一个频道名才能互通</p>
-          <p class="tl"><strong>await getCard(cardNo)</strong> — 顾客屏先向后端查卡，验证卡片状态</p>
-          <p class="tl"><strong>ch.postMessage({...})</strong> — 验证通过后，把卡号、姓名、余额打包成一条消息，广播出去</p>
-          <p class="tl"><strong>ch.onmessage</strong> — 操作端一直"守着收音机"，收到 card_read 消息就立刻更新界面</p>
+          <p class="tl"><strong>new BroadcastChannel('window-1')</strong> — 打开对讲机，拨到频道 window-1</p>
+          <p class="tl"><strong>await getCard(cardNo)</strong> — 顾客屏先向后端验证卡片</p>
+          <p class="tl"><strong>ch.postMessage({...})</strong> — 验证通过，把信息广播出去</p>
+          <p class="tl"><strong>ch.onmessage</strong> — 操作端监听，收到后更新界面</p>
         </div>
       </div>
     </div>
-    <div class="callout callout-insight animate-in">
-      <div class="callout-icon">🔑</div>
-      <div class="callout-content">
-        <strong>同源限制</strong>
-        <p><span class="glossary-term" data-definition="同源指协议、域名、端口三者完全相同。例如 http://localhost:5173 下的所有页面互为同源">BroadcastChannel</span> 只在同源页面之间生效。两块屏幕必须来自同一个前端服务，这在窗口机（同一台电脑）的场景下天然满足。</p>
-      </div>
-    </div>
-  </div>
+  </section>
 
-  <!-- Screen 4: 职责分离 -->
-  <div class="screen">
-    <h3 class="screen-title">为什么要分两块屏？</h3>
+  <section class="screen animate-in">
+    <h3>为什么要分两块屏？</h3>
     <div class="callout callout-insight animate-in">
       <div class="callout-icon">⚠️</div>
-      <div class="callout-content">
-        <strong>如果两边都能输入卡号会怎样？</strong>
-        <p>阿姨可能在学生还没刷卡时就手动录入卡号，导致"替人消费"的安全漏洞；或者两边同时触发查卡请求，产生竞态条件。<br><strong>职责单一</strong>从设计上杜绝了这类问题——顾客屏是唯一的刷卡入口，操作端只能被动接收信息。</p>
-      </div>
+      <div class="callout-content"><strong>如果两边都能输入卡号？</strong><p>阿姨可能手动录入 → "替人消费"漏洞。<strong>职责单一</strong>从设计上杜绝：顾客屏是唯一刷卡入口，操作端只能被动接收。</p></div>
     </div>
-    <div class="pattern-cards" style="margin-top: 1.5rem;">
-      <div class="pattern-card">
-        <div class="pattern-icon">🎓</div>
-        <h4>顾客屏只做一件事</h4>
-        <p>输入卡号 + 显示结果。不能输入金额，不能结算。</p>
-      </div>
-      <div class="pattern-card">
-        <div class="pattern-icon">👩‍🍳</div>
-        <h4>操作端只做一件事</h4>
-        <p>输入金额 + 确认结算。不能输入卡号，必须等学生先刷。</p>
-      </div>
+    <div class="pattern-cards">
+      <div class="pattern-card"><div class="pattern-icon">🎓</div><h4>顾客屏只做</h4><p>输入卡号 + 显示结果</p></div>
+      <div class="pattern-card"><div class="pattern-icon">👩‍🍳</div><h4>操作端只做</h4><p>输入金额 + 确认结算</p></div>
     </div>
-  </div>
+  </section>
 </section>
 <section class="module" id="module-5" style="background: var(--color-bg)">
   <div class="module-header">
@@ -585,124 +414,87 @@ ch.onmessage = (e) => {
     <p class="module-subtitle">系统如何保护学生的钱包</p>
   </div>
 
-  <!-- Screen 1: 比喻 -->
-  <div class="screen">
-    <h3 class="screen-title">像银行一样的多重防线</h3>
-    <p>每一笔消费，都必须通过三道"门"才能放行。就像银行取款——先刷卡、再核身份、再看余额，缺一不可。</p>
+  <section class="screen animate-in">
+    <h3>像银行一样的多重防线</h3>
     <div class="pattern-cards">
-      <div class="pattern-card">
-        <div class="pattern-icon">🚪</div>
-        <h4>门禁检查</h4>
-        <p>卡必须存在且未被<span class="glossary-term" data-definition="管理员在系统中将该卡标记为「已注销」，通常发生在学生离校退卡时">注销</span></p>
-      </div>
-      <div class="pattern-card">
-        <div class="pattern-icon">🪪</div>
-        <h4>柜台确认</h4>
-        <p>卡未被<span class="glossary-term" data-definition="持卡人向管理处申报卡片丢失后，系统将该卡标记为「挂失」，任何窗口刷卡都会触发红色报警">挂失</span>，仍可正常使用</p>
-      </div>
-      <div class="pattern-card">
-        <div class="pattern-icon">💰</div>
-        <h4>限额检查</h4>
-        <p>单笔 ≤ 200元，当日累计 ≤ 500元，防止异常盗刷</p>
-      </div>
+      <div class="pattern-card"><div class="pattern-icon">🚪</div><h4>门禁</h4><p>卡存在且未<span class="glossary-term" data-definition="管理员将卡标记为「已注销」，通常在学生离校退卡时">注销</span></p></div>
+      <div class="pattern-card"><div class="pattern-icon">🪪</div><h4>确认</h4><p>卡未被<span class="glossary-term" data-definition="持卡人报告丢失后，任何窗口刷卡都会触发红色报警">挂失</span></p></div>
+      <div class="pattern-card"><div class="pattern-icon">💰</div><h4>限额</h4><p>单笔≤200元，日累计≤500元</p></div>
     </div>
-    <div class="callout callout-info animate-in">
+    <div class="callout callout-insight animate-in">
       <div class="callout-icon">💡</div>
-      <div class="callout-content">
-        <strong>为什么是三重而不是一重？</strong>
-        <p>单纯检查余额无法阻止被盗刷；单纯检查挂失无法识别已注销的卡。三重校验各司其职，互相补充。</p>
-      </div>
+      <div class="callout-content"><strong>为什么三重而不是一重？</strong><p>只查余额无法防盗刷，只查挂失无法识别注销卡。三重各司其职。</p></div>
     </div>
-  </div>
+  </section>
 
-  <!-- Screen 2: Flow Animation -->
-  <div class="screen">
-    <h3 class="screen-title">一笔消费的完整校验之旅</h3>
-    <p>点击「下一步」跟随一笔 15 元的午餐费走完全程。</p>
+  <section class="screen animate-in">
+    <h3>一笔消费的完整校验之旅</h3>
     <div class="flow-animation" data-steps='[
-      {"from": "窗口机", "to": "后端", "label": "刷卡请求", "detail": "窗口机读取卡号，向后端发起消费请求"},
-      {"from": "后端", "to": "后端", "label": "第一关：卡存在？", "detail": "数据库查询卡号是否存在，不存在则返回「卡不存在」"},
-      {"from": "后端", "to": "后端", "label": "第二关：未注销？", "detail": "检查 status ≠ cancelled，已注销则拒绝"},
-      {"from": "后端", "to": "后端", "label": "第三关：未挂失？", "detail": "检查 status ≠ lost，已挂失则触发红色报警"},
-      {"from": "后端", "to": "后端", "label": "第四关：单笔限额", "detail": "15元 < 200元上限，通过"},
-      {"from": "后端", "to": "后端", "label": "第五关：日累计限额", "detail": "今日累计 + 15元 ≤ 500元，通过"},
-      {"from": "后端", "to": "数据库", "label": "事务扣款", "detail": "余额减15元 + 写入消费记录，要么全部成功要么全部回滚"},
-      {"from": "后端", "to": "窗口机", "label": "返回结果", "detail": "显示新余额，消费完成"}
+      {"label":"刷卡请求：窗口机发送卡号到后端"},
+      {"label":"第一关：卡是否存在？不存在→拒绝"},
+      {"label":"第二关：是否已注销？注销→拒绝"},
+      {"label":"第三关：是否挂失？挂失→红色报警"},
+      {"label":"第四关：单笔≤200元？超限→拒绝"},
+      {"label":"第五关：日累计+本次≤500元？超限→拒绝"},
+      {"label":"全部通过：事务扣款+写记录"},
+      {"label":"返回结果：显示新余额，消费完成"}
     ]'>
-      <div class="flow-actors">
-        <div class="flow-actor" data-actor-id="窗口机"><span class="flow-actor-icon">💳</span><span class="flow-actor-name">窗口机</span></div>
-        <div class="flow-actor" data-actor-id="后端"><span class="flow-actor-icon">⚙️</span><span class="flow-actor-name">后端校验</span></div>
-        <div class="flow-actor" data-actor-id="数据库"><span class="flow-actor-icon">🗄️</span><span class="flow-actor-name">数据库</span></div>
-      </div>
-      <div class="flow-track"></div>
-      <div class="flow-detail"></div>
+      <div class="flow-step-label">点击「下一步」开始</div>
+      <div class="flow-progress"></div>
       <div class="flow-controls">
-        <button class="flow-btn flow-prev">← 上一步</button>
-        <span class="flow-step-indicator"></span>
-        <button class="flow-btn flow-next">下一步 →</button>
+        <button class="flow-next-btn">下一步 →</button>
+        <button class="flow-reset-btn">重置</button>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Screen 3: 限额 + 卡号安全 -->
-  <div class="screen">
-    <h3 class="screen-title">限额设计与卡号安全</h3>
+  <section class="screen animate-in">
+    <h3>限额设计与卡号安全</h3>
     <div class="callout callout-insight animate-in">
       <div class="callout-icon">💸</div>
-      <div class="callout-content">
-        <strong>为什么要有消费限额？</strong>
-        <p>卡丢失或被复制后，单笔 200 元上限能将损失控制在可接受范围；日累计 500 元确保即使多次小额盗刷，当日总损失也有上限。</p>
-      </div>
+      <div class="callout-content"><strong>消费限额</strong><p>单笔200元防大额盗刷 · 日累计500元防多次小额盗刷。金额以"分"存储避免浮点误差。</p></div>
     </div>
-    <div class="callout callout-insight animate-in" style="margin-top: 1rem;">
+    <div class="callout callout-insight animate-in" style="margin-top:1rem">
       <div class="callout-icon">🔢</div>
-      <div class="callout-content">
-        <strong>为什么卡号是 16 位随机数？</strong>
-        <p>如果卡号 = 自增 ID（1, 2, 3…），攻击者知道自己是 42 号就能猜测 41、43 号。16 位随机数的穷举概率为 1/10¹⁶——在计算上不可能猜中。</p>
-      </div>
+      <div class="callout-content"><strong>16位随机卡号</strong><p>自增 ID（1,2,3…）可预测——知道自己是42号就能猜41、43号。16位随机数穷举概率 1/10¹⁶。</p></div>
     </div>
-  </div>
+  </section>
 
-  <!-- Screen 4: Quiz -->
-  <div class="screen">
-    <h3 class="screen-title">检验你的理解</h3>
-    <div class="quiz" data-quiz-id="security">
-      <h3 class="quiz-title">🧪 安全检验</h3>
-
-      <div class="quiz-question" data-correct="B">
-        <p class="quiz-prompt">1. 小明的饭卡被挂失后，他拿着卡去食堂窗口消费，会发生什么？</p>
+  <section class="screen animate-in">
+    <h3>检验你的理解</h3>
+    <div id="quiz-security">
+      <h4 class="quiz-title">🧪 安全检验</h4>
+      <div class="quiz-question-block" data-correct="B" data-explanation-right="挂失校验在余额校验之前，直接报警拒绝。" data-explanation-wrong="挂失校验优先于余额检查，系统不会走到扣款步骤。">
+        <p class="quiz-prompt">1. 饭卡被挂失后去窗口消费，会发生什么？</p>
         <div class="quiz-options">
-          <button class="quiz-option" data-option="A">A. 正常扣款，因为卡里有余额</button>
-          <button class="quiz-option" data-option="B">B. 窗口机触发红色报警，拒绝消费</button>
-          <button class="quiz-option" data-option="C">C. 系统提示余额不足</button>
+          <button class="quiz-option" data-value="A" onclick="selectOption(this)">A. 正常扣款</button>
+          <button class="quiz-option" data-value="B" onclick="selectOption(this)">B. 触发红色报警，拒绝消费</button>
+          <button class="quiz-option" data-value="C" onclick="selectOption(this)">C. 提示余额不足</button>
         </div>
-        <div class="quiz-feedback correct">✅ 正确！挂失校验在余额校验之前，系统不会走到扣款步骤，直接报警。</div>
-        <div class="quiz-feedback incorrect">❌ 挂失校验发生在余额校验之前，系统根本不会检查余额，而是直接触发报警。</div>
+        <div class="quiz-feedback"></div>
       </div>
-
-      <div class="quiz-question" data-correct="C">
-        <p class="quiz-prompt">2. 小红今天已经消费了 450 元，现在想再消费 60 元，结果会是？</p>
+      <div class="quiz-question-block" data-correct="C" data-explanation-right="450+60=510>500，整笔拒绝。" data-explanation-wrong="系统不做部分扣款，整笔60元被拒绝。">
+        <p class="quiz-prompt">2. 今天已消费450元，再消费60元，结果？</p>
         <div class="quiz-options">
-          <button class="quiz-option" data-option="A">A. 消费成功，450 + 60 = 510 元</button>
-          <button class="quiz-option" data-option="B">B. 只扣 50 元，凑够今日上限</button>
-          <button class="quiz-option" data-option="C">C. 消费被拒绝，提示「日累计超限」</button>
+          <button class="quiz-option" data-value="A" onclick="selectOption(this)">A. 消费成功</button>
+          <button class="quiz-option" data-value="B" onclick="selectOption(this)">B. 只扣50元凑上限</button>
+          <button class="quiz-option" data-value="C" onclick="selectOption(this)">C. 拒绝，提示日累计超限</button>
         </div>
-        <div class="quiz-feedback correct">✅ 正确！450 + 60 = 510 超过日限额 500，系统拒绝整笔消费。</div>
-        <div class="quiz-feedback incorrect">❌ 系统不做「部分扣款」，整笔 60 元被完整拒绝。</div>
+        <div class="quiz-feedback"></div>
       </div>
-
-      <div class="quiz-question" data-correct="A">
-        <p class="quiz-prompt">3. 为什么用 16 位随机数字作卡号而不是数据库自增 ID？</p>
+      <div class="quiz-question-block" data-correct="A" data-explanation-right="自增 ID 可预测，随机卡号让穷举不可行。" data-explanation-wrong="核心是安全：可预测的卡号让攻击成为可能。">
+        <p class="quiz-prompt">3. 为什么用16位随机数作卡号？</p>
         <div class="quiz-options">
-          <button class="quiz-option" data-option="A">A. 防止攻击者根据规律猜测他人卡号</button>
-          <button class="quiz-option" data-option="B">B. 随机数字更容易记忆</button>
-          <button class="quiz-option" data-option="C">C. 自增 ID 数字不够用</button>
+          <button class="quiz-option" data-value="A" onclick="selectOption(this)">A. 防止猜测他人卡号</button>
+          <button class="quiz-option" data-value="B" onclick="selectOption(this)">B. 更容易记</button>
+          <button class="quiz-option" data-value="C" onclick="selectOption(this)">C. ID 不够用</button>
         </div>
-        <div class="quiz-feedback correct">✅ 正确！自增 ID 是可预测的，随机卡号让穷举攻击不可行。</div>
-        <div class="quiz-feedback incorrect">❌ 核心原因是安全性——自增 ID 暴露了数据库结构和用户顺序。</div>
+        <div class="quiz-feedback"></div>
       </div>
+      <button class="quiz-submit-btn" onclick="checkQuiz('quiz-security')">提交答案</button>
+      <button class="quiz-reset-btn" onclick="resetQuiz('quiz-security')">重做</button>
     </div>
-  </div>
+  </section>
 </section>
   </main>
 

@@ -5,74 +5,59 @@
     <p class="module-subtitle">如何用一个浏览器 API 实现两块屏幕的实时联动</p>
   </div>
 
-  <!-- Screen 1: 对讲机比喻 -->
-  <div class="screen">
-    <h3 class="screen-title">两块屏幕，一条频道</h3>
-    <p>想象一对<strong>对讲机</strong>——只要两台设备调到同一频率，按下说话键就能互通。不需要电话基站，不需要服务器中转，信号直接在两端之间传递。</p>
+  <section class="screen animate-in">
+    <h3>两块屏幕，一条频道</h3>
+    <p>像<strong>对讲机</strong>——调到同一频率就能互通，不需要基站。</p>
     <div class="pattern-cards">
-      <div class="pattern-card">
-        <div class="pattern-icon">🖥️</div>
-        <h4>顾客屏</h4>
-        <p>学生刷卡、查看余额、等待结算结果<br><code>/window/customer?id=1</code></p>
-      </div>
-      <div class="pattern-card">
-        <div class="pattern-icon">👩‍🍳</div>
-        <h4>操作端（阿姨屏）</h4>
-        <p>等待刷卡、查看学生信息、输入金额结算<br><code>/window?id=1</code></p>
-      </div>
+      <div class="pattern-card"><div class="pattern-icon">🖥️</div><h4>顾客屏</h4><p>学生刷卡、看余额、等结果<br><code>/window/customer?id=1</code></p></div>
+      <div class="pattern-card"><div class="pattern-icon">👩‍🍳</div><h4>操作端</h4><p>阿姨等刷卡、输金额、结算<br><code>/window?id=1</code></p></div>
     </div>
-    <div class="callout callout-info animate-in">
+    <div class="callout callout-insight animate-in">
       <div class="callout-icon">💡</div>
-      <div class="callout-content">
-        两块屏幕都在同一台电脑的浏览器里，通过
-        <span class="glossary-term" data-definition="BroadcastChannel 是浏览器内置 API，允许同源的多个标签页/窗口通过命名频道互相发消息，无需服务器">BroadcastChannel</span>
-        频道 <code>window-{id}</code> 互相通信，<strong>完全不经过后端</strong>。
-      </div>
+      <div class="callout-content">通过 <span class="glossary-term" data-definition="BroadcastChannel 是浏览器内置 API，同源的标签页可通过命名频道互发消息">BroadcastChannel</span> 频道 <code>window-{id}</code> 通信，<strong>完全不经过后端</strong>。</div>
     </div>
-  </div>
+  </section>
 
-  <!-- Screen 2: Group chat -->
-  <div class="screen">
-    <h3 class="screen-title">一次完整消费的对话</h3>
-    <div class="group-chat" id="chat-dual-screen">
+  <section class="screen animate-in">
+    <h3>一次完整消费的对话</h3>
+    <div class="chat-window" id="chat-dual-screen">
       <div class="chat-header">📱 双屏对话</div>
-      <div class="chat-messages">
-        <div class="chat-msg" data-actor="1" data-delay="0">
-          <span class="chat-name">顾客屏</span>
-          <span class="chat-bubble">我刷卡了（card_read）<br><small>卡号 10001 · 张三</small></span>
-        </div>
-        <div class="chat-msg" data-actor="2" data-delay="800">
-          <span class="chat-name">操作端</span>
-          <span class="chat-bubble">收到！余额 ¥500.00，请阿姨输入金额</span>
-        </div>
-        <div class="chat-msg" data-actor="2" data-delay="2000">
-          <span class="chat-name">操作端</span>
-          <span class="chat-bubble">已结算，扣 ¥15.00（settled）</span>
-        </div>
-        <div class="chat-msg" data-actor="1" data-delay="2800">
-          <span class="chat-name">顾客屏</span>
-          <span class="chat-bubble">收到！剩余 ¥485.00，请取走餐盘 ✅</span>
-        </div>
-        <div class="chat-msg" data-actor="2" data-delay="4000">
-          <span class="chat-name">操作端</span>
-          <span class="chat-bubble">下一位请刷卡（reset）</span>
-        </div>
-        <div class="chat-msg" data-actor="1" data-delay="4600">
-          <span class="chat-name">顾客屏</span>
-          <span class="chat-bubble">已重置，等待下一位同学…</span>
-        </div>
+      <div class="chat-message" data-sender="customer" style="display:none">
+        <span class="chat-avatar" style="background:var(--color-actor-4)">客</span>
+        <div class="chat-bubble"><strong>顾客屏</strong><br>学生刷卡了（card_read）：卡号 10001 · 张三 · 余额 ¥500</div>
       </div>
-      <button class="chat-replay-btn" data-chat="chat-dual-screen">重新播放 ↺</button>
+      <div class="chat-message" data-sender="operator" style="display:none">
+        <span class="chat-avatar" style="background:var(--color-actor-2)">操</span>
+        <div class="chat-bubble"><strong>操作端</strong><br>收到！显示学生信息，请阿姨输入金额</div>
+      </div>
+      <div class="chat-message" data-sender="operator" style="display:none">
+        <span class="chat-avatar" style="background:var(--color-actor-2)">操</span>
+        <div class="chat-bubble"><strong>操作端</strong><br>已结算，扣 ¥15.00（settled）→ 广播给顾客屏</div>
+      </div>
+      <div class="chat-message" data-sender="customer" style="display:none">
+        <span class="chat-avatar" style="background:var(--color-actor-4)">客</span>
+        <div class="chat-bubble"><strong>顾客屏</strong><br>收到！显示"剩余 ¥485.00" ✅</div>
+      </div>
+      <div class="chat-message" data-sender="operator" style="display:none">
+        <span class="chat-avatar" style="background:var(--color-actor-2)">操</span>
+        <div class="chat-bubble"><strong>操作端</strong><br>下一位（reset）→ 顾客屏回到刷卡界面</div>
+      </div>
+      <div class="chat-typing" style="display:none"><span class="chat-avatar">·</span><span class="typing-dots">···</span></div>
+      <div class="chat-controls">
+        <button class="chat-next-btn">下一条 →</button>
+        <button class="chat-all-btn">全部播放</button>
+        <button class="chat-reset-btn">重置</button>
+        <span class="chat-progress"></span>
+      </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Screen 3: Code translation -->
-  <div class="screen">
-    <h3 class="screen-title">BroadcastChannel 核心代码</h3>
+  <section class="screen animate-in">
+    <h3>BroadcastChannel 核心代码</h3>
     <div class="translation-block animate-in">
       <div class="translation-code">
         <span class="translation-label">CODE</span>
-        <pre><code>// 顾客屏：刷卡后广播给操作端
+        <pre><code>// 顾客屏：刷卡后广播
 const ch = new BroadcastChannel('window-1')
 const res = await getCard(cardNo)
 ch.postMessage({
@@ -82,7 +67,7 @@ ch.postMessage({
   balance: res.balance
 })
 
-// 操作端：监听顾客屏消息
+// 操作端：监听
 ch.onmessage = (e) => {
   if (e.data.type === 'card_read') {
     setCardInfo(e.data)
@@ -92,43 +77,24 @@ ch.onmessage = (e) => {
       <div class="translation-english">
         <span class="translation-label">中文解释</span>
         <div class="translation-lines">
-          <p class="tl"><strong>new BroadcastChannel('window-1')</strong> — 打开对讲机，拨到频道 window-1。两块屏幕用同一个频道名才能互通</p>
-          <p class="tl"><strong>await getCard(cardNo)</strong> — 顾客屏先向后端查卡，验证卡片状态</p>
-          <p class="tl"><strong>ch.postMessage({...})</strong> — 验证通过后，把卡号、姓名、余额打包成一条消息，广播出去</p>
-          <p class="tl"><strong>ch.onmessage</strong> — 操作端一直"守着收音机"，收到 card_read 消息就立刻更新界面</p>
+          <p class="tl"><strong>new BroadcastChannel('window-1')</strong> — 打开对讲机，拨到频道 window-1</p>
+          <p class="tl"><strong>await getCard(cardNo)</strong> — 顾客屏先向后端验证卡片</p>
+          <p class="tl"><strong>ch.postMessage({...})</strong> — 验证通过，把信息广播出去</p>
+          <p class="tl"><strong>ch.onmessage</strong> — 操作端监听，收到后更新界面</p>
         </div>
       </div>
     </div>
-    <div class="callout callout-insight animate-in">
-      <div class="callout-icon">🔑</div>
-      <div class="callout-content">
-        <strong>同源限制</strong>
-        <p><span class="glossary-term" data-definition="同源指协议、域名、端口三者完全相同。例如 http://localhost:5173 下的所有页面互为同源">BroadcastChannel</span> 只在同源页面之间生效。两块屏幕必须来自同一个前端服务，这在窗口机（同一台电脑）的场景下天然满足。</p>
-      </div>
-    </div>
-  </div>
+  </section>
 
-  <!-- Screen 4: 职责分离 -->
-  <div class="screen">
-    <h3 class="screen-title">为什么要分两块屏？</h3>
+  <section class="screen animate-in">
+    <h3>为什么要分两块屏？</h3>
     <div class="callout callout-insight animate-in">
       <div class="callout-icon">⚠️</div>
-      <div class="callout-content">
-        <strong>如果两边都能输入卡号会怎样？</strong>
-        <p>阿姨可能在学生还没刷卡时就手动录入卡号，导致"替人消费"的安全漏洞；或者两边同时触发查卡请求，产生竞态条件。<br><strong>职责单一</strong>从设计上杜绝了这类问题——顾客屏是唯一的刷卡入口，操作端只能被动接收信息。</p>
-      </div>
+      <div class="callout-content"><strong>如果两边都能输入卡号？</strong><p>阿姨可能手动录入 → "替人消费"漏洞。<strong>职责单一</strong>从设计上杜绝：顾客屏是唯一刷卡入口，操作端只能被动接收。</p></div>
     </div>
-    <div class="pattern-cards" style="margin-top: 1.5rem;">
-      <div class="pattern-card">
-        <div class="pattern-icon">🎓</div>
-        <h4>顾客屏只做一件事</h4>
-        <p>输入卡号 + 显示结果。不能输入金额，不能结算。</p>
-      </div>
-      <div class="pattern-card">
-        <div class="pattern-icon">👩‍🍳</div>
-        <h4>操作端只做一件事</h4>
-        <p>输入金额 + 确认结算。不能输入卡号，必须等学生先刷。</p>
-      </div>
+    <div class="pattern-cards">
+      <div class="pattern-card"><div class="pattern-icon">🎓</div><h4>顾客屏只做</h4><p>输入卡号 + 显示结果</p></div>
+      <div class="pattern-card"><div class="pattern-icon">👩‍🍳</div><h4>操作端只做</h4><p>输入金额 + 确认结算</p></div>
     </div>
-  </div>
+  </section>
 </section>
