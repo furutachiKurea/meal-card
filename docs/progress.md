@@ -24,6 +24,9 @@
 - 后端启动时自动初始化 5 个默认窗口（种子数据）
 - 首页三入口卡片（管理端/窗口操作端/顾客屏）
 
+- 消费限额：单笔 200 元、日累计 500 元，超限拒绝结算
+- 历史查询 API：GET /api/cards/:cardNo/transactions 和 GET /api/cards/:cardNo/deposits
+
 ## 进行中
 
 （无）
@@ -41,6 +44,25 @@
 系统已形成完整闭环。如有新需求再行迭代。
 
 ## 变更记录
+
+### 2026-06-16 第 20 轮：消费限额 + 历史查询 API
+
+修改文件：
+- `backend/service/card_service.go` — CreateTransaction 增加单笔限额（200元）和日累计限额（500元）校验；新增 GetCardTransactions / GetCardDeposits 方法
+- `backend/repository/card_repository.go` — 新增 SumCardTransactionsByTimeRange（按卡+时间范围统计消费）、GetCardTransactions（消费记录分页）
+- `backend/handler/card_handler.go` — 新增 GetCardTransactions / GetCardDeposits handler；bizErrStatus 增加 EXCEED_SINGLE_LIMIT / EXCEED_DAILY_LIMIT → 403
+- `backend/router/router.go` — 注册 GET /api/cards/:cardNo/transactions 和 GET /api/cards/:cardNo/deposits
+- `backend/service/card_service_test.go` — 修正余额不足测试用例金额；新增 TestCreateTransaction_ExceedSingleLimit / ExceedDailyLimit
+
+新增文件：
+- `docs/course-docs/usecases/transaction-limit.md` — 消费限额 use case 文档
+
+测试结果：go test 全部通过；集成测试验证限额拦截和历史查询正确
+
+关键决策：
+- 单笔 200 元 / 日累计 500 元为系统常量，不可配置（课设不需要运行时配置）
+- 日累计计算在事务内执行，避免并发消费绕过限额
+- 历史查询复用已有 repository 方法，不引入新表
 
 ### 2026-06-16 第 19 轮：窗口机双屏拆分 + 种子数据
 

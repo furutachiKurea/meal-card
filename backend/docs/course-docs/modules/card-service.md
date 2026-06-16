@@ -3,9 +3,10 @@
 ## 作用
 - 管理饭卡全生命周期：发卡、存款、就餐消费、挂失、取消挂失、注销
 - 按证件号查询当前有效卡（GetCurrentCardByIDNumber）
+- 消费/存款历史查询（GetCardTransactions / GetCardDeposits）
 
 ## 职责边界
-- 负责：业务规则校验、卡状态流转、跨实体协调（卡+持卡人）、业务错误定义、调用学籍验证接口、数据库事务管理
+- 负责：业务规则校验、卡状态流转、跨实体协调（卡+持卡人）、业务错误定义、调用学籍验证接口、数据库事务管理、消费限额校验
 - 不负责：HTTP 参数解析、数据库 SQL 细节、统计聚合、学籍验证的底层实现
 
 ## 事务化策略
@@ -93,19 +94,52 @@ stateDiagram-v2
 ### 输出
 - TransactionResult：消费记录 ID、卡 ID、窗口 ID、消费金额、消费后余额、时间戳
 
-### 核心流程（三重校验顺序严格）
+### 核心流程（三重校验 + 限额校验）
 1. amount > 0 校验
-2. 卡存在校验（CARD_NOT_FOUND，消息："此卡非本单位所发"）
-3. 非 cancelled 校验（CARD_CANCELLED，消息："此卡已注销"）
-4. 非 lost 校验（CARD_LOST，消息："此卡已挂失"）
-5. 余额充足校验（INSUFFICIENT_BALANCE）
-6. 窗口存在校验（WINDOW_NOT_FOUND）
-7. balance -= amount，保存卡片，创建 Transaction 记录
+2. 单笔限额校验：amount ≤ 20000 分（200 元），超限返回 EXCEED_SINGLE_LIMIT
+3. 窗口存在校验（WINDOW_NOT_FOUND）— 事务外
+4. 卡存在校验（CARD_NOT_FOUND，消息："此卡非本单位所发"）
+5. 非 cancelled 校验（CARD_CANCELLED，消息："此卡已注销"）
+6. 非 lost 校验（CARD_LOST，消息："此卡已挂失"）
+7. 日累计限额校验：今日已消费 + 本次 ≤ 50000 分（500 元），超限返回 EXCEED_DAILY_LIMIT
+8. 余额充足校验（INSUFFICIENT_BALANCE）
+9. balance -= amount，保存卡片，创建 Transaction 记录
 
 ### 关键实现点
 - cancelled 先于 lost 校验（已注销优先报警）
+- 单笔限额在事务外校验（纯数值比较）
+- 日累计限额在事务内校验（需查当天消费 SUM，保证一致性）
 - 窗口存在性校验在事务外执行（只读，不需要事务保护）
 - 卡片余额扣减和消费记录创建在同一事务内，保证原子性
+
+---
+
+## GetCardTransactions（消费历史查询）
+
+### 输入
+- cardNo（16位卡号）、page、pageSize
+
+### 输出
+- CardTransactionsResult：消费记录列表（含窗口名）、总数、页码
+
+### 核心流程
+1. 按 cardNo 查卡（CARD_NOT_FOUND）
+2. 按 card.ID 查消费记录，JOIN windows 获取窗口名
+3. 按 created_at DESC 排序，LIMIT/OFFSET 分页
+
+---
+
+## GetCardDeposits（存款历史查询）
+
+### 输入
+- cardNo（16位卡号）、page、pageSize
+
+### 输出
+- CardDepositsResult：存款记录列表、总数、页码
+
+### 核心流程
+1. 按 cardNo 查卡（CARD_NOT_FOUND）
+2. 复用 GetHolderDeposits 按 holderID 查存款记录分页
 
 ---
 
