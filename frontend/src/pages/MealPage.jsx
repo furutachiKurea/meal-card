@@ -24,11 +24,31 @@ export default function MealPage() {
 
   const currentStep = txResult ? 2 : cardInfo ? 1 : 0
 
-  // 初始化 BroadcastChannel 向顾客屏推送状态
+  // 初始化 BroadcastChannel，双向通信：接收顾客屏刷卡 + 向顾客屏推送结果
   useEffect(() => {
     const channelName = lockedWindowId ? `window-${lockedWindowId}` : 'window-default'
-    channelRef.current = new BroadcastChannel(channelName)
-    return () => channelRef.current?.close()
+    const ch = new BroadcastChannel(channelName)
+    channelRef.current = ch
+
+    ch.onmessage = (e) => {
+      const msg = e.data
+      if (msg.type === 'card_read' && msg.cardNo) {
+        // 顾客屏发来刷卡信息，操作端自动填充
+        setCardNo(msg.cardNo)
+        setCardInfo({ cardNo: msg.cardNo, cardHolder: { name: msg.holderName }, balance: msg.balance })
+        setAlarm('')
+        setTxResult(null)
+        setError('')
+      } else if (msg.type === 'alarm' && msg.cardNo) {
+        // 顾客屏发来报警
+        setCardNo(msg.cardNo)
+        setAlarm(`警报：${msg.message}，禁止就餐！`)
+        setCardInfo(null)
+        setTxResult(null)
+      }
+    }
+
+    return () => ch.close()
   }, [lockedWindowId])
 
   function broadcast(msg) {
