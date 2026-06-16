@@ -8,9 +8,10 @@
 
 ```
 meal-card/                    ← mono repo
-├── frontend/                 ← React SPA（管理端 + 窗口机模拟）
+├── frontend/                 ← React SPA（管理端 + 窗口操作端 + 顾客屏）
 ├── backend/                  ← Go HTTP API（:8080）
-│   └── client/               ← 学籍验证实现（内嵌 Mock，无需外部服务）
+│   ├── client/               ← 学籍验证实现（内嵌 Mock，无需外部服务）
+│   └── db/                   ← 数据库初始化 + 种子数据
 └── docs/                     ← 全局文档
     └── api/                  ← OpenAPI 契约（yaml）
 ```
@@ -19,7 +20,15 @@ meal-card/                    ← mono repo
 
 前端开发时通过 Vite 代理 `/api` 到后端 `:8080`，api.js 使用相对路径。
 
-学籍验证数据内嵌在后端 `client/student_client.go` 的 `MockStudentValidator` 中，无需启动外部服务。
+学籍验证数据内嵌在后端 `client/student_client.go` 的 `MockStudentValidator` 中（mock 外部服务调用），无需启动外部服务。
+
+### 前端三入口
+
+| 入口 | 路径 | 角色 | 通信 |
+|------|------|------|------|
+| 管理端 | `/admin/*` | 管理处操作员 | 直接调用后端 API |
+| 窗口操作端 | `/window?id=N` | 窗口工作人员 | 调用后端 API + BroadcastChannel 推送给顾客屏 |
+| 顾客屏 | `/window/customer?id=N` | 学生 | 只接收 BroadcastChannel 消息，不调后端 |
 
 ## 技术选型
 
