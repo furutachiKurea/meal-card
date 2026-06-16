@@ -1,10 +1,11 @@
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { Card, Row, Col, Typography, Space } from 'antd'
-import { SettingOutlined, DesktopOutlined } from '@ant-design/icons'
+import { SettingOutlined, DesktopOutlined, UserOutlined } from '@ant-design/icons'
 import AdminLayout from './layouts/AdminLayout.jsx'
 import IssuePage from './pages/IssuePage.jsx'
 import DepositPage from './pages/DepositPage.jsx'
 import MealPage from './pages/MealPage.jsx'
+import CustomerScreen from './pages/CustomerScreen.jsx'
 import LossPage from './pages/LossPage.jsx'
 import CancelPage from './pages/CancelPage.jsx'
 import StatisticsPage from './pages/StatisticsPage.jsx'
@@ -33,27 +34,17 @@ function HomePage() {
         <Text type="secondary">请选择使用模式</Text>
       </Space>
 
-      <Row gutter={40} justify="center">
+      <Row gutter={[24, 24]} justify="center">
         <Col>
           <Card
             hoverable
-            style={{
-              width: 240,
-              textAlign: 'center',
-              borderRadius: 16,
-              boxShadow: '0 4px 20px rgba(22,119,255,0.12)',
-              cursor: 'pointer',
-            }}
+            style={{ width: 200, textAlign: 'center', borderRadius: 16, boxShadow: '0 4px 20px rgba(22,119,255,0.12)' }}
             onClick={() => navigate('/admin/issue')}
           >
             <Space direction="vertical" size={12} style={{ padding: '16px 0' }}>
-              <SettingOutlined style={{ fontSize: 56, color: '#1677ff' }} />
-              <Title level={3} style={{ margin: 0 }}>管理端</Title>
-              <Text type="secondary" style={{ fontSize: 13 }}>
-                发卡 / 存款 / 挂失 / 注销
-                <br />
-                统计 / 窗口管理
-              </Text>
+              <SettingOutlined style={{ fontSize: 48, color: '#1677ff' }} />
+              <Title level={4} style={{ margin: 0 }}>管理端</Title>
+              <Text type="secondary" style={{ fontSize: 12 }}>发卡/存款/挂失/统计</Text>
             </Space>
           </Card>
         </Col>
@@ -61,23 +52,27 @@ function HomePage() {
         <Col>
           <Card
             hoverable
-            style={{
-              width: 240,
-              textAlign: 'center',
-              borderRadius: 16,
-              boxShadow: '0 4px 20px rgba(82,196,26,0.12)',
-              cursor: 'pointer',
-            }}
+            style={{ width: 200, textAlign: 'center', borderRadius: 16, boxShadow: '0 4px 20px rgba(82,196,26,0.12)' }}
             onClick={() => navigate('/window')}
           >
             <Space direction="vertical" size={12} style={{ padding: '16px 0' }}>
-              <DesktopOutlined style={{ fontSize: 56, color: '#52c41a' }} />
-              <Title level={3} style={{ margin: 0 }}>窗口机</Title>
-              <Text type="secondary" style={{ fontSize: 13 }}>
-                就餐消费
-                <br />
-                刷卡结算
-              </Text>
+              <DesktopOutlined style={{ fontSize: 48, color: '#52c41a' }} />
+              <Title level={4} style={{ margin: 0 }}>窗口操作端</Title>
+              <Text type="secondary" style={{ fontSize: 12 }}>工作人员刷卡结算</Text>
+            </Space>
+          </Card>
+        </Col>
+
+        <Col>
+          <Card
+            hoverable
+            style={{ width: 200, textAlign: 'center', borderRadius: 16, boxShadow: '0 4px 20px rgba(250,140,22,0.12)' }}
+            onClick={() => navigate('/window/customer')}
+          >
+            <Space direction="vertical" size={12} style={{ padding: '16px 0' }}>
+              <UserOutlined style={{ fontSize: 48, color: '#fa8c16' }} />
+              <Title level={4} style={{ margin: 0 }}>顾客屏</Title>
+              <Text type="secondary" style={{ fontSize: 12 }}>学生查看余额/结果</Text>
             </Space>
           </Card>
         </Col>
@@ -103,6 +98,7 @@ export default function App() {
         </Route>
 
         <Route path="/window" element={<MealPage />} />
+        <Route path="/window/customer" element={<CustomerScreen />} />
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

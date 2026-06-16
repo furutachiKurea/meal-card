@@ -37,6 +37,9 @@ func main() {
 		log.Fatal().Err(err).Msg("数据库初始化失败")
 	}
 
+	// 种子数据（首次启动时自动创建默认窗口）
+	db.Seed(gormDB)
+
 	// 初始化 repository
 	cardRepo := repository.NewCardRepository(gormDB)
 	windowRepo := repository.NewWindowRepository(gormDB)
