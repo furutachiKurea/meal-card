@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Form, Input, InputNumber, Button, Alert, Descriptions, Card, Typography, Space } from 'antd'
-import { getCard, deposit } from '../api.js'
+import { Form, Input, InputNumber, Button, Alert, Descriptions, Card, Typography, Space, Table } from 'antd'
+import { getCard, deposit, getCardDeposits } from '../api.js'
 
 const { Title } = Typography
 
@@ -13,11 +13,16 @@ export default function DepositPage() {
   const [depositLoading, setDepositLoading] = useState(false)
   const [depositForm] = Form.useForm()
 
+  // 存款历史
+  const [history, setHistory] = useState(null)
+  const [historyPage, setHistoryPage] = useState(1)
+
   async function handleQueryCard() {
     if (!cardNo.trim()) return
     setError('')
     setCardInfo(null)
     setReceipt(null)
+    setHistory(null)
     setQueryLoading(true)
     try {
       const res = await getCard(cardNo.trim())
@@ -27,11 +32,21 @@ export default function DepositPage() {
         return
       }
       setCardInfo(res)
+      // 同时加载存款历史
+      loadHistory(1)
     } catch (err) {
       setError(err.message || '查询失败')
     } finally {
       setQueryLoading(false)
     }
+  }
+
+  async function loadHistory(page) {
+    try {
+      const res = await getCardDeposits(cardNo.trim(), { page, pageSize: 5 })
+      setHistory(res)
+      setHistoryPage(page)
+    } catch {}
   }
 
   async function handleDeposit(values) {
@@ -43,12 +58,19 @@ export default function DepositPage() {
       setReceipt(res)
       setCardInfo(prev => prev ? { ...prev, balance: res.newBalance } : null)
       depositForm.resetFields()
+      // 刷新历史
+      loadHistory(1)
     } catch (err) {
       setError(err.message || '存款失败')
     } finally {
       setDepositLoading(false)
     }
   }
+
+  const historyColumns = [
+    { title: '金额', dataIndex: 'amount', key: 'amount', render: v => `${(v / 100).toFixed(2)} 元` },
+    { title: '时间', dataIndex: 'createdAt', key: 'createdAt', render: v => new Date(v).toLocaleString('zh-CN') },
+  ]
 
   return (
     <Card style={{ maxWidth: 520, margin: '0 auto' }}>
@@ -58,7 +80,7 @@ export default function DepositPage() {
         <Input
           placeholder="请输入16位卡号"
           value={cardNo}
-          onChange={e => { setCardNo(e.target.value); setCardInfo(null); setReceipt(null); setError('') }}
+          onChange={e => { setCardNo(e.target.value); setCardInfo(null); setReceipt(null); setHistory(null); setError('') }}
           onPressEnter={handleQueryCard}
         />
         <Button type="primary" loading={queryLoading} onClick={handleQueryCard}>
@@ -67,12 +89,7 @@ export default function DepositPage() {
       </Space.Compact>
 
       {cardInfo && (
-        <Descriptions
-          column={1}
-          size="small"
-          bordered
-          style={{ marginBottom: 16 }}
-        >
+        <Descriptions column={1} size="small" bordered style={{ marginBottom: 16 }}>
           <Descriptions.Item label="持卡人">{cardInfo.cardHolder.name}</Descriptions.Item>
           <Descriptions.Item label="卡号">{cardInfo.cardNo}</Descriptions.Item>
           <Descriptions.Item label="当前余额">{(cardInfo.balance / 100).toFixed(2)} 元</Descriptions.Item>
@@ -82,25 +99,15 @@ export default function DepositPage() {
       {cardInfo && (
         <Form form={depositForm} layout="vertical" onFinish={handleDeposit}>
           <Form.Item label="存款金额（元）" name="amount" rules={[{ required: true, message: '请输入存款金额' }]}>
-            <InputNumber
-              min={0.01}
-              step={0.01}
-              precision={2}
-              placeholder="0.00"
-              style={{ width: '100%' }}
-            />
+            <InputNumber min={0.01} step={0.01} precision={2} placeholder="0.00" style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item>
-            <Button type="primary" htmlType="submit" loading={depositLoading}>
-              确认存款
-            </Button>
+            <Button type="primary" htmlType="submit" loading={depositLoading}>确认存款</Button>
           </Form.Item>
         </Form>
       )}
 
-      {error && (
-        <Alert type="error" message={error} style={{ marginTop: 8 }} showIcon />
-      )}
+      {error && <Alert type="error" message={error} style={{ marginTop: 8 }} showIcon />}
 
       {receipt && (
         <>
@@ -128,6 +135,24 @@ export default function DepositPage() {
             </Descriptions>
           </Card>
         </>
+      )}
+
+      {history && history.total > 0 && (
+        <Card size="small" title="充值记录" style={{ marginTop: 16 }}>
+          <Table
+            size="small"
+            rowKey="id"
+            dataSource={history.records}
+            columns={historyColumns}
+            pagination={{
+              current: historyPage,
+              total: history.total,
+              pageSize: 5,
+              size: 'small',
+              onChange: p => loadHistory(p),
+            }}
+          />
+        </Card>
       )}
     </Card>
   )

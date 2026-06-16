@@ -63,6 +63,24 @@ export function createTransaction(cardNo, { windowId, amount }) {
   })
 }
 
+/** 查询消费历史 GET /api/cards/{cardNo}/transactions */
+export function getCardTransactions(cardNo, { page, pageSize } = {}) {
+  const params = new URLSearchParams()
+  if (page != null) params.set('page', page)
+  if (pageSize != null) params.set('pageSize', pageSize)
+  const qs = params.toString()
+  return request(`/api/cards/${cardNo}/transactions${qs ? '?' + qs : ''}`)
+}
+
+/** 查询存款历史 GET /api/cards/{cardNo}/deposits */
+export function getCardDeposits(cardNo, { page, pageSize } = {}) {
+  const params = new URLSearchParams()
+  if (page != null) params.set('page', page)
+  if (pageSize != null) params.set('pageSize', pageSize)
+  const qs = params.toString()
+  return request(`/api/cards/${cardNo}/deposits${qs ? '?' + qs : ''}`)
+}
+
 // ==================== 挂失 ====================
 
 /** 挂失 PUT /api/cards/{cardNo}/loss-report */
